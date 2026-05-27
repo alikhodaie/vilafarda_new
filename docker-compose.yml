@@ -1,0 +1,105 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: rentnaap-app
+    restart: unless-stopped
+    working_dir: /var/www/rentnaap
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      DB_HOST: ${DB_HOST:-mariadb}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      WAIT_FOR_DB: ${WAIT_FOR_DB:-true}
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+    volumes:
+      - ./:/var/www/rentnaap
+    networks:
+      - rentnaap
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  nginx:
+    image: nginx:alpine
+    container_name: rentnaap-nginx
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-80}:80"
+    volumes:
+      - ./:/var/www/rentnaap:ro
+      - ./docker/nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - rentnaap
+    depends_on:
+      - app
+
+  mariadb:
+    image: mariadb:10.11
+    container_name: rentnaap-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_FORWARD_PORT:-3306}:3306"
+    volumes:
+      - rentnaap-db:/var/lib/mysql
+    networks:
+      - rentnaap
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: rentnaap-redis
+    restart: unless-stopped
+    volumes:
+      - rentnaap-redis:/data
+    networks:
+      - rentnaap
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: rentnaap-scheduler
+    restart: unless-stopped
+    working_dir: /var/www/rentnaap
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      DB_HOST: ${DB_HOST:-mariadb}
+      DB_PORT: ${DB_PORT:-3306}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      WAIT_FOR_DB: "true"
+    volumes:
+      - ./:/var/www/rentnaap
+    command: sh -c "while true; do php artisan schedule:run --verbose --no-interaction; sleep 60; done"
+    networks:
+      - rentnaap
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      app:
+        condition: service_started
+
+networks:
+  rentnaap:
+    driver: bridge
+
+volumes:
+  rentnaap-db:
+  rentnaap-redis:

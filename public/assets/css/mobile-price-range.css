@@ -1,0 +1,239 @@
+/* محدوده اجاره‌بها — فیلتر موبایل */
+.mobile-price-range-col {
+    min-width: 0;
+    max-width: 100%;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+}
+
+.mobile-price-range {
+    direction: rtl;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.mobile-price-range__head {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.mobile-price-range__accent {
+    width: 4px;
+    height: 22px;
+    border-radius: 4px;
+    background: #D39D1A;
+    flex-shrink: 0;
+}
+
+.mobile-price-range__title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.3;
+}
+
+/* فضای کنار دسته‌ها تا از باکس بیرون نزنند */
+.mobile-price-range__slider-wrap {
+    position: relative;
+    height: 32px;
+    margin: 4px 12px 22px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    width: calc(100% - 24px);
+    max-width: 100%;
+    direction: ltr;
+}
+
+.mobile-price-range__track {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 4px;
+    border-radius: 4px;
+    background: #e5e7eb;
+    pointer-events: none;
+}
+
+.mobile-price-range__fill {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 6px;
+    border-radius: 4px;
+    background: #2563eb;
+    pointer-events: none;
+}
+
+.mobile-price-range__input {
+    position: absolute;
+    left: 10px;
+    width: calc(100% - 20px);
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    padding: 0;
+    height: 32px;
+    background: transparent;
+    pointer-events: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.mobile-price-range__input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    pointer-events: auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #2563eb 4px, #fff 5px);
+    border: none;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+    cursor: grab;
+}
+
+.mobile-price-range__input::-moz-range-thumb {
+    pointer-events: auto;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, #2563eb 4px, #fff 5px);
+    border: none;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+    cursor: grab;
+}
+
+.mobile-price-range__input::-webkit-slider-runnable-track {
+    height: 4px;
+    background: transparent;
+}
+
+.mobile-price-range__input::-moz-range-track {
+    height: 4px;
+    background: transparent;
+}
+
+.mobile-price-range__input--max {
+    z-index: 4;
+}
+
+.mobile-price-range__input--min {
+    z-index: 3;
+}
+
+.mobile-price-range__fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.mobile-price-range__field {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.mobile-price-range__field label {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+    margin-bottom: 5px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.mobile-price-range__field--min label {
+    text-align: right;
+}
+
+.mobile-price-range__field--max label {
+    text-align: left;
+}
+
+.mobile-price-range__box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    padding: 8px 8px;
+    min-height: 40px;
+    max-width: 100%;
+    box-sizing: border-box;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+}
+
+.mobile-price-range__box:focus-within {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.mobile-price-range__display {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 0;
+    border: none;
+    background: transparent;
+    font-size: clamp(10px, 2.6vw, 12px);
+    font-weight: 600;
+    color: #111827;
+    text-align: right;
+    outline: none;
+    direction: rtl;
+    padding: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-price-range__currency {
+    flex: 0 0 auto;
+    font-size: 10px;
+    color: #9ca3af;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+/* داخل مودال فیلتر — جلوگیری از بیرون‌زدگی row بوت‌استرپ */
+#filterModal .modal-body > .row,
+#filterPriceModal .modal-body > .row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+#filterModal .modal-body,
+#filterPriceModal .modal-body {
+    overflow-x: hidden;
+}
+
+@media (max-width: 380px) {
+    .mobile-price-range__fields {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .mobile-price-range__field--min label,
+    .mobile-price-range__field--max label {
+        text-align: right;
+    }
+
+    .mobile-price-range__slider-wrap {
+        width: calc(100% - 16px);
+        margin-left: 8px;
+        margin-right: 8px;
+    }
+}

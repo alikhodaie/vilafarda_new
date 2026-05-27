@@ -1,0 +1,82 @@
+.villa-card {
+    border-radius: 2.2rem;
+    background: #fff;
+    transition: box-shadow 0.2s;
+}
+
+/* گرادیان تیره از پایین کارت — خوانایی متن سفید روی تصویر */
+.villa-card__image-gradient {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    height: 62%;
+    border-bottom-left-radius: 3rem;
+    border-bottom-right-radius: 3rem;
+    pointer-events: none;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.82) 0%,
+        rgba(0, 0, 0, 0.58) 22%,
+        rgba(0, 0, 0, 0.32) 48%,
+        rgba(0, 0, 0, 0.1) 72%,
+        rgba(0, 0, 0, 0) 100%
+    );
+}
+
+.villa-card__caption {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 2;
+    padding: 0 1rem 0.875rem;
+    text-align: right;
+}
+
+.villa-card__caption-title {
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.villa-card__caption-location {
+    font-size: 0.875rem;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.92);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.villa-card__caption-price {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.villa-card__caption-price-unit {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.discount-badge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: #e53935;
+    color: #fff;
+    font-weight: bold;
+    font-size: 0.80rem;
+    padding: 0.35em 0.85em;
+    border-radius: 1.2em;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(229,57,53,0.18);
+    letter-spacing: 0.5px;
+    border: 2px solid #fff;
+    display: inline-block;
+} 

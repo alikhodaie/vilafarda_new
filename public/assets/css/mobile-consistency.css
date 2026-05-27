@@ -1,0 +1,688 @@
+/* Mobile Views Consistency CSS */
+
+/* ===== COLORS ===== */
+:root {
+    /* Primary Colors */
+    --mobile-primary: #D39D1A;
+    --mobile-primary-dark: #B8860B;
+    --mobile-success: #28a745;
+    --mobile-danger: #dc3545;
+    --mobile-warning: #ffc107;
+    --mobile-info: #17a2b8;
+    --mobile-secondary: #6c757d;
+    
+    /* Text Colors */
+    --mobile-text-primary: #333333;
+    --mobile-text-secondary: #666666;
+    --mobile-text-muted: #6c757d;
+    --mobile-text-light: #999999;
+    
+    /* Background Colors */
+    --mobile-bg-white: #ffffff;
+    --mobile-bg-light: #f8f9fa;
+    --mobile-bg-card: #ffffff;
+    --mobile-bg-modal: rgba(0,0,0,0.5);
+    
+    /* Border Colors */
+    --mobile-border-light: #ddd;
+    --mobile-border-medium: #e9ecef;
+    --mobile-border-dark: #ccc;
+    
+    /* Shadow */
+    --mobile-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    --mobile-shadow-hover: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+/* جلوگیری از overflow افقی (مثلاً تصاویر با عرض ثابت بزرگ در RTL) */
+html,
+body,
+#main-wrapper {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* ===== BUTTONS ===== */
+.btn-mobile-primary {
+    background: var(--mobile-primary) !important;
+    border-color: var(--mobile-primary) !important;
+    color: white !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+.btn-mobile-primary:hover {
+    background: var(--mobile-primary-dark) !important;
+    border-color: var(--mobile-primary-dark) !important;
+    color: white !important;
+}
+
+.btn-mobile-secondary {
+    background: var(--mobile-secondary) !important;
+    border-color: var(--mobile-secondary) !important;
+    color: white !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+.btn-mobile-success {
+    background: var(--mobile-success) !important;
+    border-color: var(--mobile-success) !important;
+    color: white !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+.btn-mobile-danger {
+    background: var(--mobile-danger) !important;
+    border-color: var(--mobile-danger) !important;
+    color: white !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+.btn-mobile-outline-primary {
+    background: transparent !important;
+    border: 1px solid var(--mobile-primary) !important;
+    color: var(--mobile-primary) !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+.btn-mobile-outline-secondary {
+    background: transparent !important;
+    border: 1px solid var(--mobile-border-light) !important;
+    color: var(--mobile-text-secondary) !important;
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    font-weight: 500 !important;
+}
+
+/* ===== CARDS ===== */
+.card-mobile {
+    background: var(--mobile-bg-card) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--mobile-shadow) !important;
+    border: none !important;
+    padding: 16px !important;
+}
+
+.card-mobile-header {
+    background: var(--mobile-bg-card) !important;
+    border-radius: 12px 12px 0 0 !important;
+    box-shadow: var(--mobile-shadow) !important;
+    border: none !important;
+    padding: 16px !important;
+}
+
+.card-mobile-body {
+    background: var(--mobile-bg-card) !important;
+    border-radius: 0 0 12px 12px !important;
+    box-shadow: var(--mobile-shadow) !important;
+    border: none !important;
+    padding: 16px !important;
+}
+
+/* ===== TEXT STYLES ===== */
+.text-mobile-primary {
+    color: var(--mobile-text-primary) !important;
+    font-size: 18px !important;
+    font-weight: bold !important;
+}
+
+.text-mobile-secondary {
+    color: var(--mobile-text-secondary) !important;
+    font-size: 14px !important;
+}
+
+.text-mobile-muted {
+    color: var(--mobile-text-muted) !important;
+    font-size: 12px !important;
+}
+
+.text-mobile-small {
+    font-size: 12px !important;
+}
+
+.text-mobile-medium {
+    font-size: 14px !important;
+}
+
+.text-mobile-large {
+    font-size: 16px !important;
+}
+
+.text-mobile-xlarge {
+    font-size: 18px !important;
+}
+
+/* ===== FORM ELEMENTS ===== */
+.form-control-mobile {
+    font-size: 14px !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--mobile-border-light) !important;
+    padding: 10px 12px !important;
+}
+
+.form-control-mobile:focus {
+    border-color: var(--mobile-primary) !important;
+    box-shadow: 0 0 0 0.2rem rgba(211, 157, 26, 0.25) !important;
+}
+
+.form-label-mobile {
+    font-size: 14px !important;
+    color: var(--mobile-text-primary) !important;
+    font-weight: 500 !important;
+    margin-bottom: 8px !important;
+}
+
+/* ===== QTY STEPPER (+ / −) ===== */
+.mobile-qty-stepper {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+    max-width: 220px;
+    border: 1px solid var(--mobile-border-light, #e7e7e7);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+.mobile-qty-stepper .qty-btn {
+    flex: 0 0 48px;
+    border: none;
+    background: #fafafa;
+    color: #333;
+    font-size: 22px;
+    line-height: 1;
+    padding: 10px 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+.mobile-qty-stepper .qty-btn:active {
+    background: #fff3d6;
+    color: #000;
+}
+.mobile-qty-stepper .qty-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    font-size: 18px !important;
+    font-weight: 600;
+    padding: 10px 4px !important;
+    background: #fff !important;
+    -moz-appearance: textfield;
+}
+.mobile-qty-stepper .qty-input::-webkit-outer-spin-button,
+.mobile-qty-stepper .qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* ===== CHECKBOX LISTS (health / safety) ===== */
+.mobile-check-list,
+.mobile-safety-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.mobile-check-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+    margin: 0;
+    padding: 12px 0;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.mobile-check-list .mobile-check-label {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-check-input {
+    flex: 0 0 20px;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    margin: 2px 0 0 0 !important;
+    float: none !important;
+    position: static !important;
+    vertical-align: middle;
+    accent-color: #D39D1A;
+}
+
+.mobile-check-title {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+}
+
+.mobile-safety-item {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-safety-item:last-child {
+    border-bottom: none;
+}
+
+.mobile-safety-item .mobile-check-label {
+    padding-bottom: 8px;
+    border-bottom: none;
+}
+
+.mobile-safety-desc-wrap {
+    padding: 0 0 12px 32px;
+}
+
+.mobile-safety-desc-wrap .safety-desc-input {
+    width: 100%;
+}
+
+.mobile-room-count-stepper .qty-display {
+    flex: 1 1 auto;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    padding: 10px 4px;
+    line-height: 1.2;
+}
+
+.mobile-bedroom-card {
+    background: #fafafa;
+    border: 1px solid #ececec;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.mobile-bedroom-card-header {
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    color: #333;
+}
+
+/* ===== MODALS ===== */
+.modal-mobile .modal-content {
+    border-radius: 12px !important;
+    border: none !important;
+    box-shadow: var(--mobile-shadow-hover) !important;
+}
+
+.modal-mobile .modal-header {
+    border-bottom: 1px solid var(--mobile-border-light) !important;
+    padding: 16px 20px !important;
+}
+
+.modal-mobile .modal-footer {
+    border-top: 1px solid var(--mobile-border-light) !important;
+    padding: 16px 20px !important;
+}
+
+/* ===== BADGES ===== */
+.badge-mobile-primary {
+    background: var(--mobile-primary) !important;
+    color: white !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+}
+
+.badge-mobile-success {
+    background: var(--mobile-success) !important;
+    color: white !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+}
+
+.badge-mobile-danger {
+    background: var(--mobile-danger) !important;
+    color: white !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    padding: 4px 8px !important;
+}
+
+/* ===== ALERTS ===== */
+.alert-mobile-info {
+    background: #e3f2fd !important;
+    border: 1px solid #bbdefb !important;
+    color: #1565c0 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    margin-bottom: 0.75rem !important;
+}
+
+.alert-mobile-success {
+    background: #e8f5e8 !important;
+    border: 1px solid #c8e6c9 !important;
+    color: #2e7d32 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    margin-bottom: 0.75rem !important;
+}
+
+.alert-mobile-warning {
+    background: #fff3e0 !important;
+    border: 1px solid #ffcc02 !important;
+    color: #f57c00 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    margin-bottom: 0.75rem !important;
+}
+
+.alert-mobile-danger {
+    background: #ffebee !important;
+    border: 1px solid #ffcdd2 !important;
+    color: #c62828 !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    margin-bottom: 0.75rem !important;
+}
+
+/* ===== UTILITIES ===== */
+.shadow-mobile {
+    box-shadow: var(--mobile-shadow) !important;
+}
+
+.shadow-mobile-hover:hover {
+    box-shadow: var(--mobile-shadow-hover) !important;
+}
+
+.border-radius-mobile {
+    border-radius: 8px !important;
+}
+
+.border-radius-mobile-lg {
+    border-radius: 12px !important;
+}
+
+.border-radius-mobile-xl {
+    border-radius: 16px !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 576px) {
+    .btn-mobile-primary,
+    .btn-mobile-secondary,
+    .btn-mobile-success,
+    .btn-mobile-danger {
+        font-size: 13px !important;
+        padding: 8px 12px !important;
+    }
+    
+    .text-mobile-primary {
+        font-size: 16px !important;
+    }
+    
+    .text-mobile-secondary {
+        font-size: 13px !important;
+    }
+}
+
+/* ===== SWEET ALERT TOAST SMALL SIZE ===== */
+.swal2-popup-small {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 12px !important;
+    width: auto !important;
+    min-width: 180px !important;
+    max-width: 85% !important;
+}
+
+.swal2-title-small {
+    font-size: 13px !important;
+    margin-bottom: 0.25rem !important;
+    padding: 0 !important;
+}
+
+.swal2-html-container-small {
+    font-size: 12px !important;
+    margin: 0.25rem 0 !important;
+    line-height: 1.3 !important;
+    padding: 0 !important;
+}
+
+.swal2-popup-small .swal2-icon {
+    width: 28px !important;
+    height: 28px !important;
+    margin: 0 auto 0.25rem !important;
+}
+
+.swal2-popup-small .swal2-icon .swal2-icon-content {
+    font-size: 18px !important;
+    line-height: 28px !important;
+}
+
+.swal2-popup-small .swal2-close {
+    font-size: 16px !important;
+    width: 20px !important;
+    height: 20px !important;
+    line-height: 20px !important;
+    top: 0.25rem !important;
+    right: 0.25rem !important;
+}
+
+.swal2-popup-small .swal2-timer-progress-bar {
+    height: 2px !important;
+}
+
+/* ===== GENERAL ALERT STYLES - SMALLER SIZE ===== */
+.alert {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+    border-radius: 6px !important;
+    margin-bottom: 0.75rem !important;
+}
+
+.alert .icon-item {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 4px !important;
+}
+
+.alert .icon-item .fas {
+    font-size: 14px !important;
+}
+
+.alert p {
+    font-size: 12px !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}
+
+.alert .btn-close {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 12px !important;
+    padding: 0 !important;
+}
+
+@media (max-width: 576px) {
+    .alert {
+        padding: 6px 10px !important;
+        font-size: 11px !important;
+    }
+    
+    .alert .icon-item {
+        width: 20px !important;
+        height: 20px !important;
+        min-width: 20px !important;
+    }
+    
+    .alert .icon-item .fas {
+        font-size: 12px !important;
+    }
+    
+    .alert p {
+        font-size: 11px !important;
+    }
+}
+
+/* ===== INDEX: MOBILE HOME SECTIONS ===== */
+.index-section {
+    padding: 1.25rem 1rem;
+    background: var(--mobile-bg-white);
+    border-top: 1px solid var(--mobile-border-medium);
+}
+
+.index-section__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.875rem;
+}
+
+.index-section__title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.4;
+    color: var(--mobile-text-primary);
+    text-align: right;
+}
+
+/* ===== INDEX: POPULAR DESTINATIONS (CITIES) ===== */
+.index-destinations__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 0.875rem;
+    row-gap: 1.25rem;
+}
+
+.index-destination-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
+}
+
+.index-destination-card__image {
+    flex-shrink: 0;
+    width: 4.75rem;
+    height: 4.75rem;
+    border-radius: 1.125rem;
+    object-fit: cover;
+    background: var(--mobile-bg-light);
+}
+
+.index-destination-card__content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-width: 0;
+    text-align: right;
+    gap: 0.125rem;
+}
+
+.index-destination-card__label,
+.index-destination-card__count {
+    font-size: 0.6875rem;
+    line-height: 1.35;
+    color: #888888;
+}
+
+.index-destination-card__city {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    line-height: 1.35;
+    color: #1a1a1a;
+}
+
+@media (max-width: 360px) {
+    .index-destination-card__image {
+        width: 4.25rem;
+        height: 4.25rem;
+        border-radius: 1rem;
+    }
+
+    .index-destination-card__city {
+        font-size: 0.875rem;
+    }
+}
+
+/* ===== INDEX: HERO SLIDER / VIDEO (ADMIN SETTINGS) ===== */
+.index-hero-slider {
+    background: var(--mobile-bg-white);
+}
+
+.index-hero-slider__image {
+    display: block;
+    width: 100%;
+    height: 13.75rem;
+    object-fit: cover;
+    border-radius: 0;
+}
+
+.index-hero-slider__pagination {
+    bottom: 0.5rem !important;
+}
+
+.index-hero-video {
+    position: relative;
+    overflow: hidden;
+    height: 13.75rem;
+    background: #111;
+}
+
+.index-hero-video__media {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.index-hero-video__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+.index-hero-video__content {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #fff;
+}
+
+.index-hero-video__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.index-hero-video__desc {
+    font-size: 0.875rem;
+    opacity: 0.95;
+}
+
+

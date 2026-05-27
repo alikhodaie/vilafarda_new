@@ -1,0 +1,560 @@
+/* Bottom sheet — الگو از mobile-reserve-sheet صفحه نمایش اقامتگاه */
+.map-travel-sheet.mobile-reserve-sheet {
+    --sheet-duration: 0.48s;
+    --sheet-ease: cubic-bezier(0.16, 1, 0.3, 1);
+    position: fixed;
+    inset: 0;
+    z-index: 10070;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    pointer-events: none;
+    visibility: hidden;
+}
+
+.map-travel-sheet.mobile-reserve-sheet.is-open,
+.map-travel-sheet.mobile-reserve-sheet.is-closing {
+    visibility: visible;
+}
+
+.map-travel-sheet.mobile-reserve-sheet.is-open {
+    pointer-events: auto;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    transition: opacity var(--sheet-duration) ease;
+}
+
+.map-travel-sheet.is-open .mobile-reserve-sheet__backdrop {
+    opacity: 1;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__dock {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-height: 58vh;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    transform: translate3d(0, 100%, 0);
+    transition: transform var(--sheet-duration) var(--sheet-ease), max-height 0.35s var(--sheet-ease);
+}
+
+.map-travel-sheet.is-open .mobile-reserve-sheet__dock {
+    transform: translate3d(0, 0, 0);
+}
+
+.map-travel-sheet.is-calendar-step .mobile-reserve-sheet__dock,
+.map-travel-sheet.is-calendar-only .mobile-reserve-sheet__dock {
+    max-height: min(92vh, calc(100dvh - 32px));
+}
+
+.map-travel-sheet .mobile-reserve-sheet__close {
+    position: relative;
+    left: 16px;
+    margin: 0 0 12px 16px;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.96);
+    color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+    font-size: 22px;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+    transition: opacity 0.36s ease, transform 0.4s var(--sheet-ease);
+}
+
+.map-travel-sheet.is-open .mobile-reserve-sheet__close {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transition-delay: 0.14s;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__panel {
+    width: 100%;
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 16px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.18);
+    direction: rtl;
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__step--form,
+.map-travel-sheet .mobile-reserve-sheet__step--calendar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__footer {
+    flex-shrink: 0;
+    padding-top: 12px;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__date-split {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #d9d9d9;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__date-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 8px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1.35;
+    color: #1a1a1a;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__date-btn.is-placeholder {
+    color: #9a9a9a;
+    font-weight: 400;
+    font-size: 12px;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__date-btn:not(.is-placeholder) {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 8px 6px;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__date-btn.is-active {
+    background: #faf6ea;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__date-divider {
+    width: 1px;
+    background: #e5e5e5;
+    flex-shrink: 0;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__guest-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__guest-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__guest-title .bi {
+    font-size: 15px;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__guest-counter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__guest-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__guest-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__guest-count {
+    min-width: 20px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__info-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #e8f4fd;
+    border-radius: 10px;
+    padding: 8px 10px;
+    margin-top: 12px;
+    font-size: 11px;
+    color: #1a5a8a;
+    line-height: 1.6;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__calendar-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__calendar-back {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ddd;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__calendar-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__calendar-mount {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 8px;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__submit {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #D39D1A;
+    color: #fff;
+    cursor: pointer;
+    line-height: 1.3;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__submit:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.map-travel-sheet .mobile-reserve-sheet__submit--secondary {
+    background: #f0f0f0;
+    color: #333;
+    margin-top: 0;
+}
+
+.map-travel-sheet .map-travel-sheet__actions-row {
+    display: flex;
+    gap: 6px;
+}
+
+.map-travel-sheet .map-travel-sheet__actions-row .mobile-reserve-sheet__submit--secondary {
+    flex: 0 0 auto;
+    min-width: 72px;
+    padding: 10px 10px;
+    font-size: 12px;
+}
+
+.map-travel-sheet .map-travel-sheet__actions-row .mobile-reserve-sheet__submit {
+    flex: 1;
+}
+
+.mobile-reserve-sheet__guest-breakdown {
+    margin: 2px 0 0;
+    font-size: 11px;
+    color: #8a8a8a;
+}
+
+/* تقویم شمسی (استایل PersianCalendar) */
+.persian-calendar--stacked {
+    font-family: inherit;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+.persian-calendar--stacked .calendar-range-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-range-cell {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: center;
+    background: #fff;
+}
+
+.persian-calendar--stacked .calendar-range-cell.is-active {
+    border-color: #D39D1A;
+    box-shadow: 0 0 0 1px #D39D1A;
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-range-label {
+    display: block;
+    font-size: 10px;
+    color: #6b7280;
+    margin-bottom: 2px;
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-range-value {
+    display: block;
+    font-size: 11px;
+    color: #9ca3af;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-range-cell.has-value .calendar-range-value {
+    color: #111827;
+    font-size: 10px;
+}
+
+/* شیت تاریخ — فقط تقویم */
+.map-travel-sheet.is-calendar-only .map-date-sheet__panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    max-height: min(92vh, calc(100dvh - 32px));
+    padding-top: 12px;
+}
+
+.map-travel-sheet.is-calendar-only .mobile-reserve-sheet__calendar-header {
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+
+.map-travel-sheet.is-calendar-only .mobile-reserve-sheet__dock {
+    flex: 1 1 auto;
+    min-height: 0;
+    width: 100%;
+    align-self: stretch;
+}
+
+.map-travel-sheet.is-calendar-only .mobile-reserve-sheet__panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+
+.map-travel-sheet.is-calendar-only .mobile-reserve-sheet__calendar-mount {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0;
+    overflow: hidden;
+    position: relative;
+}
+
+.map-travel-sheet.is-calendar-only .mobile-reserve-sheet__calendar-mount .persian-calendar--stacked {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+    height: 100%;
+}
+
+.map-travel-sheet.is-calendar-only .persian-calendar--stacked .calendar-range-header {
+    flex-shrink: 0;
+    margin-bottom: 8px;
+}
+
+.map-travel-sheet.is-calendar-only .map-date-sheet__footer {
+    flex-shrink: 0;
+    padding-top: 10px;
+    border-top: 1px solid #eee;
+    background: #fff;
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-scroll-months {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-padding-top: 42px;
+    padding-bottom: 24px;
+    position: relative;
+}
+
+/* پیش‌نمایش ماه بعد — گرادیان پایین */
+.map-travel-sheet.is-calendar-only .mobile-reserve-sheet__calendar-mount::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 52px;
+    height: 48px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.95));
+    pointer-events: none;
+    z-index: 3;
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-month-block {
+    margin-bottom: 4px;
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-month-title {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0;
+    padding: 10px 8px 8px;
+    background: #fff;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-weekdays {
+    position: sticky;
+    top: 38px;
+    z-index: 3;
+    background: #fff;
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+}
+
+.persian-calendar--stacked .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.persian-calendar--stacked .weekday {
+    font-size: 11px;
+    color: #6b7280;
+    text-align: center;
+    font-weight: 600;
+}
+
+.persian-calendar--stacked .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.persian-calendar--stacked .calendar-day {
+    aspect-ratio: 1;
+    min-height: 44px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.persian-calendar--stacked .calendar-day.empty {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.persian-calendar--stacked .calendar-day.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.persian-calendar--stacked .calendar-day.available .day-content {
+    background: #f9fafb;
+    border-radius: 10px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.persian-calendar--stacked .calendar-day.is-friday:not(.disabled):not(.selected) .day-number {
+    color: #dc2626;
+}
+
+.persian-calendar--stacked .calendar-day.in-range .day-content {
+    background: #dbeafe;
+}
+
+.persian-calendar--stacked .calendar-day.check-in .day-content,
+.persian-calendar--stacked .calendar-day.check-out .day-content {
+    background: #D39D1A;
+}
+
+.persian-calendar--stacked .calendar-day.check-in .day-number,
+.persian-calendar--stacked .calendar-day.check-out .day-number {
+    color: #fff;
+}
+
+.map-travel-sheet .persian-calendar--stacked .day-number {
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.map-travel-sheet.is-calendar-only .persian-calendar--stacked .calendar-day {
+    min-height: 38px;
+    aspect-ratio: auto;
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-stacked-footer {
+    display: none;
+}
+
+.persian-calendar--stacked .calendar-stacked-footer {
+    margin-top: 8px;
+    text-align: center;
+}
+
+.map-travel-sheet .persian-calendar--stacked .calendar-clear-btn {
+    border: none;
+    background: transparent;
+    color: #666;
+    font-size: 11px;
+    padding: 6px;
+    cursor: pointer;
+}
+
+body.map-travel-sheet-open {
+    overflow: hidden;
+}

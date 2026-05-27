@@ -1,0 +1,268 @@
+.mobile-site-footer {
+    background: #f0f1f3;
+    border-top: 1px solid #e4e6ea;
+    margin-top: 1.5rem;
+    padding: 1.5rem 1rem 20px;
+}
+
+.mobile-site-footer__inner {
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.mobile-site-footer__section {
+    margin-bottom: 0;
+    padding: 0 0 20px;
+    position: static;
+}
+
+.mobile-site-footer__heading {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-align: center;
+    margin: 0 0 0.75rem;
+    line-height: 1.5;
+}
+
+.mobile-site-footer__install-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+}
+
+.mobile-site-footer__install-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-height: 88px;
+    padding: 0.875rem 0.5rem;
+    background: #1a1a1a;
+    color: #fff;
+    border-radius: 14px;
+    text-decoration: none;
+    text-align: center;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.mobile-site-footer__install-btn:hover {
+    background: #333;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.mobile-site-footer__install-btn .bi {
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.mobile-site-footer__install-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.mobile-site-footer__install-platform {
+    font-size: 0.6875rem;
+    opacity: 0.75;
+}
+
+.mobile-site-footer__access-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1rem;
+    row-gap: 0.5rem;
+    text-align: center;
+    justify-items: center;
+}
+
+.mobile-site-footer__access-links li {
+    width: 100%;
+    text-align: center;
+}
+
+.mobile-site-footer__access-links a {
+    display: inline-block;
+    font-size: 0.8125rem;
+    color: #2563eb;
+    text-decoration: none;
+    line-height: 1.6;
+    padding: 0.125rem 0;
+    text-align: center;
+}
+
+.mobile-site-footer__access-links a:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.mobile-site-footer__social-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.625rem;
+}
+
+.mobile-site-footer__social-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 56px;
+    padding: 0.75rem 1rem;
+    border-radius: 14px;
+    text-decoration: none;
+    color: #fff;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.mobile-site-footer__social-card:hover {
+    color: #fff;
+    transform: translateY(-1px);
+    opacity: 0.95;
+}
+
+.mobile-site-footer__social-card--telegram {
+    background: #229ed9;
+}
+
+.mobile-site-footer__social-card--instagram {
+    background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+}
+
+.mobile-site-footer__social-card--default {
+    background: #4b5563;
+}
+
+.mobile-site-footer__social-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-site-footer__social-card-icon .bi {
+    font-size: 1.625rem;
+}
+
+.mobile-site-footer__social-card-icon img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+.mobile-site-footer__social-card-count {
+    font-size: 1.125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.mobile-site-footer__trust {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.mobile-site-footer__trust-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 88px;
+    height: 88px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 0.5rem;
+}
+
+.mobile-site-footer__trust-badge img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.mobile-site-footer__copyright {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #6b7280;
+    padding-top: 0.5rem;
+}
+
+/* Add to home tutorial pages */
+.add-to-home-page {
+    background: #f8f9fa;
+    min-height: 60vh;
+}
+
+.add-to-home-page__hero {
+    background: #1a1a1a;
+    color: #fff;
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+
+.add-to-home-page__hero .bi {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.add-to-home-page__hero h1 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+}
+
+.add-to-home-page__hero p {
+    font-size: 0.8125rem;
+    opacity: 0.85;
+    margin: 0;
+}
+
+.add-to-home-step {
+    display: flex;
+    gap: 1rem;
+    background: #fff;
+    border-radius: 14px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.add-to-home-step__number {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--mobile-primary, #d39d1a);
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-to-home-step__body h3 {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 0.25rem;
+}
+
+.add-to-home-step__body p {
+    font-size: 0.8125rem;
+    color: #666;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.add-to-home-step__body .bi {
+    font-size: 1.25rem;
+    color: var(--mobile-primary, #d39d1a);
+    vertical-align: middle;
+}

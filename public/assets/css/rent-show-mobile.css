@@ -1,0 +1,890 @@
+/* جزئیات رزرو — موبایل */
+.rent-show-page {
+    background: #f2f2f2;
+    min-height: 100vh;
+    padding: 16px 16px 100px;
+}
+
+/* استپر پیشرفت */
+.rent-stepper {
+    margin-bottom: 20px;
+    padding: 0 4px;
+}
+
+.rent-stepper__track {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: relative;
+}
+
+.rent-stepper__track::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    left: 14px;
+    height: 2px;
+    background: #e0e0e0;
+    z-index: 0;
+}
+
+.rent-stepper__progress-line {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    height: 2px;
+    background: #2e9e5a;
+    z-index: 0;
+    transition: width 0.3s ease;
+}
+
+.rent-stepper__step {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+}
+
+.rent-stepper__dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    color: transparent;
+    flex-shrink: 0;
+}
+
+.rent-stepper__step--done .rent-stepper__dot {
+    background: #2e9e5a;
+    border-color: #2e9e5a;
+    color: #fff;
+}
+
+.rent-stepper__step--active .rent-stepper__dot {
+    background: #fff;
+    border-color: #2e9e5a;
+    color: #2e9e5a;
+    box-shadow: 0 0 0 3px rgba(46, 158, 90, 0.15);
+}
+
+.rent-stepper__label {
+    margin-top: 8px;
+    font-size: 11px;
+    line-height: 1.3;
+    color: #999;
+    text-align: center;
+    max-width: 72px;
+}
+
+.rent-stepper__step--done .rent-stepper__label,
+.rent-stepper__step--active .rent-stepper__label {
+    color: #666;
+}
+
+.rent-stepper__step--current .rent-stepper__label {
+    color: #111;
+    font-weight: 700;
+}
+
+.rent-stepper--unsuccessful .rent-stepper__track::before {
+    background: transparent;
+    border-top: 2px dashed #d0d0d0;
+    height: 0;
+}
+
+.rent-stepper__step--failed .rent-stepper__dot {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: #fff;
+}
+
+.rent-stepper__step--failed .rent-stepper__label {
+    color: #dc3545;
+    font-weight: 700;
+}
+
+.rent-stepper__step--pending .rent-stepper__dot {
+    color: #999;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* کارت وضعیت */
+.rent-status-card {
+    position: relative;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    padding: 36px 16px 16px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.rent-status-card__icon {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-size: 20px;
+}
+
+.rent-status-card__icon--success {
+    background: #f0f0f0;
+    color: #2e9e5a;
+}
+
+.rent-status-card__icon--warning {
+    background: #fff8e1;
+    color: #e8a317;
+}
+
+.rent-status-card__icon--danger {
+    background: #fdecea;
+    color: #dc3545;
+}
+
+.rent-status-card--unsuccessful {
+    border-top: 3px solid #dc3545;
+}
+
+.rent-status-card--unsuccessful .rent-status-card__icon--danger {
+    background: #dc3545;
+    color: #fff;
+}
+
+/* علت لغو / رد رزرو */
+.rent-cancel-reason {
+    background: #fff5f5;
+    border: 2px dashed #c62828;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    text-align: right;
+}
+
+.rent-cancel-reason__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.rent-cancel-reason__icon {
+    color: #c62828;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.rent-cancel-reason__title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #c62828;
+}
+
+.rent-cancel-reason__text {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #b71c1c;
+}
+
+.rent-cancel-reason__text--placeholder {
+    color: #c62828;
+    opacity: 0.75;
+    font-style: italic;
+}
+
+.rent-status-card__title {
+    margin: 0 0 10px;
+    font-size: 17px;
+    font-weight: 700;
+    color: #111;
+}
+
+.rent-status-card__text {
+    margin: 0 0 16px;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #777;
+}
+
+.rent-status-card__divider {
+    border: none;
+    border-top: 1px solid #f0f0f0;
+    margin: 0 0 14px;
+}
+
+.rent-status-card__home {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: right;
+}
+
+.rent-status-card__thumb {
+    flex-shrink: 0;
+    width: 72px;
+    height: 56px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #eee;
+}
+
+.rent-status-card__home-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.rent-status-card__home-name {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #222;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.rent-status-card__code {
+    display: inline-block;
+    margin-bottom: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #f5f5f5;
+    font-size: 11px;
+    color: #666;
+}
+
+.rent-status-card__home-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #3b82c4;
+    text-decoration: none;
+}
+
+.rent-status-card__actions {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.rent-status-card__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 11px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.rent-status-card__btn--pay {
+    background: #28a745;
+    color: #fff;
+}
+
+.rent-status-card__btn--cancel {
+    background: #fff;
+    color: #dc3545;
+    border: 1px solid #f5c2c7;
+}
+
+.rent-status-card__btn--back {
+    background: #f0f0f0;
+    color: #444;
+}
+
+/* کارت ثبت نظر */
+.rent-review-card {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+
+.rent-review-card__accent {
+    flex-shrink: 0;
+    width: 5px;
+    background: #f5d547;
+}
+
+.rent-review-card__body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 14px 14px 0;
+    min-width: 0;
+}
+
+.rent-review-card__content {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+}
+
+.rent-review-card__title {
+    margin: 0 0 4px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #222;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.rent-review-card__title .bi {
+    font-size: 15px;
+    color: #888;
+}
+
+.rent-review-card__text {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #888;
+}
+
+.rent-review-card__btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #f5d547;
+    color: #222;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* جزئیات تکمیلی */
+.rent-details-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.rent-details-card__title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    text-align: right;
+}
+
+.rent-details-card__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+}
+
+.rent-details-card__item {
+    text-align: right;
+}
+
+.rent-details-card__label {
+    display: block;
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 2px;
+}
+
+.rent-details-card__value {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+}
+
+/* نقشه اقامتگاه */
+.rent-location-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.rent-location-card__title {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+}
+
+.rent-location-card__hint {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: #888;
+    line-height: 1.5;
+    text-align: right;
+}
+
+.rent-location-card__map {
+    height: 220px;
+    min-height: 220px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #ebebeb;
+    background: #f3f3f3;
+    margin-bottom: 12px;
+}
+
+.rent-location-card__map .leaflet-container {
+    height: 100%;
+    width: 100%;
+    border-radius: 12px;
+}
+
+.rent-location-card__map .custom-home-marker {
+    background: transparent !important;
+    border: none !important;
+}
+
+.rent-location-card__nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #D39D1A;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.rent-location-card__nav-btn:active {
+    opacity: 0.92;
+    color: #fff;
+}
+
+/* میزبان */
+.rent-host-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.rent-host-card__title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    text-align: right;
+}
+
+.rent-host-card__profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    text-align: right;
+}
+
+.rent-host-card__avatar {
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #f0f0f0;
+    background: #eee;
+}
+
+.rent-host-card__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.rent-host-card__name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #222;
+}
+
+.rent-host-card__phone {
+    font-size: 13px;
+    color: #666;
+    letter-spacing: 0.02em;
+}
+
+.rent-host-card__call-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #2e9e5a;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.rent-host-card__call-btn:active {
+    opacity: 0.92;
+    color: #fff;
+}
+
+/* صورتحساب */
+.rent-invoice-card,
+.rent-rules-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+}
+
+.rent-invoice-card__title,
+.rent-rules-card__title {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #222;
+    text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+.rent-invoice-card__section-label {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #888;
+    text-align: right;
+}
+
+.rent-invoice-card__lines {
+    margin: 0 0 12px;
+    padding: 0;
+    list-style: none;
+}
+
+.rent-invoice-card__line {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 13px;
+}
+
+.rent-invoice-card__line:last-child {
+    border-bottom: none;
+}
+
+.rent-invoice-card__line-info {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+}
+
+.rent-invoice-card__line-label {
+    display: block;
+    color: #333;
+    font-weight: 500;
+}
+
+.rent-invoice-card__line-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    color: #999;
+}
+
+.rent-invoice-card__line-amount {
+    flex-shrink: 0;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+}
+
+.rent-invoice-card__line--discount .rent-invoice-card__line-amount {
+    color: #2e9e5a;
+}
+
+.rent-invoice-card__summary {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 10px;
+}
+
+.rent-invoice-card__summary li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #444;
+    text-align: right;
+}
+
+.rent-invoice-card__summary li strong {
+    font-weight: 600;
+    color: #111;
+    white-space: nowrap;
+}
+
+.rent-invoice-card__summary li.rent-invoice-card__summary--total {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px dashed #e8e8e8;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.rent-invoice-card__summary li.rent-invoice-card__summary--payable strong {
+    color: #D39D1A;
+    font-size: 15px;
+}
+
+.rent-invoice-card__summary li.rent-invoice-card__summary--host-payout {
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px dashed #e8e8e8;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.rent-invoice-card__summary li.rent-invoice-card__summary--host-payout strong {
+    color: #1a6b3c;
+    font-size: 15px;
+}
+
+.rent-invoice-card__host-payout-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 400;
+    color: #888;
+}
+
+/* مودال رد درخواست */
+.order-reject-reasons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.order-reject-reasons__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #ebebeb;
+    border-radius: 10px;
+    background: #fafafa;
+    cursor: pointer;
+    margin: 0;
+    text-align: right;
+}
+
+.order-reject-reasons__item:has(.order-reject-reasons__input:checked) {
+    border-color: #D39D1A;
+    background: #fff8e8;
+}
+
+.order-reject-reasons__input {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.order-reject-reasons__label {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+/* مقررات */
+.rent-rules-card__body {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.75;
+    color: #555;
+    text-align: right;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.rent-rules-card__subtitle {
+    margin: 14px 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #333;
+    text-align: right;
+}
+
+.rent-rules-card__list {
+    margin: 0;
+    padding: 0 18px 0 0;
+    list-style: disc;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #555;
+    text-align: right;
+}
+
+.rent-rules-card__list li + li {
+    margin-top: 6px;
+}
+
+.rent-rules-card__empty {
+    margin: 0;
+    font-size: 13px;
+    color: #999;
+    text-align: right;
+}
+
+/* شمارش معکوس مهلت */
+.rent-deadline-card {
+    background: #fff8e6;
+    border: 1px solid #f0d78c;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin: 16px 0 0;
+    text-align: center;
+}
+
+.rent-deadline-card__label {
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #8a6d1d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.rent-deadline-card .countdown-clock {
+    font-size: 2rem;
+    color: #c0392b;
+}
+
+.rent-deadline-card .time-part {
+    font-size: 24px;
+    min-width: 52px;
+}
+
+/* واچر — پس از پرداخت تا تاریخ خروج */
+.rent-voucher-card,
+.rent-contract-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    text-align: right;
+}
+
+.rent-voucher-card__title,
+.rent-contract-card__title {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #222;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+.rent-voucher-card__text,
+.rent-contract-card__text {
+    margin: 0 0 12px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #777;
+}
+
+.rent-voucher-card__btn {
+    margin-top: 4px;
+    box-sizing: border-box;
+}
+
+.rent-contract-card__btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 11px 16px;
+    border-radius: 10px;
+    background: #f0f0f0;
+    color: #222;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.rent-contract-card__btn:active {
+    opacity: 0.85;
+}

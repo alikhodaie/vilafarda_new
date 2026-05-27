@@ -1,0 +1,36 @@
+.home-similar-homes {
+    padding-bottom: 8px;
+}
+
+.home-similar-homes .home-detail-section__title {
+    margin-bottom: 12px;
+}
+
+.home-similar-tabs {
+    margin-bottom: 12px;
+}
+
+.home-similar-tab {
+    border: none;
+    font-family: inherit;
+}
+
+.home-similar-swiper {
+    overflow: visible;
+    margin: 0 -2px;
+}
+
+.home-similar-swiper .swiper-slide {
+    width: 17.5rem;
+    height: auto;
+}
+
+.home-similar-swiper .home-favorite-card-wrap {
+    position: relative;
+}
+
+@media (max-width: 767px) {
+    .home-similar-swiper .swiper-slide {
+        width: 16.25rem;
+    }
+}

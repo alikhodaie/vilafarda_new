@@ -1,0 +1,114 @@
+/* ===== SUGGESTIONS: TABS ===== */
+.suggestion-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.suggestion-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.suggestion-badge {
+    border-radius: 999px !important;
+    border: 2px solid #E6B31E !important;
+    background: #fff !important;
+    color: #343434 !important;
+    font-size: 14px;
+    padding: 0.5rem 1.2rem !important;
+    cursor: pointer !important;
+    display: inline-block !important;
+    transition: background 0.2s, color 0.2s, border 0.2s !important;
+    margin-bottom: 4px !important;
+    font-weight: 500 !important;
+    box-shadow: none !important;
+}
+
+.suggestion-badge.active,
+.suggestion-badge.active:focus {
+    background: #E6B31E !important;
+    color: #343434 !important;
+    border: 2px solid #E6B31E !important;
+    font-weight: 700 !important;
+}
+
+.suggestion-badge:not(.active):hover {
+    background: #f9e7b8 !important;
+    color: #343434 !important;
+    border: 2px solid #E6B31E !important;
+}
+
+.suggestion-tabs .suggestion-badge {
+    background-clip: padding-box !important;
+}
+
+/* ===== SUGGESTIONS: HORIZONTAL CARDS (matches last-minute-off) ===== */
+.suggestions-swiper {
+    overflow: visible;
+}
+
+.suggestions-swiper .swiper-slide {
+    width: 17.5rem;
+    height: auto;
+}
+
+.suggestion-more-card {
+    display: flex;
+    align-items: stretch;
+    height: 100%;
+    min-height: 100%;
+    text-decoration: none;
+    color: inherit;
+}
+
+.suggestion-more-card__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    width: 100%;
+    min-height: 14.5rem;
+    padding: 1.25rem 1rem;
+    border-radius: 1.125rem;
+    border: 2px dashed #d0d0d0;
+    background: #fff;
+    text-align: center;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.suggestion-more-card:hover .suggestion-more-card__inner {
+    border-color: #E6B31E;
+    background: #fffef8;
+}
+
+.suggestion-more-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: #E6B31E;
+    color: #1a1a1a;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.suggestion-more-card__text {
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.45;
+    color: #1a1a1a;
+}
+
+.suggestions__loading,
+.suggestions__empty {
+    width: 100%;
+    text-align: center;
+    padding: 2rem 0;
+    color: var(--mobile-text-secondary, #666);
+    font-size: 0.875rem;
+}

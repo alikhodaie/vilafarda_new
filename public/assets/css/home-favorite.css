@@ -1,0 +1,84 @@
+/* دکمه علاقه‌مندی روی کارت اقامتگاه */
+.home-favorite-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.home-favorite-btn:active {
+    transform: scale(0.94);
+}
+
+.home-favorite-btn .bi {
+    font-size: 20px;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.95);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+    pointer-events: none;
+    transition: color 0.15s ease;
+}
+
+.home-favorite-btn.is-active .bi {
+    color: #dc3545;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.25));
+}
+
+.home-favorite-card-wrap {
+    position: relative;
+}
+
+.home-favorite-btn--overlay {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    left: auto;
+    z-index: 20;
+    pointer-events: auto;
+    touch-action: manipulation;
+}
+
+/* صفحه جستجو — تصویر زیر دکمه قلب نباشد */
+.home-card-image-wrap > .img-fluid,
+.home-card-image-wrap > img {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.home-favorite-btn.is-loading {
+    opacity: 0.65;
+}
+
+.home-favorite-btn.is-loading .bi {
+    animation: home-favorite-pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes home-favorite-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* جلوگیری از کلیک روی لینک کارت هنگام لایک */
+.last-minute-off-card__image-wrap .home-favorite-btn,
+.home-card-image-wrap .home-favorite-btn {
+    z-index: 20;
+}
+
+/* لیبل وضعیت — گوشه چپ بالا (علاقه‌مندی راست) */
+.home-card-image-wrap .home-card-status-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 4;
+}

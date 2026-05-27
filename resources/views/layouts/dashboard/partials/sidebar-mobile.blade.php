@@ -1,0 +1,1 @@
+@include('layouts.dashboard.partials.sidebar-items-mobile')

@@ -1,0 +1,40 @@
+services:
+  app:
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+    restart: always
+
+  nginx:
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+      NGINX_SSL: ${NGINX_SSL:-false}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www/rentnaap:ro
+      - ./docker/nginx/templates:/etc/nginx/templates:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    command:
+      - /bin/sh
+      - -c
+      - |
+        if [ "$$NGINX_SSL" = "true" ]; then
+          envsubst '$$APP_DOMAIN' < /etc/nginx/templates/prod.conf.template > /etc/nginx/conf.d/default.conf
+        else
+          envsubst '$$APP_DOMAIN' < /etc/nginx/templates/prod-http.conf.template > /etc/nginx/conf.d/default.conf
+        fi
+        exec nginx -g 'daemon off;'
+
+  mariadb:
+    ports: []
+    restart: always
+
+  redis:
+    restart: always
+
+  scheduler:
+    environment:
+      APP_ENV: production
+    restart: always

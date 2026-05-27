@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /dashboard/
+Disallow: /admin/
+Disallow: /login
+Disallow: /register
+Disallow: /login-temp
+Disallow: /call-back
+
+Sitemap: /sitemap.xml

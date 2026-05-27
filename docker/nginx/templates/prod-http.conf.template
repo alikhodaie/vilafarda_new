@@ -1,0 +1,26 @@
+server {
+    listen 80;
+    server_name ${APP_DOMAIN} _;
+
+    root /var/www/rentnaap/public;
+    index index.php;
+    client_max_body_size 512M;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include fastcgi_params;
+        fastcgi_pass app:9000;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_read_timeout 180;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
