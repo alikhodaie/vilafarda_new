@@ -1,12 +1,39 @@
-@php use App\Models\Setting; @endphp
+@php
+    use App\Models\Setting;
+
+    $settingActivePanel = request('active');
+    if (! $settingActivePanel) {
+        $settingPanelAbilities = [
+            'general' => 'general',
+            'payment' => 'payment',
+            'rejectPolicy' => 'rejectPolicy',
+            'commission' => 'commission',
+            'index' => 'indexPage',
+            'submitHome' => 'submitHome',
+            'aboutUs' => 'aboutUs',
+            'contactUs' => 'contactUs',
+            'privacy' => 'privacy',
+            'faq' => 'faq',
+            'footer' => 'footer',
+            'seo' => 'seo',
+        ];
+        foreach ($settingPanelAbilities as $panelId => $ability) {
+            if (auth()->user()->can($ability, Setting::class)) {
+                $settingActivePanel = $panelId;
+                break;
+            }
+        }
+    }
+@endphp
 @extends('layouts.admin.admin', ['title' => __('title.setting'), 'active' => 'setting'])
 
 @section('content')
     <div class="card" id="accordionSetting">
         <div class="card-header">
             @if(auth()->user()->can('general', \App\Models\Setting::class))
-                <button id="generalBtn" class="btn btn-falcon-default mx-2 mb-2" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#general" aria-controls="general">@lang('title.general')</button>
+                <button id="generalBtn" class="btn btn-falcon-default mx-2 mb-2 @if($settingActivePanel === 'general') active @endif" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#general" aria-controls="general"
+                        aria-expanded="{{ $settingActivePanel === 'general' ? 'true' : 'false' }}">@lang('title.general')</button>
             @endif
             @if(auth()->user()->can('payment', \App\Models\Setting::class))
                 <button id="paymentBtn" class="btn btn-falcon-default mx-2 mb-2" type="button" data-bs-toggle="collapse"
@@ -59,99 +86,99 @@
             <hr>
         </div>
 
-        <div class="card-body pt-0">
+        <div class="card-body pt-0" id="accordionSettingPanels">
             @if(auth()->user()->can('general', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="general" aria-labelledby="general"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'general') show @endif" id="general" aria-labelledby="general"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.general')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('payment', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="payment" aria-labelledby="payment"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'payment') show @endif" id="payment" aria-labelledby="payment"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.payment')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('rejectPolicy', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="rejectPolicy" aria-labelledby="rejectPolicy"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'rejectPolicy') show @endif" id="rejectPolicy" aria-labelledby="rejectPolicy"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.reject_policy')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('commission', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="commission" aria-labelledby="commission"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'commission') show @endif" id="commission" aria-labelledby="commission"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.commission')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('indexPage', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="index" aria-labelledby="index"
-                     data-bs-parent="#accordionSetting">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'index') show @endif" id="index" aria-labelledby="index"
+                     data-bs-parent="#accordionSettingPanels">
                     <div class="accordion-body">
                         @include('admin.setting.pages.index-page')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('submitHome', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="submitHome" aria-labelledby="submitHome"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'submitHome') show @endif" id="submitHome" aria-labelledby="submitHome"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.submit-home')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('contactUs', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="contactUs" aria-labelledby="contactUs"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'contactUs') show @endif" id="contactUs" aria-labelledby="contactUs"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.contact-us')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('privacy', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="privacy" aria-labelledby="privacy"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'privacy') show @endif" id="privacy" aria-labelledby="privacy"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.privacy')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('aboutUs', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="aboutUs" aria-labelledby="aboutUs"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'aboutUs') show @endif" id="aboutUs" aria-labelledby="aboutUs"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.about-us')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('faq', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="faq" aria-labelledby="faq"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'faq') show @endif" id="faq" aria-labelledby="faq"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.faq')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('footer', \App\Models\Setting::class))
-                <div class="accordion-collapse collapse" id="footer" aria-labelledby="footer"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'footer') show @endif" id="footer" aria-labelledby="footer"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.footer')
                     </div>
                 </div>
             @endif
             @if(auth()->user()->can('seo', Setting::class))
-                <div class="accordion-collapse collapse" id="seo" aria-labelledby="seo"
-                     data-bs-parent="#accordionSetting">
-                    <div class="accordion-body">
+                <div class="accordion-collapse collapse @if($settingActivePanel === 'seo') show @endif" id="seo" aria-labelledby="seo"
+                     data-bs-parent="#accordionSettingPanels">
+                    <div class="accordion-body" v-pre>
                         @include('admin.setting.pages.seo')
                     </div>
                 </div>
@@ -160,16 +187,49 @@
     </div>
 @endsection
 
-@section('bottom-assets')
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const active = urlParams.get('active');
-
-        if (active) {
-            const activeBtn = document.getElementById(active + 'Btn');
-            if (activeBtn) {
-                activeBtn.click();
-            }
+@push('bottom-assets')
+    <style>
+        #accordionSetting .accordion-collapse.collapse:not(.show) {
+            display: none;
         }
+    </style>
+@endpush
+
+@push('after-vue')
+    <script>
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var active = params.get('active');
+            var card = document.getElementById('accordionSetting');
+            if (!card || typeof bootstrap === 'undefined') {
+                return;
+            }
+
+            function showPanel(selector) {
+                var panel = document.querySelector(selector);
+                if (!panel) {
+                    return;
+                }
+                bootstrap.Collapse.getOrCreateInstance(panel, {toggle: false}).show();
+            }
+
+            if (active) {
+                var btn = document.getElementById(active + 'Btn');
+                if (btn) {
+                    btn.click();
+                    return;
+                }
+                showPanel('#' + active);
+                return;
+            }
+
+            var openPanel = card.querySelector('#accordionSettingPanels .accordion-collapse.show');
+            if (!openPanel) {
+                var firstBtn = card.querySelector('.card-header [data-bs-toggle="collapse"]');
+                if (firstBtn) {
+                    firstBtn.click();
+                }
+            }
+        })();
     </script>
-@endsection
+@endpush

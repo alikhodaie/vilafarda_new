@@ -29,6 +29,6 @@
 @stack('bottom-assets')
 @yield('bottom-assets')
 
-<script src="{{ asset('assets/admin/js/admin.js') }}"></script>
+<script src="{{ public_asset_version('assets/admin/js/admin.js') }}"></script>
 
 @stack('after-vue')
