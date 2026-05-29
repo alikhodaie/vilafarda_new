@@ -2,6 +2,9 @@
 /public/hot
 /public/storage
 /storage/*.key
+/storage/app/public
+/storage/framework
+/storage/logs
 /vendor
 .env
 .env.backup
@@ -15,4 +18,6 @@ yarn-error.log
 /.vscode
 /public/assets/js/app.js
 /public/assets/admin/js/admin.js
+*.sql
+/public/vendor
 TODO
