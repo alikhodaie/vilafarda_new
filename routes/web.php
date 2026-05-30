@@ -477,6 +477,7 @@ Route::prefix('/admin')->name('admin.')->middleware(['auth', 'admin'])->group(fu
         Route::put('/commission', [SettingController::class, 'commission'])->name('commission');
         Route::put('/reject-policy', [SettingController::class, 'rejectPolicy'])->name('reject-policy');
         Route::put('/index-page', [SettingController::class, 'indexPage'])->name('index-page');
+        Route::post('/index-page/banner-video', [SettingController::class, 'indexPageBannerVideo'])->name('index-page.banner-video');
         Route::put('/contact-us', [SettingController::class, 'contactUs'])->name('contact-us');
         Route::put('/privacy', [SettingController::class, 'privacy'])->name('privacy');
         Route::put('/about-us', [SettingController::class, 'aboutUs'])->name('about-us');

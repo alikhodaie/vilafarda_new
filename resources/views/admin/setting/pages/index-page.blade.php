@@ -1,5 +1,5 @@
 @php use App\Models\Province; @endphp
-<form action="{{ route('admin.setting.index-page') }}" method="POST" enctype="multipart/form-data">
+<form id="index-page-settings-form" action="{{ route('admin.setting.index-page') }}" method="POST" enctype="multipart/form-data">
     @csrf
     @method('PUT')
 
@@ -42,13 +42,12 @@
             <label for="banner_video">@lang('title.video')</label>
         </div>
         <div class="col-12 col-md-6">
-            <div class="input-group">
-                <input class="form-control" type="file" name="banner_video" id="banner_video">
-                <video class="input-group-text w-50" controls autoplay loop>
-                    <source src="{{ settingFilePath('index:banner-video') }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            </div>
+            <index-banner-video-upload
+                upload-url="{{ route('admin.setting.index-page.banner-video') }}"
+                :max-upload-bytes="{{ index_banner_video_max_upload_bytes() }}"
+                current-src="{{ settingFilePath('index:banner-video') }}"
+                hint="پس از انتخاب، ویدئو در مرورگر فشرده و مستقیم ذخیره می‌شود (محدودیت ۲ مگابایت PHP دور زده می‌شود)."
+            ></index-banner-video-upload>
         </div>
     </div>
     <div class="row mt-4">

@@ -9,10 +9,13 @@ use App\Models\Home;
 use App\Models\Province;
 use App\Models\Setting;
 use App\Rules\HomeRasterImageUpload;
+use App\Services\IndexBannerVideoEncoder;
+use App\Support\UploadValidation;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
@@ -221,11 +224,33 @@ class SettingController extends Controller
 
         ];
 
-        # Banner Video
-        if ($request->hasFile('banner_video')){
+        # Banner Video (hasFile فقط برای آپلود معتبر true است؛ ویدئوهای بزرگ‌تر از upload_max_filesize بدون خطا رد می‌شدند)
+        $bannerVideo = $request->file('banner_video');
+        if ($bannerVideo instanceof UploadedFile) {
+            try {
+                UploadValidation::validateUploadedOrFail($bannerVideo, 'banner_video', 'ویدئو بنر صفحه اصلی');
+            } catch (ValidationException $e) {
+                return redirect()->route('admin.setting.index', ['active' => 'index'])
+                    ->with('danger', $e->validator->errors()->first('banner_video'))
+                    ->withInput();
+            }
+
+            $mime = strtolower((string) $bannerVideo->getMimeType());
+            if ($mime !== '' && strpos($mime, 'video/') !== 0) {
+                return redirect()->route('admin.setting.index', ['active' => 'index'])
+                    ->with('danger', 'فایل انتخاب‌شده باید ویدئو باشد (MP4، MOV، WebM و …).')
+                    ->withInput();
+            }
+
             Setting::deleteFile(setting('index:banner-video'));
 
-            $data['index:banner-video'] = Setting::saveFile($request->file('banner_video'), 'banners.mp4');
+            try {
+                $data['index:banner-video'] = app(IndexBannerVideoEncoder::class)->storeOptimizedMp4($bannerVideo);
+            } catch (\RuntimeException $e) {
+                return redirect()->route('admin.setting.index', ['active' => 'index'])
+                    ->with('danger', $e->getMessage())
+                    ->withInput();
+            }
         }
 
         foreach ($data as $key => $value){
@@ -235,6 +260,70 @@ class SettingController extends Controller
         forgetSettingsCache();
 
         return redirect()->route('admin.setting.index', ['active' => 'index'])->with('success', __('text.success.setting_index'));
+    }
+
+    /**
+     * آپلود ویدئو بنر جدا از فرم (بدنهٔ خام) — محدودیت upload_max_filesize اعمال نمی‌شود.
+     */
+    public function indexPageBannerVideo(Request $request)
+    {
+        $this->authorize('indexPage', Setting::class);
+
+        $maxBytes = index_banner_video_max_upload_bytes();
+        $raw = file_get_contents('php://input');
+
+        if ($raw === false || $raw === '' || strlen($raw) < 1024) {
+            return response()->json([
+                'message' => 'ویدئو دریافت نشد. صفحه را رفرش کنید و دوباره انتخاب کنید.',
+            ], 422);
+        }
+
+        if (strlen($raw) > $maxBytes) {
+            return response()->json([
+                'message' => sprintf(
+                    'حجم ویدئو (%s مگ) از سقف این سرور (%s مگ، post_max_size=%s) بیشتر است.',
+                    number_format(strlen($raw) / 1048576, 1),
+                    number_format($maxBytes / 1048576, 1),
+                    ini_get('post_max_size') ?: '?'
+                ),
+            ], 413);
+        }
+
+        $tmp = tempnam(sys_get_temp_dir(), 'rn_banner_');
+        if ($tmp === false) {
+            return response()->json(['message' => 'خطای موقت سرور.'], 500);
+        }
+
+        try {
+            if (file_put_contents($tmp, $raw) === false) {
+                throw new \RuntimeException('نوشتن فایل موقت انجام نشد.');
+            }
+
+            $uploaded = new UploadedFile($tmp, 'banners.mp4', 'video/mp4', UPLOAD_ERR_OK, true);
+
+            Setting::deleteFile(setting('index:banner-video'));
+
+            $filename = app(IndexBannerVideoEncoder::class)->storeOptimizedMp4($uploaded);
+
+            Setting::query()->updateOrCreate(
+                ['key' => 'index:banner-video'],
+                ['value' => $filename]
+            );
+
+            forgetSettingsCache();
+
+            $absolute = Storage::disk('public-folder')->path(Setting::FILE_PATH.$filename);
+
+            return response()->json([
+                'ok' => true,
+                'url' => settingFilePath('index:banner-video'),
+                'size' => is_file($absolute) ? filesize($absolute) : strlen($raw),
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } finally {
+            @unlink($tmp);
+        }
     }
 
     public function commission(Request $request)

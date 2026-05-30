@@ -1,5 +1,7 @@
 {
     "/assets/js/app.js": "/assets/js/app.js",
     "/assets/admin/js/admin.js": "/assets/admin/js/admin.js",
-    "/assets/css/app.css": "/assets/css/app.css"
+    "/assets/css/app.css": "/assets/css/app.css",
+    "/vendor/ffmpeg/ffmpeg-core.js": "/vendor/ffmpeg/ffmpeg-core.js",
+    "/vendor/ffmpeg/ffmpeg-core.wasm": "/vendor/ffmpeg/ffmpeg-core.wasm"
 }

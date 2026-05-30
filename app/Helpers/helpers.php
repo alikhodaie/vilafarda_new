@@ -61,7 +61,18 @@ if (!function_exists('settingFilePath')){
     {
         $filename = setting($setting_key);
 
-        return $filename ? Setting::getFilePath($filename): null;
+        if (! $filename) {
+            return null;
+        }
+
+        $url = Setting::getFilePath($filename);
+        $absolute = public_path(Setting::FILE_PATH.ltrim($filename, '/'));
+
+        if (is_file($absolute)) {
+            return $url.'?v='.filemtime($absolute);
+        }
+
+        return $url;
     }
 }
 
@@ -69,6 +80,48 @@ if (! function_exists('forgetSettingsCache')) {
     function forgetSettingsCache(): void
     {
         cache()->forget(Setting::CACHE_KEY);
+    }
+}
+
+if (! function_exists('ini_size_to_bytes')) {
+    /**
+     * تبدیل مقدار ini مثل 256M یا 8M به بایت.
+     */
+    function ini_size_to_bytes($value): int
+    {
+        $value = trim((string) $value);
+        if ($value === '' || $value === '-1') {
+            return 0;
+        }
+
+        $unit = strtolower(substr($value, -1));
+        $number = (float) $value;
+
+        switch ($unit) {
+            case 'g':
+                return (int) round($number * 1024 * 1024 * 1024);
+            case 'm':
+                return (int) round($number * 1024 * 1024);
+            case 'k':
+                return (int) round($number * 1024);
+            default:
+                return (int) round((float) $value);
+        }
+    }
+}
+
+if (! function_exists('index_banner_video_max_upload_bytes')) {
+    /** سقف امن آپلود خام ویدئو بنر (بر اساس post_max_size سرور). */
+    function index_banner_video_max_upload_bytes(): int
+    {
+        $postMax = ini_size_to_bytes(ini_get('post_max_size') ?: '8M');
+        $cap = 30 * 1024 * 1024;
+
+        if ($postMax <= 0) {
+            return $cap;
+        }
+
+        return (int) min(floor($postMax * 0.85), $cap);
     }
 }
 

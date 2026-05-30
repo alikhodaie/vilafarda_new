@@ -15,3 +15,8 @@ mix.js('resources/js/app.js', 'public/assets/js')
     .js('resources/js/admin.js', 'public/assets/admin/js')
     .vue()
     .css('resources/css/app.css', 'public/assets/css');
+
+if (require('fs').existsSync('node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm')) {
+    mix.copy('node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js', 'public/vendor/ffmpeg/ffmpeg-core.js')
+        .copy('node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm', 'public/vendor/ffmpeg/ffmpeg-core.wasm');
+}
