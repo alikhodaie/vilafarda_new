@@ -3,7 +3,7 @@
 @section('content')
     <div class="d-flex flex-column bd-highlight mb-3 align-items-center min-vh-100 px-3 pt-5">
         <div class="p-2 bd-highlight">
-            <img class="mb-5" src="{{ settingFilePath('app:logo-light') }}" width="300">
+            <img class="mb-5" src="{{ settingFilePath('app:logo') }}" alt="{{ config('app.name') }}" width="300" style="max-width: 100%; height: auto;">
         </div>
         
         <!-- Dynamic Title and Subtitle -->
