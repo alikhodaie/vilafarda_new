@@ -67,10 +67,18 @@ class CompressImageJob implements ShouldQueue
 
         if ($image->width() > 500 || $image->height() > 500) {
             $scale = $this->getScale($image);
+            $image->resize($scale[0], $scale[1]);
 
-            $image->resize($scale[0], $scale[1])
-                ->toJpeg(80)
-                ->save($path);
+            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            if ($extension === 'png') {
+                $image->toPng()->save($path);
+            } elseif ($extension === 'webp') {
+                $image->toWebp(80)->save($path);
+            } elseif ($extension === 'gif') {
+                $image->toGif()->save($path);
+            } else {
+                $image->toJpeg(80)->save($path);
+            }
         }
     }
 

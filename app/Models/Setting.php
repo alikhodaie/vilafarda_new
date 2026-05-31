@@ -67,7 +67,7 @@ class Setting extends Model
         return true;
     }
 
-    public static function saveFile(UploadedFile $file, string $filename = '', $extra_path = ''): string
+    public static function saveFile(UploadedFile $file, string $filename = '', $extra_path = '', bool $compress = true): string
     {
         $path = self::FILE_PATH.$extra_path;
 
@@ -75,7 +75,7 @@ class Setting extends Model
             ? basename($file->storeAs($path, $filename, self::FILE_DISK))
             : basename($file->store($path, self::FILE_DISK));
 
-        if (in_array(pathinfo($name, PATHINFO_EXTENSION), [
+        if ($compress && in_array(pathinfo($name, PATHINFO_EXTENSION), [
             'png',
             'jpg',
             'jpeg',

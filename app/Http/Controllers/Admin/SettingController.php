@@ -36,13 +36,13 @@ class SettingController extends Controller
             if ($request->hasFile('logo')){
                 Setting::deleteFile(setting('app:logo'));
 
-                $data['app:logo'] = Setting::saveFile($request->file('logo'), 'logo.png');
+                $data['app:logo'] = Setting::saveFile($request->file('logo'), 'logo.png', '', false);
             }
 
             if ($request->hasFile('logo_light')){
                 Setting::deleteFile(setting('app:logo-light'));
 
-                $data['app:logo-light'] = Setting::saveFile($request->file('logo_light'), 'logo-light.png');
+                $data['app:logo-light'] = Setting::saveFile($request->file('logo_light'), 'logo-light.png', '', false);
             }
         }
 
