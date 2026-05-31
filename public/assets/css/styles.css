@@ -5110,6 +5110,21 @@ span.expiration {
         display: none;
     }
 
+    .nav-brand {
+        padding: 22px 15px 22px 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .nav-brand img {
+        max-width: 80px;
+        max-height: 36px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+    }
+
     .dark-text .nav-brand, .header-transparent.dark-text .nav-brand:focus, .header-transparent.dark-text .nav-brand:hover, .header-transparent.dark-text .nav-menu > li > a {
         color: #404656;
     }
