@@ -1,6 +1,8 @@
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
+
 const DEFAULT_TARGET_MAX_BYTES = 12 * 1024 * 1024;
 
-/** یک پاس با کیفیت بالا؛ در صورت نیاز فقط CRF کمی بالاتر می‌رود (بدون کوچک‌کردن شدید رزولوشن) */
 const ENCODE_PROFILES = [
     { maxWidth: 1920, crf: 20, preset: 'fast' },
     { maxWidth: 1920, crf: 23, preset: 'fast' },
@@ -26,26 +28,32 @@ function extensionFromFile(file) {
     return 'mp4';
 }
 
-async function loadFfmpeg(onProgress) {
+function resolveFfmpegBaseUrl(ffmpegBaseUrl) {
+    const raw = (ffmpegBaseUrl || '/vendor/ffmpeg').replace(/\/$/, '');
+    if (raw.startsWith('http://') || raw.startsWith('https://')) {
+        return raw;
+    }
+    const path = raw.startsWith('/') ? raw : `/${raw}`;
+
+    return `${window.location.origin}${path}`;
+}
+
+async function loadFfmpeg(onProgress, ffmpegBaseUrl) {
     if (ffmpegBundle) {
         return ffmpegBundle;
     }
 
     if (!ffmpegLoadPromise) {
         ffmpegLoadPromise = (async () => {
-            const [{ FFmpeg }, { fetchFile, toBlobURL }] = await Promise.all([
-                import('@ffmpeg/ffmpeg'),
-                import('@ffmpeg/util'),
-            ]);
-
+            const base = resolveFfmpegBaseUrl(ffmpegBaseUrl);
             const ffmpeg = new FFmpeg();
+
             ffmpeg.on('progress', ({ progress }) => {
                 if (typeof onProgress === 'function') {
                     onProgress(Math.min(99, Math.round((progress ?? 0) * 100)));
                 }
             });
 
-            const base = `${window.location.origin}/vendor/ffmpeg`;
             await ffmpeg.load({
                 coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, 'text/javascript'),
                 wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, 'application/wasm'),
@@ -98,18 +106,14 @@ async function encodeAttempt(ffmpeg, inputName, { maxWidth, crf, preset }) {
 }
 
 /**
- * فشرده‌سازی ویدئو بنر در مرورگر قبل از ارسال فرم (MP4 / H.264 / بدون صدا).
- *
- * @param {File} file
- * @param {{ onProgress?: (n: number) => void, onStatus?: (s: string) => void }} hooks
- * @returns {Promise<File>}
+ * فقط برای ویدئوهای بزرگ‌تر از سقف آپلود سرور (فشرده‌سازی در مرورگر).
  */
 export async function compressUploadBannerVideo(file, hooks = {}) {
     if (!file) {
         throw new Error('فایلی انتخاب نشده است.');
     }
 
-    const { onProgress, onStatus } = hooks;
+    const { onProgress, onStatus, ffmpegBaseUrl } = hooks;
     const targetMaxBytes = hooks.targetMaxBytes ?? DEFAULT_TARGET_MAX_BYTES;
 
     onStatus?.('در حال آماده‌سازی فشرده‌ساز ویدئو…');
@@ -117,11 +121,17 @@ export async function compressUploadBannerVideo(file, hooks = {}) {
 
     let bundle;
     try {
-        bundle = await loadFfmpeg(onProgress);
+        bundle = await loadFfmpeg(onProgress, ffmpegBaseUrl);
     } catch (e) {
-        throw new Error(
-            'بارگذاری ابزار فشرده‌سازی ویدئو در مرورگر انجام نشد. صفحه را یک‌بار رفرش کنید یا با پشتیبانی تماس بگیرید.'
+        const detail = e && e.message ? ` (${e.message})` : '';
+        const err = new Error(
+            'فشرده‌سازی در مرورگر ممکن نشد.'
+            + detail
+            + ' فایل‌های public/vendor/ffmpeg (ffmpeg-core.js و .wasm) را روی سرور بررسی کنید.'
         );
+        err.cause = e;
+        err.code = 'FFMPEG_WASM_LOAD_FAILED';
+        throw err;
     }
 
     const { ffmpeg, fetchFile } = bundle;
@@ -133,7 +143,7 @@ export async function compressUploadBannerVideo(file, hooks = {}) {
     let outputBlob = null;
 
     for (const profile of ENCODE_PROFILES) {
-        onStatus?.(`فشرده‌سازی با کیفیت بالا (${profile.maxWidth}px، CRF ${profile.crf})…`);
+        onStatus?.(`فشرده‌سازی (${profile.maxWidth}px، CRF ${profile.crf})…`);
 
         outputBlob = await encodeAttempt(ffmpeg, inputName, profile);
 
@@ -153,12 +163,7 @@ export async function compressUploadBannerVideo(file, hooks = {}) {
     }
 
     onProgress?.(100);
-
-    if (outputBlob.size > targetMaxBytes) {
-        onStatus?.(`فشرده شد (${formatMb(outputBlob.size)} مگ) — برای این سرور هنوز بزرگ است.`);
-    } else {
-        onStatus?.(`آماده ارسال (${formatMb(outputBlob.size)} مگابایت، کیفیت بالا)`);
-    }
+    onStatus?.(`آماده ارسال (${formatMb(outputBlob.size)} مگابایت)`);
 
     return new File([outputBlob], 'banners.mp4', {
         type: 'video/mp4',

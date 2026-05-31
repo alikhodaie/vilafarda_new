@@ -71,6 +71,10 @@ export default {
             type: String,
             default: 'ویدئو در مرورگر آماده و مستقیم ذخیره می‌شود.',
         },
+        ffmpegBaseUrl: {
+            type: String,
+            default: '/vendor/ffmpeg',
+        },
     },
     data() {
         return {
@@ -88,7 +92,11 @@ export default {
     },
     computed: {
         compressTargetBytes() {
-            return Math.min(this.maxUploadBytes, 12 * 1024 * 1024);
+            return Math.min(this.maxUploadBytes, 6 * 1024 * 1024);
+        },
+        /** زیر این حجم مستقیم به سرور می‌رود؛ بالاتر اول در مرورگر فشرده می‌شود (دور زدن nginx 1–2M) */
+        browserCompressAboveBytes() {
+            return Math.min(2 * 1024 * 1024, Math.floor(this.maxUploadBytes * 0.35));
         },
     },
     mounted() {
@@ -125,13 +133,28 @@ export default {
 
             this.busy = true;
             this.progress = 0;
-            this.statusText = 'شروع فشرده‌سازی…';
             this.readyFileName = '';
             this.readySizeLabel = '';
 
             try {
-                const compressed = await compressUploadBannerVideo(file, {
+                let payload = await this.preparePayload(file);
+                await this.uploadToServer(payload, input);
+            } catch (e) {
+                this.errorText = this.formatUploadError(e);
+                input.value = '';
+            } finally {
+                this.busy = false;
+            }
+        },
+        async preparePayload(file) {
+            const needsBrowserCompress = file.size > this.browserCompressAboveBytes;
+
+            if (needsBrowserCompress) {
+                this.statusText = 'در حال فشرده‌سازی در مرورگر (کاهش حجم برای سرور)…';
+
+                return compressUploadBannerVideo(file, {
                     targetMaxBytes: this.compressTargetBytes,
+                    ffmpegBaseUrl: this.ffmpegBaseUrl,
                     onProgress: (n) => {
                         this.progress = n;
                     },
@@ -139,44 +162,52 @@ export default {
                         this.statusText = s;
                     },
                 });
-
-                if (compressed.size > this.maxUploadBytes) {
-                    throw new Error(
-                        `حجم ویدئو (${(compressed.size / (1024 * 1024)).toFixed(1)} مگ) از سقف سرور `
-                        + `(${(this.maxUploadBytes / (1024 * 1024)).toFixed(1)} مگ) بیشتر است. ویدئو را کوتاه‌تر کنید.`
-                    );
-                }
-
-                this.statusText = 'در حال ذخیره روی سرور…';
-                this.progress = 0;
-
-                const { data } = await window.axios.post(this.uploadUrl, compressed, {
-                    headers: { 'Content-Type': 'video/mp4' },
-                    onUploadProgress: (e) => {
-                        if (e.total) {
-                            this.progress = Math.min(99, Math.round((e.loaded / e.total) * 100));
-                        }
-                    },
-                });
-
-                input.value = '';
-
-                if (this.previewSrc && this.previewSrc.startsWith('blob:')) {
-                    URL.revokeObjectURL(this.previewSrc);
-                }
-
-                this.previewSrc = data.url || URL.createObjectURL(compressed);
-                this.readyFileName = compressed.name;
-                this.readySizeLabel = `${(compressed.size / (1024 * 1024)).toFixed(1)} مگابایت`;
-                this.statusText = 'ویدئو ذخیره شد. بقیه فیلدها را ویرایش کنید و «ثبت» را بزنید.';
-                this.videoSaved = true;
-            } catch (e) {
-                const msg = e.response?.data?.message || e.message || 'ذخیره ویدئو انجام نشد.';
-                this.errorText = msg;
-                input.value = '';
-            } finally {
-                this.busy = false;
             }
+
+            this.statusText = 'ارسال به سرور…';
+
+            return file;
+        },
+        formatUploadError(e) {
+            if (e.response?.status === 413) {
+                const maxMb = (this.maxUploadBytes / (1024 * 1024)).toFixed(1);
+
+                return 'حجم ویدئو از سقف سرور بیشتر است (خطای 413). '
+                    + `سقف فعلی برنامه حدود ${maxMb} مگ است. `
+                    + 'روی سرور در nginx مقدار client_max_body_size و در PHP مقدار post_max_size را بالا ببرید '
+                    + '(مثلاً 64M یا 128M)، یا ویدئوی کوتاه‌تر/سبک‌تر آپلود کنید.';
+            }
+
+            return e.response?.data?.message || e.message || 'ذخیره ویدئو انجام نشد.';
+        },
+        async uploadToServer(file, input) {
+            this.statusText = 'در حال ذخیره روی سرور…';
+            this.progress = 0;
+
+            const contentType = file.type && file.type.startsWith('video/')
+                ? file.type
+                : 'video/mp4';
+
+            const { data } = await window.axios.post(this.uploadUrl, file, {
+                headers: { 'Content-Type': contentType },
+                onUploadProgress: (e) => {
+                    if (e.total) {
+                        this.progress = Math.min(99, Math.round((e.loaded / e.total) * 100));
+                    }
+                },
+            });
+
+            input.value = '';
+
+            if (this.previewSrc && this.previewSrc.startsWith('blob:')) {
+                URL.revokeObjectURL(this.previewSrc);
+            }
+
+            this.previewSrc = data.url || URL.createObjectURL(file);
+            this.readyFileName = file.name || 'banners.mp4';
+            this.readySizeLabel = `${(file.size / (1024 * 1024)).toFixed(1)} مگابایت`;
+            this.statusText = 'ویدئو ذخیره شد. بقیه فیلدها را ویرایش کنید و «ثبت» را بزنید.';
+            this.videoSaved = true;
         },
     },
 };

@@ -44,6 +44,7 @@
         <div class="col-12 col-md-6">
             <index-banner-video-upload
                 upload-url="{{ route('admin.setting.index-page.banner-video') }}"
+                ffmpeg-base-url="{{ asset('vendor/ffmpeg') }}"
                 :max-upload-bytes="{{ index_banner_video_max_upload_bytes() }}"
                 current-src="{{ settingFilePath('index:banner-video') }}"
                 hint="پس از انتخاب، ویدئو در مرورگر فشرده و مستقیم ذخیره می‌شود (محدودیت ۲ مگابایت PHP دور زده می‌شود)."
