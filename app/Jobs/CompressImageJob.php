@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Services\HeicToRasterConverter;
+use App\Models\Setting;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Interfaces\ImageInterface;
@@ -36,7 +37,7 @@ class CompressImageJob implements ShouldQueue
      */
     public function handle()
     {
-        if (in_array(basename($this->path), ['logo.png', 'logo-light.png'], true)) {
+        if (Setting::isLogoPath($this->path)) {
             return;
         }
 

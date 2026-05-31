@@ -34,15 +34,11 @@ class SettingController extends Controller
         # Logo
         if (auth()->user()->can('logo', Setting::class)){
             if ($request->hasFile('logo')){
-                Setting::deleteFile(setting('app:logo'));
-
-                $data['app:logo'] = Setting::saveLogoFile($request->file('logo'), 'logo.png');
+                $data['app:logo'] = Setting::saveLogoFile($request->file('logo'), 'app:logo', 'logo');
             }
 
             if ($request->hasFile('logo_light')){
-                Setting::deleteFile(setting('app:logo-light'));
-
-                $data['app:logo-light'] = Setting::saveLogoFile($request->file('logo_light'), 'logo-light.png', 'logo_light');
+                $data['app:logo-light'] = Setting::saveLogoFile($request->file('logo_light'), 'app:logo-light', 'logo_light');
             }
         }
 

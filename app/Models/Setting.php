@@ -64,15 +64,26 @@ class Setting extends Model
 
     public static function deleteFile(string $filename): bool
     {
+        if ($filename === null || $filename === '') {
+            return true;
+        }
+
         Storage::disk(self::FILE_DISK)->delete(self::FILE_PATH.$filename);
 
         return true;
     }
 
+    public static function isLogoPath(string $relativePath): bool
+    {
+        $basename = basename($relativePath);
+
+        return (bool) preg_match('/^logo(-light)?(-\d+)?\.png$/i', $basename);
+    }
+
     /**
      * ذخیره لوگو بدون فشرده‌سازی — فقط PNG واقعی (با آلفا/شفافیت).
      */
-    public static function saveLogoFile(UploadedFile $file, string $filename, string $field = 'logo'): string
+    public static function saveLogoFile(UploadedFile $file, string $settingKey, string $field = 'logo'): string
     {
         $realType = @exif_imagetype($file->getRealPath());
         if ($realType !== IMAGETYPE_PNG) {
@@ -83,17 +94,38 @@ class Setting extends Model
 
         self::purgeLogoCompressJobs();
 
-        Storage::disk(self::FILE_DISK)->putFileAs(self::FILE_PATH, $file, $filename);
+        $oldFilename = setting($settingKey);
+        foreach (self::legacyLogoFilenames($settingKey) as $legacyFilename) {
+            self::deleteFile($legacyFilename);
+        }
+        if ($oldFilename) {
+            self::deleteFile($oldFilename);
+        }
 
-        $savedPath = Storage::disk(self::FILE_DISK)->path(self::FILE_PATH.$filename);
+        $baseName = $settingKey === 'app:logo-light' ? 'logo-light' : 'logo';
+        $newFilename = $baseName.'-'.time().'.png';
+
+        Storage::disk(self::FILE_DISK)->putFileAs(self::FILE_PATH, $file, $newFilename);
+
+        $savedPath = Storage::disk(self::FILE_DISK)->path(self::FILE_PATH.$newFilename);
         if (@exif_imagetype($savedPath) !== IMAGETYPE_PNG) {
-            Storage::disk(self::FILE_DISK)->delete(self::FILE_PATH.$filename);
+            Storage::disk(self::FILE_DISK)->delete(self::FILE_PATH.$newFilename);
             throw ValidationException::withMessages([
-                $field => 'فایل لوگو پس از ذخیره به JPEG تبدیل شد. روی سرور: git pull، php artisan queue:restart و php-fpm را restart کنید.',
+                $field => 'فایل لوگو پس از ذخیره به JPEG تبدیل شد. git pull بزنید و php-fpm را restart کنید.',
             ]);
         }
 
-        return $filename;
+        return $newFilename;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function legacyLogoFilenames(string $settingKey): array
+    {
+        return $settingKey === 'app:logo-light'
+            ? ['logo-light.png']
+            : ['logo.png'];
     }
 
     /**
@@ -109,7 +141,7 @@ class Setting extends Model
             DB::table('jobs')
                 ->where(function ($query) {
                     $query->where('payload', 'like', '%logo.png%')
-                        ->orWhere('payload', 'like', '%logo-light.png%');
+                        ->orWhere('payload', 'like', '%logo-light%');
                 })
                 ->delete();
         } catch (\Throwable $e) {
@@ -125,7 +157,7 @@ class Setting extends Model
             ? basename($file->storeAs($path, $filename, self::FILE_DISK))
             : basename($file->store($path, self::FILE_DISK));
 
-        if ($compress && in_array(pathinfo($name, PATHINFO_EXTENSION), [
+        if ($compress && ! self::isLogoPath($path.$name) && in_array(pathinfo($name, PATHINFO_EXTENSION), [
             'png',
             'jpg',
             'jpeg',
