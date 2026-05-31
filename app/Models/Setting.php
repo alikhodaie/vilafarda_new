@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class Setting extends Model
 {
@@ -65,6 +66,23 @@ class Setting extends Model
         Storage::disk(self::FILE_DISK)->delete(self::FILE_PATH.$filename);
 
         return true;
+    }
+
+    /**
+     * ذخیره لوگو بدون فشرده‌سازی — فقط PNG واقعی (با آلفا/شفافیت).
+     */
+    public static function saveLogoFile(UploadedFile $file, string $filename, string $field = 'logo'): string
+    {
+        $realType = @exif_imagetype($file->getRealPath());
+        if ($realType !== IMAGETYPE_PNG) {
+            throw ValidationException::withMessages([
+                $field => 'لوگو باید فایل PNG باشد. در InShot گزینه Save as PNG را انتخاب کنید (نه JPG).',
+            ]);
+        }
+
+        Storage::disk(self::FILE_DISK)->putFileAs(self::FILE_PATH, $file, $filename);
+
+        return $filename;
     }
 
     public static function saveFile(UploadedFile $file, string $filename = '', $extra_path = '', bool $compress = true): string

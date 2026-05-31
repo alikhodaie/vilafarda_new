@@ -4,6 +4,7 @@
 
     @can('logo', \App\Models\Setting::class)
         <h4 class="text-center">@lang('title.logo')</h4>
+        <p class="text-muted text-center small mb-3">فقط فایل PNG با پس‌زمینه شفاف (از InShot: Save as PNG — نه JPG)</p>
         <div class="row mt-4">
             <div class="col-12 col-md-6">
                 <label for="logo">@lang('title.logo')</label>
