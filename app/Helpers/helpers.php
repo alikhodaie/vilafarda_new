@@ -135,6 +135,7 @@ if (! function_exists('footerSettings')) {
             'second_menu' => [],
             'third_menu_title' => '',
             'third_menu' => [],
+            'enamad_html' => '',
             'enamad_url' => '',
             'enamad_image_url' => '',
             'trust_section_title' => '',
@@ -150,12 +151,26 @@ if (! function_exists('footerSettings')) {
 
         $merged = array_replace_recursive($defaults, $decoded);
 
-        if (empty($merged['enamad_url']) && empty($merged['enamad_image_url'])) {
-            $merged['enamad_url'] = 'https://trustseal.enamad.ir/?id=341631&Code=Qk98lTGBRYsxA6HLexcG';
-            $merged['enamad_image_url'] = 'https://trustseal.enamad.ir/logo.aspx?id=341631&Code=Qk98lTGBRYsxA6HLexcG';
+        if (empty($merged['enamad_html'])) {
+            if (! empty($merged['enamad_url']) && ! empty($merged['enamad_image_url'])) {
+                $merged['enamad_html'] = sprintf(
+                    '<a referrerpolicy="origin" target="_blank" href="%s"><img referrerpolicy="origin" src="%s" alt="" style="cursor:pointer"></a>',
+                    e($merged['enamad_url']),
+                    e($merged['enamad_image_url'])
+                );
+            } else {
+                $merged['enamad_html'] = '<a referrerpolicy=\'origin\' target=\'_blank\' href=\'https://trustseal.enamad.ir/?id=341631&Code=Qk98lTGBRYsxA6HLexcG\'><img referrerpolicy=\'origin\' src=\'https://trustseal.enamad.ir/logo.aspx?id=341631&Code=Qk98lTGBRYsxA6HLexcG\' alt=\'\' style=\'cursor:pointer\' code=\'Qk98lTGBRYsxA6HLexcG\'></a>';
+            }
         }
 
         return $merged;
+    }
+}
+
+if (! function_exists('footerEnamadHtml')) {
+    function footerEnamadHtml(): string
+    {
+        return trim((string) (footerSettings()['enamad_html'] ?? ''));
     }
 }
 

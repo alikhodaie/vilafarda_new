@@ -69,20 +69,11 @@
             </section>
         @endif
 
-        @if(!empty($footer['enamad_url']) && !empty($footer['enamad_image_url']))
+        @if(footerEnamadHtml())
             <section class="mobile-site-footer__section" aria-labelledby="footer-trust-title">
                 <h2 id="footer-trust-title" class="mobile-site-footer__heading">{{ footerTrustSectionTitle() }}</h2>
                 <div class="mobile-site-footer__trust">
-                    <a href="{{ $footer['enamad_url'] }}"
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       referrerpolicy="origin"
-                       class="mobile-site-footer__trust-badge">
-                        <img src="{{ $footer['enamad_image_url'] }}"
-                             alt="@lang('title.footer_enamad')"
-                             loading="lazy"
-                             referrerpolicy="origin">
-                    </a>
+                    <div class="mobile-site-footer__trust-badge">{!! footerEnamadHtml() !!}</div>
                 </div>
             </section>
         @endif

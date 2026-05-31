@@ -98,25 +98,16 @@
     </div>
     <div class="row mt-4">
         <div class="col-12 col-md-6">
-            <label for="enamad_url">@lang('title.footer_enamad_url')</label>
+            <label for="enamad_html">@lang('title.footer_enamad_html')</label>
+            <small class="text-muted d-block">@lang('title.footer_enamad_html_hint')</small>
         </div>
         <div class="col-12 col-md-6">
-            <input class="form-control" type="url" name="enamad_url" id="enamad_url" dir="ltr"
-                   value="{{ $footer['enamad_url'] }}"
-                   placeholder="https://trustseal.enamad.ir/?id=...">
-        </div>
-    </div>
-    <div class="row mt-4">
-        <div class="col-12 col-md-6">
-            <label for="enamad_image_url">@lang('title.footer_enamad_image')</label>
-        </div>
-        <div class="col-12 col-md-6">
-            <input class="form-control" type="url" name="enamad_image_url" id="enamad_image_url" dir="ltr"
-                   value="{{ $footer['enamad_image_url'] }}"
-                   placeholder="https://trustseal.enamad.ir/logo.aspx?id=...">
-            @if($footer['enamad_image_url'])
-                <div class="mt-2">
-                    <img src="{{ $footer['enamad_image_url'] }}" alt="@lang('title.footer_enamad')" width="120" height="120" style="object-fit: contain;">
+            <textarea class="form-control" name="enamad_html" id="enamad_html" rows="6" dir="ltr"
+                      placeholder="<a referrerpolicy='origin' target='_blank' href='...'><img ...></a>">{!! $footer['enamad_html'] !!}</textarea>
+            @if(!empty($footer['enamad_html']))
+                <div class="mt-2 border rounded p-2 bg-light">
+                    <small class="text-muted d-block mb-1">پیش‌نمایش</small>
+                    {!! $footer['enamad_html'] !!}
                 </div>
             @endif
         </div>

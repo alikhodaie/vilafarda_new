@@ -695,8 +695,7 @@ class SettingController extends Controller
                 'second_menu' => array_values($request->get('second_menu', []) ?: []),
                 'third_menu_title' => $request->get('third_menu_title'),
                 'third_menu' => array_values($request->get('third_menu', []) ?: []),
-                'enamad_url' => trim((string) $request->get('enamad_url', '')),
-                'enamad_image_url' => trim((string) $request->get('enamad_image_url', '')),
+                'enamad_html' => trim((string) $request->get('enamad_html', '')),
                 'trust_section_title' => trim((string) $request->get('trust_section_title', '')),
                 'phones' => array_values(array_filter($request->get('phones', []) ?: [], function ($row) {
                     return ! empty($row['number']);

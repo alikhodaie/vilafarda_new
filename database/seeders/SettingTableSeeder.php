@@ -72,8 +72,7 @@ class SettingTableSeeder extends Seeder
                     ['title' => 'املاک', 'link' => route('main.homes.index')],
                     ['title' => 'سوالات متداول', 'link' => route('main.faq')]
                 ],
-                'enamad_url' => 'https://trustseal.enamad.ir/?id=341631&Code=Qk98lTGBRYsxA6HLexcG',
-                'enamad_image_url' => 'https://trustseal.enamad.ir/logo.aspx?id=341631&Code=Qk98lTGBRYsxA6HLexcG',
+                'enamad_html' => '<a referrerpolicy=\'origin\' target=\'_blank\' href=\'https://trustseal.enamad.ir/?id=341631&Code=Qk98lTGBRYsxA6HLexcG\'><img referrerpolicy=\'origin\' src=\'https://trustseal.enamad.ir/logo.aspx?id=341631&Code=Qk98lTGBRYsxA6HLexcG\' alt=\'\' style=\'cursor:pointer\' code=\'Qk98lTGBRYsxA6HLexcG\'></a>',
                 'phones' => [
                     ['label' => 'پشتیبانی', 'number' => '0211234567'],
                 ],

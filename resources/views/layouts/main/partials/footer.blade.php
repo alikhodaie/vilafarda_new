@@ -84,10 +84,8 @@
 
                 <div class="col-12 col-md-2">
                     <div class="footer_widget">
-                        @if(!empty($footer['enamad_url']) && !empty($footer['enamad_image_url']))
-                            <a referrerpolicy="origin" target="_blank" rel="noopener noreferrer" href="{{ $footer['enamad_url'] }}">
-                                <img referrerpolicy="origin" src="{{ $footer['enamad_image_url'] }}" alt="@lang('title.footer_enamad')" style="cursor:pointer; max-width:200px; height:auto;">
-                            </a>
+                        @if(footerEnamadHtml())
+                            <div class="footer-enamad">{!! footerEnamadHtml() !!}</div>
                         @endif
                         @if(!empty($footer['socials']))
                             <div class="d-flex justify-content-between mt-3 flex-wrap gap-2">
