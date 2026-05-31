@@ -6,6 +6,7 @@ use App\Jobs\CompressImageJob;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
@@ -80,9 +81,40 @@ class Setting extends Model
             ]);
         }
 
+        self::purgeLogoCompressJobs();
+
         Storage::disk(self::FILE_DISK)->putFileAs(self::FILE_PATH, $file, $filename);
 
+        $savedPath = Storage::disk(self::FILE_DISK)->path(self::FILE_PATH.$filename);
+        if (@exif_imagetype($savedPath) !== IMAGETYPE_PNG) {
+            Storage::disk(self::FILE_DISK)->delete(self::FILE_PATH.$filename);
+            throw ValidationException::withMessages([
+                $field => 'فایل لوگو پس از ذخیره به JPEG تبدیل شد. روی سرور: git pull، php artisan queue:restart و php-fpm را restart کنید.',
+            ]);
+        }
+
         return $filename;
+    }
+
+    /**
+     * حذف jobهای قدیمی فشرده‌سازی که لوگو را به JPEG تبدیل می‌کنند.
+     */
+    public static function purgeLogoCompressJobs(): void
+    {
+        if (config('queue.default') !== 'database') {
+            return;
+        }
+
+        try {
+            DB::table('jobs')
+                ->where(function ($query) {
+                    $query->where('payload', 'like', '%logo.png%')
+                        ->orWhere('payload', 'like', '%logo-light.png%');
+                })
+                ->delete();
+        } catch (\Throwable $e) {
+            // queue table may not exist
+        }
     }
 
     public static function saveFile(UploadedFile $file, string $filename = '', $extra_path = '', bool $compress = true): string
