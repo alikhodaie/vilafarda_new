@@ -4,14 +4,19 @@ namespace App\Observers;
 
 use App\Classes\SMS;
 use App\Models\Order;
-use App\Models\User;
 use App\Services\HomeStatisticsService;
 use App\Services\HostPayoutService;
+use App\Services\OrderAdminSmsService;
 use Illuminate\Support\Str;
 
 
 class OrderObserver
 {
+    public function __construct(
+        protected OrderAdminSmsService $orderAdminSmsService
+    ) {
+    }
+
     /**
      * Handle the Order "created" event.
      *
@@ -20,11 +25,15 @@ class OrderObserver
      */
     public function created(Order $order)
     {
-        SMS::sendPattern($order->renter->mobile ,'300047', [[
-            'name' => 'HOME-NAME',
-            'value' => Str::limit($order->home->name, 25, ''),
-        ]]);
-        SMS::sendPattern($order->owner->mobile, '233577', [
+        $rotatingAdmin = $this->orderAdminSmsService->pickNextRotatingAdmin();
+
+        SMS::sendPattern(
+            $order->renter->mobile,
+            config('sms.patterns.order_created_renter'),
+            $this->orderAdminSmsService->buildGuestSmsParameters($order, $rotatingAdmin)
+        );
+
+        SMS::sendPattern($order->owner->mobile, config('sms.patterns.order_created_owner'), [
             [
                 'name' => 'COUNT',
                 'value' => $order->count_guest,
@@ -35,7 +44,7 @@ class OrderObserver
             ],
             [
                 'name' => 'END-DATE',
-                'value' => persianDate($order->end_at->addDay())->format('%A d F Y'),
+                'value' => persianDate($order->end_at->copy()->addDay())->format('%A d F Y'),
             ],
             [
                 'name' => 'AMOUNT',
@@ -43,45 +52,16 @@ class OrderObserver
             ],
         ]);
 
-        foreach (User::getAdminsThatCanGetOrdersSms() as $admin){
-            SMS::sendPattern($admin->mobile, '431957', [
-                [
-                    'name' => 'ID',
-                    'value' => Str::limit($order->home->code, 25, ''),
-                ],
-                [
-                    'name' => 'COUNT',
-                    'value' => $order->count_guest,
-                ],
-                [
-                    'name' => 'START-DATE',
-                    'value' => $order->persianDate('start_at', '%A d F Y'),
-                ],
-                [
-                    'name' => 'END-DATE',
-                    'value' => persianDate($order->end_at->addDay())->format('%A d F Y'),
-                ],
-                [
-                    'name' => 'AMOUNT',
-                    'value' => number_format($order->price),
-                ],
-                [
-                    'name' => 'GUEST-NAME',
-                    'value' => Str::limit($order->renter->full_name, 25, ''),
-                ],
-                [
-                    'name' => 'GUEST-MOBILE',
-                    'value' => $order->renter->mobile,
-                ],
-                [
-                    'name' => 'OWNER-NAME',
-                    'value' => Str::limit($order->owner->full_name, 25, ''),
-                ],
-                [
-                    'name' => 'OWNER-MOBILE',
-                    'value' => $order->owner->mobile,
-                ],
-            ]);
+        $adminParameters = $this->orderAdminSmsService->buildAdminSmsParameters($order);
+        $adminPattern = config('sms.patterns.order_created_admin');
+        $alwaysAdminIds = $this->orderAdminSmsService->getAlwaysAdmins()->pluck('id');
+
+        foreach ($this->orderAdminSmsService->getAlwaysAdmins() as $admin) {
+            SMS::sendPattern($admin->mobile, $adminPattern, $adminParameters);
+        }
+
+        if ($rotatingAdmin && ! $alwaysAdminIds->contains($rotatingAdmin->id)) {
+            SMS::sendPattern($rotatingAdmin->mobile, $adminPattern, $adminParameters);
         }
     }
 

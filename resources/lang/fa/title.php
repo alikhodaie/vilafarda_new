@@ -477,6 +477,9 @@ return [
     'sms_category_orders' => 'سفارشات',
     'sms_category_scheduled' => 'زمان‌بندی‌شده',
     'sms_category_auth' => 'احراز هویت',
+    'order_sms_mode' => 'نحوه دریافت پیامک سفارش',
+    'order_sms_mode_always' => 'همیشه',
+    'order_sms_mode_rotating' => 'نوبتی',
     'desktop' => 'دسکتاپ',
     'mobile_web' => 'موبایل (وب)',
 ];

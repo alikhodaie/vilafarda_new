@@ -2,13 +2,14 @@
 
 return [
     'order_created_renter' => [
-        'pattern_id' => '300047',
+        'pattern_id' => config('sms.patterns.order_created_renter'),
         'title' => 'ثبت درخواست رزرو — مهمان',
         'recipient' => 'مهمان',
         'trigger' => 'ایجاد سفارش (رزرو)',
         'source' => 'OrderObserver::created',
         'category' => 'orders',
-        'parameters' => ['HOME-NAME'],
+        'parameters' => ['HOME_NAME', 'CONSULTANT_NAME', 'CONSULTANT_MOBILE'],
+        'description' => 'مشاور شما (#CONSULTANT_NAME#) — برای سوالات بیشتر با مشاور خود تماس بگیرید: #CONSULTANT_MOBILE#',
     ],
     'order_created_owner' => [
         'pattern_id' => '233577',
@@ -20,13 +21,13 @@ return [
         'parameters' => ['COUNT', 'START-DATE', 'END-DATE', 'AMOUNT'],
     ],
     'order_created_admin' => [
-        'pattern_id' => '431957',
+        'pattern_id' => config('sms.patterns.order_created_admin'),
         'title' => 'درخواست رزرو جدید — ادمین',
-        'recipient' => 'ادمین (دارای دسترسی orders:sms)',
+        'recipient' => 'ادمین (دریافت پیامک همیشگی و نوبتی)',
         'trigger' => 'ایجاد سفارش (رزرو)',
         'source' => 'OrderObserver::created',
         'category' => 'orders',
-        'parameters' => ['ID', 'COUNT', 'START-DATE', 'END-DATE', 'AMOUNT', 'GUEST-NAME', 'GUEST-MOBILE', 'OWNER-NAME', 'OWNER-MOBILE'],
+        'parameters' => ['ID', 'COUNT', 'START_DATE', 'END_DATE', 'AMOUNT', 'GUEST_NAME', 'GUEST_MOBILE', 'OWNER_NAME', 'OWNER_MOBILE', 'CALENDAR_LINK'],
     ],
     'order_awaiting_payment' => [
         'pattern_id' => '328688',

@@ -16,7 +16,7 @@ class UserObserver
     public function created(User $user)
     {
         if ($user->isAdmin()) {
-            cache()->delete(User::ADMIN_ORDER_SMS_CACHE_KEY);
+            User::forgetOrderSmsCache();
 
             return;
         }
@@ -33,7 +33,7 @@ class UserObserver
     public function updated(User $user)
     {
         if ($user->isAdmin()){
-            cache()->delete(User::ADMIN_ORDER_SMS_CACHE_KEY);
+            User::forgetOrderSmsCache();
         }
     }
 
@@ -46,7 +46,7 @@ class UserObserver
     public function deleted(User $user)
     {
         if ($user->isAdmin()){
-            cache()->delete(User::ADMIN_ORDER_SMS_CACHE_KEY);
+            User::forgetOrderSmsCache();
         }
     }
 
@@ -59,7 +59,7 @@ class UserObserver
     public function restored(User $user)
     {
         if ($user->isAdmin()){
-            cache()->delete(User::ADMIN_ORDER_SMS_CACHE_KEY);
+            User::forgetOrderSmsCache();
         }
     }
 
@@ -72,7 +72,7 @@ class UserObserver
     public function forceDeleted(User $user)
     {
         if ($user->isAdmin()){
-            cache()->delete(User::ADMIN_ORDER_SMS_CACHE_KEY);
+            User::forgetOrderSmsCache();
         }
     }
 }

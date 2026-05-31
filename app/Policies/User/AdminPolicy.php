@@ -20,7 +20,7 @@ trait AdminPolicy
 
     public function adminUpdate(User $user, User $model): bool
     {
-        return $user->id === $model->id || ($user->hasPermissionTo('admins:update') && (! $model->hasRole('super-admin') || $model->id === $user->id) && $model->isAdmin());
+        return ($user->id === $model->id || $user->hasPermissionTo('admins:update')) && $model->isAdmin();
     }
 
     public function adminBlock(User $user, User $model): bool
@@ -35,11 +35,11 @@ trait AdminPolicy
 
     public function adminUpdateRole(User $user, User $model): bool
     {
-        return $user->hasPermissionTo('admins:updateRole') && ! $model->hasRole('super-admin') && $model->isAdmin();
+        return $user->hasPermissionTo('admins:updateRole') && $model->isAdmin();
     }
 
     public function adminDelete(User $user, User $model): bool
     {
-        return $user->hasPermissionTo('admins:destroy') && $user->id !== $model->id && ! $model->hasRole('super-admin') && $model->isAdmin();
+        return $user->hasPermissionTo('admins:destroy') && $user->id !== $model->id && $model->isAdmin();
     }
 }

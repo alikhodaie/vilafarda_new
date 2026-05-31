@@ -22,6 +22,14 @@
                             </div>
                         @endforeach
                     </div>
+
+                    @if($name === 'سفارشات')
+                        @include('admin.roles.partials.order-sms-mode', [
+                            'ordersSmsPermissionId' => $ordersSmsPermissionId,
+                            'orderSmsMode' => old('order_sms_mode', 'always'),
+                            'showOrderSmsMode' => old('permissions') && in_array($ordersSmsPermissionId, old('permissions', [])),
+                        ])
+                    @endif
                 </div>
             @endforeach
 

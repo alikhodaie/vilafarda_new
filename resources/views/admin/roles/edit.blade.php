@@ -23,6 +23,14 @@
                             </div>
                         @endforeach
                     </div>
+
+                    @if($name === 'سفارشات')
+                        @include('admin.roles.partials.order-sms-mode', [
+                            'ordersSmsPermissionId' => $ordersSmsPermissionId,
+                            'orderSmsMode' => $role->order_sms_mode,
+                            'showOrderSmsMode' => $role->permissions->pluck('name')->contains('orders:sms'),
+                        ])
+                    @endif
                 </div>
             @endforeach
 

@@ -27,7 +27,8 @@ class StoreRoleRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:250'],
             'permissions' => ['required', 'array', 'min:1'],
-            'permissions.*' => ['required', 'numeric', 'exists:permissions,id']
+            'permissions.*' => ['required', 'numeric', 'exists:permissions,id'],
+            'order_sms_mode' => ['nullable', 'in:always,rotating'],
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Classes\Traits\PersianDate;
 use App\Support\HomeSlug;
+use App\Services\OrderAdminSmsService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -41,21 +42,55 @@ class User extends Authenticatable
     const FILE_PATH = 'files/user/';
 
     const ADMIN_ORDER_SMS_CACHE_KEY = 'admins_order_sms';
+
+    const ADMIN_ORDER_SMS_ALWAYS_CACHE_KEY = 'admins_order_sms_always';
+
+    const ADMIN_ORDER_SMS_ROTATING_CACHE_KEY = 'admins_order_sms_rotating';
     # endregion
 
     # region Methods
+    public static function forgetOrderSmsCache(): void
+    {
+        cache()->delete(self::ADMIN_ORDER_SMS_CACHE_KEY);
+        cache()->delete(self::ADMIN_ORDER_SMS_ALWAYS_CACHE_KEY);
+        cache()->delete(self::ADMIN_ORDER_SMS_ROTATING_CACHE_KEY);
+    }
+
     public static function getAdminsThatCanGetOrdersSms(): Collection
     {
-        return cache()->rememberForever(self::ADMIN_ORDER_SMS_CACHE_KEY, function (){
+        return self::getAdminsWithAlwaysOrderSms()->merge(self::getAdminsWithRotatingOrderSms())->unique('id');
+    }
 
-            return self::query()->admin()->whereHas('roles', function ($roles){
-
-                $roles->whereHas('permissions', function ($permissions){
-
-                    $permissions->where('name', 'orders:sms');
-                });
-            })->get();
+    public static function getAdminsWithAlwaysOrderSms(): Collection
+    {
+        return cache()->rememberForever(self::ADMIN_ORDER_SMS_ALWAYS_CACHE_KEY, function () {
+            return self::queryAdminsByOrderSmsMode(OrderAdminSmsService::MODE_ALWAYS)->get();
         });
+    }
+
+    public static function getAdminsWithRotatingOrderSms(): Collection
+    {
+        return cache()->rememberForever(self::ADMIN_ORDER_SMS_ROTATING_CACHE_KEY, function () {
+            return self::queryAdminsByOrderSmsMode(OrderAdminSmsService::MODE_ROTATING)->get();
+        });
+    }
+
+    protected static function queryAdminsByOrderSmsMode(string $mode): Builder
+    {
+        return self::query()->admin()->whereHas('roles', function ($roles) use ($mode) {
+            $roles->whereHas('permissions', function ($permissions) {
+                $permissions->where('name', 'orders:sms');
+            });
+
+            if ($mode === OrderAdminSmsService::MODE_ALWAYS) {
+                $roles->where(function ($query) {
+                    $query->where('order_sms_mode', OrderAdminSmsService::MODE_ALWAYS)
+                        ->orWhereNull('order_sms_mode');
+                });
+            } else {
+                $roles->where('order_sms_mode', OrderAdminSmsService::MODE_ROTATING);
+            }
+        })->orderBy('id');
     }
 
     public function rent(Home $home, Carbon $start_date, Carbon $end_date, int $main_guest, int $extra_guest, int $consultant_id = null)

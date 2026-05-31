@@ -6,6 +6,8 @@ use App\Classes\Error;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Role\StoreRoleRequest;
 use App\Http\Requests\Admin\Role\UpdateRoleRequest;
+use App\Models\User;
+use App\Services\OrderAdminSmsService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,8 +38,9 @@ class RoleController extends Controller
     {
         $this->authorize('create', Role::class);
         $group = Permission::all()->groupBy('fa_group');
+        $ordersSmsPermissionId = $this->ordersSmsPermissionId();
 
-        return view('admin.roles.create', compact(['group']));
+        return view('admin.roles.create', compact(['group', 'ordersSmsPermissionId']));
     }
 
     public function store(StoreRoleRequest $request)
@@ -47,10 +50,12 @@ class RoleController extends Controller
 
             $role = Role::query()->create([
                 'name' => Str::random(10),
-                'fa_name' => $request->get('title')
+                'fa_name' => $request->get('title'),
+                'order_sms_mode' => $this->resolveOrderSmsMode($request),
             ]);
 
             $role->syncPermissions($request->get('permissions'));
+            User::forgetOrderSmsCache();
 
             DB::commit();
             return redirect()->route('admin.roles.edit', $role->id)->with('success', __('text.success.create role', ['name' => $role->name]));
@@ -66,8 +71,9 @@ class RoleController extends Controller
     {
         $this->authorize('update', $role);
         $group = Permission::all()->groupBy('fa_group');
+        $ordersSmsPermissionId = $this->ordersSmsPermissionId();
 
-        return view('admin.roles.edit', compact(['role', 'group']));
+        return view('admin.roles.edit', compact(['role', 'group', 'ordersSmsPermissionId']));
     }
 
     public function update(UpdateRoleRequest $request, Role $role)
@@ -75,8 +81,12 @@ class RoleController extends Controller
         try {
             DB::beginTransaction();
 
-            $role->update(['fa_name' => $request->get('title')]);
+            $role->update([
+                'fa_name' => $request->get('title'),
+                'order_sms_mode' => $this->resolveOrderSmsMode($request),
+            ]);
             $role->syncPermissions($request->get('permissions'));
+            User::forgetOrderSmsCache();
 
             DB::commit();
             return redirect()->route('admin.roles.index')->with('success', __('text.success.update role', ['name' => $role->name]));
@@ -96,6 +106,7 @@ class RoleController extends Controller
             DB::beginTransaction();
 
             $role->delete();
+            User::forgetOrderSmsCache();
 
             DB::commit();
             return redirect()->back()->with('success', __('text.success.delete role', ['name' => $role->name]));
@@ -105,5 +116,21 @@ class RoleController extends Controller
             Error::catch($e, __CLASS__, __FUNCTION__);
             return redirect()->back()->with('danger', __('text.whoops'));
         }
+    }
+
+    protected function ordersSmsPermissionId(): ?int
+    {
+        return Permission::query()->where('name', 'orders:sms')->value('id');
+    }
+
+    protected function resolveOrderSmsMode(StoreRoleRequest|UpdateRoleRequest $request): ?string
+    {
+        $ordersSmsPermissionId = $this->ordersSmsPermissionId();
+
+        if (! $ordersSmsPermissionId || ! in_array($ordersSmsPermissionId, $request->get('permissions', []), true)) {
+            return null;
+        }
+
+        return $request->get('order_sms_mode', OrderAdminSmsService::MODE_ALWAYS);
     }
 }
