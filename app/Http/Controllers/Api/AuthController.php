@@ -203,7 +203,7 @@ class AuthController extends Controller
 
                 return response()->json([
                     'success' => true,
-                    'message' => 'کد تایید صحیح است. لطفا رمز عبور خود را وارد کنید.',
+                    'message' => 'کد تایید صحیح است. لطفا اطلاعات ثبت نام خود را وارد کنید.',
                     'action' => 'register'
                 ]);
             }
@@ -225,6 +225,8 @@ class AuthController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'phone' => 'required|string|regex:/^09\d{9}$/',
+            'first_name' => 'required|string|max:250',
+            'last_name' => 'required|string|max:250',
             'password' => 'required|string|min:6',
         ]);
 
@@ -236,6 +238,8 @@ class AuthController extends Controller
         }
 
         $phone = $request->phone;
+        $firstName = trim($request->first_name);
+        $lastName = trim($request->last_name);
         $password = $request->password;
         $ip = $request->ip();
 
@@ -260,8 +264,8 @@ class AuthController extends Controller
             // Create new user
             $user = User::create([
                 'mobile' => $phone,
-                'first_name' => 'کاربر',
-                'last_name' => $phone,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
                 'password' => Hash::make($password),
                 'email' => $phone . '@temp.com', // Temporary email
             ]);

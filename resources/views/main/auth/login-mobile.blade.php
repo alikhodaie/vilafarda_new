@@ -107,8 +107,26 @@
 
         <!-- Registration Step -->
         <div id="register-step" class="w-100" style="display: none;">
-            <!-- Password Input -->
+            <!-- First Name Input -->
             <div class="w-100 mt-4">
+                <input type="text"
+                       id="first-name-input"
+                       class="form-control text-center py-3 custom-input"
+                       placeholder="نام"
+                       style="border-radius: 12px; border: 2px solid #e9ecef; font-size: 16px;">
+            </div>
+
+            <!-- Last Name Input -->
+            <div class="w-100 mt-3">
+                <input type="text"
+                       id="last-name-input"
+                       class="form-control text-center py-3 custom-input"
+                       placeholder="نام خانوادگی"
+                       style="border-radius: 12px; border: 2px solid #e9ecef; font-size: 16px;">
+            </div>
+
+            <!-- Password Input -->
+            <div class="w-100 mt-3">
                 <div class="position-relative password-input-wrapper">
                     <input type="password" 
                            id="password-input"

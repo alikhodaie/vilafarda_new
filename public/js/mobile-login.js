@@ -177,6 +177,8 @@ class MobileLogin {
         // Clear all inputs
         document.getElementById('phone-input').value = '';
         document.getElementById('password-input').value = '';
+        document.getElementById('first-name-input').value = '';
+        document.getElementById('last-name-input').value = '';
         document.querySelectorAll('.otp-input').forEach(input => {
             input.value = '';
         });
@@ -209,6 +211,8 @@ class MobileLogin {
         // Clear all inputs
         document.getElementById('phone-input').value = '';
         document.getElementById('password-input').value = '';
+        document.getElementById('first-name-input').value = '';
+        document.getElementById('last-name-input').value = '';
         document.querySelectorAll('.otp-input').forEach(input => {
             input.value = '';
         });
@@ -339,17 +343,30 @@ class MobileLogin {
         
         // Update title
         document.getElementById('step-title').textContent = 'ثبت نام';
-        document.getElementById('step-subtitle').innerHTML = 'یک رمز برای اکانت خود تنظیم کنید';
+        document.getElementById('step-subtitle').innerHTML = 'لطفا نام، نام خانوادگی و رمز عبور خود را وارد کنید';
         
-        // Focus password input
+        // Focus first name input
         setTimeout(() => {
-            document.getElementById('password-input').focus();
+            document.getElementById('first-name-input').focus();
         }, 100);
     }
 
     async registerUser() {
+        const firstNameInput = document.getElementById('first-name-input');
+        const lastNameInput = document.getElementById('last-name-input');
         const passwordInput = document.getElementById('password-input');
+        const firstName = firstNameInput.value.trim();
+        const lastName = lastNameInput.value.trim();
         const password = passwordInput.value.trim();
+
+        if (!firstName) {
+            this.showError('لطفا نام خود را وارد کنید');
+            return;
+        }
+        if (!lastName) {
+            this.showError('لطفا نام خانوادگی خود را وارد کنید');
+            return;
+        }
         if (password.length < 6) {
             this.showError('رمز عبور باید حداقل 6 کاراکتر باشد');
             return;
@@ -364,6 +381,8 @@ class MobileLogin {
                 },
                 body: JSON.stringify({ 
                     phone: this.phoneNumber,
+                    first_name: firstName,
+                    last_name: lastName,
                     password: password 
                 }),
                 credentials: 'same-origin'
