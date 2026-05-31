@@ -3,7 +3,7 @@
 @section('content')
     <div class="d-flex flex-column bd-highlight mb-3 align-items-center min-vh-100 px-3 pt-5">
         <div class="p-2 bd-highlight">
-            <img class="mb-5" src="https://vilafarda.ir/files/setting/logo-light.png" width="300">
+            <img class="mb-5" src="{{ settingFilePath('app:logo-light') }}" width="300">
         </div>
         
         <!-- Dynamic Title and Subtitle -->

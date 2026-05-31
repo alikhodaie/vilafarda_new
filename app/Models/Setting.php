@@ -19,6 +19,7 @@ class Setting extends Model
     # region Const
     const CACHE_KEY = 'setting';
     const FILE_PATH = 'files/setting/';
+    const FILE_DISK = 'public-folder';
     const IMAGE_MAX_LONG_EDGE = 1200;
     const IMAGE_WEBP_QUALITY = 85;
     # endregion
@@ -61,7 +62,7 @@ class Setting extends Model
 
     public static function deleteFile(string $filename): bool
     {
-        Storage::delete(self::FILE_PATH.$filename);
+        Storage::disk(self::FILE_DISK)->delete(self::FILE_PATH.$filename);
 
         return true;
     }
@@ -71,8 +72,8 @@ class Setting extends Model
         $path = self::FILE_PATH.$extra_path;
 
         $name = ($filename)
-            ? basename($file->storeAs($path, $filename))
-            : basename($file->store($path));
+            ? basename($file->storeAs($path, $filename, self::FILE_DISK))
+            : basename($file->store($path, self::FILE_DISK));
 
         if (in_array(pathinfo($name, PATHINFO_EXTENSION), [
             'png',

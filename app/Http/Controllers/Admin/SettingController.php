@@ -74,6 +74,10 @@ class SettingController extends Controller
             Setting::query()->where('key', $key)->first()->update(['value' => $value]);
         }
 
+        if ($data !== []) {
+            forgetSettingsCache();
+        }
+
         return redirect()->route('admin.setting.index', ['active' => 'general'])->with('success', __('text.success.setting_general'));
     }
 
@@ -299,7 +303,21 @@ class SettingController extends Controller
                 throw new \RuntimeException('نوشتن فایل موقت انجام نشد.');
             }
 
-            $uploaded = new UploadedFile($tmp, 'banners.mp4', 'video/mp4', UPLOAD_ERR_OK, true);
+            $contentType = strtolower((string) $request->header('Content-Type', 'video/mp4'));
+            $extension = 'mp4';
+            if (str_contains($contentType, 'quicktime') || str_contains($contentType, 'x-m4v')) {
+                $extension = 'mov';
+            } elseif (str_contains($contentType, 'webm')) {
+                $extension = 'webm';
+            }
+
+            $uploaded = new UploadedFile(
+                $tmp,
+                'banner-input.'.$extension,
+                $contentType !== '' ? $contentType : 'video/mp4',
+                UPLOAD_ERR_OK,
+                true
+            );
 
             Setting::deleteFile(setting('index:banner-video'));
 

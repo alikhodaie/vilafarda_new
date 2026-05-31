@@ -36,7 +36,7 @@ class CompressImageJob implements ShouldQueue
      */
     public function handle()
     {
-        $path = Storage::path($this->path);
+        $path = Storage::disk('public-folder')->path($this->path);
 
         if (! File::exists($path) || File::size($path) === 0) {
             return;
