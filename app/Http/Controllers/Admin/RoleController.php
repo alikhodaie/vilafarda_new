@@ -56,6 +56,7 @@ class RoleController extends Controller
 
             $role->syncPermissions($request->get('permissions'));
             User::forgetOrderSmsCache();
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
             DB::commit();
             return redirect()->route('admin.roles.edit', $role->id)->with('success', __('text.success.create role', ['name' => $role->name]));
@@ -87,6 +88,7 @@ class RoleController extends Controller
             ]);
             $role->syncPermissions($request->get('permissions'));
             User::forgetOrderSmsCache();
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
             DB::commit();
             return redirect()->route('admin.roles.edit', $role->id)->with('success', __('text.success.update role', ['name' => $role->name]));
@@ -107,6 +109,7 @@ class RoleController extends Controller
 
             $role->delete();
             User::forgetOrderSmsCache();
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
             DB::commit();
             return redirect()->back()->with('success', __('text.success.delete role', ['name' => $role->name]));

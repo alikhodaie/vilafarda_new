@@ -77,20 +77,23 @@ class User extends Authenticatable
 
     protected static function queryAdminsByOrderSmsMode(string $mode): Builder
     {
-        return self::query()->admin()->whereHas('roles', function ($roles) use ($mode) {
-            $roles->whereHas('permissions', function ($permissions) {
-                $permissions->where('name', 'orders:sms');
-            });
-
-            if ($mode === OrderAdminSmsService::MODE_ALWAYS) {
-                $roles->where(function ($query) {
-                    $query->where('order_sms_mode', OrderAdminSmsService::MODE_ALWAYS)
-                        ->orWhereNull('order_sms_mode');
+        return self::query()
+            ->whereHas('roles', function ($roles) use ($mode) {
+                $roles->whereHas('permissions', function ($permissions) {
+                    $permissions->where('name', 'orders:sms');
                 });
-            } else {
-                $roles->where('order_sms_mode', OrderAdminSmsService::MODE_ROTATING);
-            }
-        })->distinct()->orderBy('id');
+
+                if ($mode === OrderAdminSmsService::MODE_ALWAYS) {
+                    $roles->where(function ($query) {
+                        $query->where('order_sms_mode', OrderAdminSmsService::MODE_ALWAYS)
+                            ->orWhereNull('order_sms_mode');
+                    });
+                } else {
+                    $roles->where('order_sms_mode', OrderAdminSmsService::MODE_ROTATING);
+                }
+            })
+            ->distinct()
+            ->orderBy('id');
     }
 
     public function rent(Home $home, Carbon $start_date, Carbon $end_date, int $main_guest, int $extra_guest, int $consultant_id = null)

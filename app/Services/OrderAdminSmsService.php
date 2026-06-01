@@ -84,63 +84,70 @@ class OrderAdminSmsService
 
     public function buildAdminSmsParameters(Order $order): array
     {
-        return array_merge(
-            $this->smsParam(['ID'], Str::limit($order->home->code, 25, '')),
-            $this->smsParam(['COUNT'], $order->count_guest),
-            $this->smsParam(['START-DATE', 'START_DATE'], $order->persianDate('start_at', '%A d F Y')),
-            $this->smsParam(['END-DATE', 'END_DATE'], persianDate($order->end_at->copy()->addDay())->format('%A d F Y')),
-            $this->smsParam(['AMOUNT'], number_format($order->price)),
-            $this->smsParam(['GUEST-NAME', 'GUEST_NAME', 'guest_name'], Str::limit($order->renter->full_name, 25, '')),
-            $this->smsParam(['GUEST-MOBILE', 'GUEST_MOBILE', 'guest_mobile'], $order->renter->mobile),
-            $this->smsParam(['OWNER-NAME', 'OWNER_NAME', 'owner_name'], Str::limit($order->owner->full_name, 25, '')),
-            $this->smsParam(['OWNER-MOBILE', 'OWNER_MOBILE', 'owner_mobile'], $order->owner->mobile),
-            $this->smsParam(
-                ['calendar_link', 'CALENDAR_LINK', 'CALENDAR-LINK'],
-                Str::limit($this->calendarEditUrl($order), 200, '')
-            ),
-        );
+        $names = config('sms.parameter_names.order_created_admin', []);
+        $values = [
+            'id' => Str::limit($order->home->code, $this->parameterMaxLength(), ''),
+            'count' => (string) $order->count_guest,
+            'start_date' => $this->parameterValue($order->persianDate('start_at', '%A d F Y')),
+            'end_date' => $this->parameterValue(persianDate($order->end_at->copy()->addDay())->format('%A d F Y')),
+            'amount' => $this->parameterValue(number_format($order->price)),
+            'guest_name' => $this->parameterValue($order->renter->full_name),
+            'guest_mobile' => $this->parameterValue($order->renter->mobile),
+            'owner_name' => $this->parameterValue($order->owner->full_name),
+            'owner_mobile' => $this->parameterValue($order->owner->mobile),
+            'calendar_link' => $this->parameterValue($this->shortCalendarLink($order)),
+        ];
+
+        return $this->buildParametersFromMap($names, $values);
     }
 
     public function buildGuestSmsParameters(Order $order, ?User $consultantAdmin): array
     {
-        $parameters = $this->smsParam(
-            ['HOME_NAME', 'HOME-NAME', 'home_name'],
-            Str::limit($order->home->name, 25, '')
-        );
+        $names = config('sms.parameter_names.order_created_renter', []);
+        $values = [
+            'home_name' => $this->parameterValue($order->home->name),
+        ];
 
         if ($consultantAdmin) {
-            $parameters = array_merge(
-                $parameters,
-                $this->smsParam(
-                    ['consultant_name', 'CONSULTANT_NAME', 'CONSULTANT-NAME'],
-                    Str::limit($consultantAdmin->full_name, 25, '')
-                ),
-                $this->smsParam(
-                    ['consultant_mobile', 'CONSULTANT_MOBILE', 'CONSULTANT-MOBILE'],
-                    $consultantAdmin->mobile
-                ),
-            );
+            $values['consultant_name'] = $this->parameterValue($consultantAdmin->full_name);
+            $values['consultant_mobile'] = $this->parameterValue($consultantAdmin->mobile);
         }
 
-        return $parameters;
+        return $this->buildParametersFromMap($names, $values);
     }
 
-    public function calendarEditUrl(Order $order): string
+    public function shortCalendarLink(Order $order): string
     {
-        return url(route('admin.homes.date.show', $order->home_id, false));
+        return route('admin.homes.date.show', $order->home_id, false);
     }
 
-    private function smsParam(array $names, mixed $value): array
+    private function buildParametersFromMap(array $names, array $values): array
     {
         $parameters = [];
 
-        foreach (array_unique($names) as $name) {
+        foreach ($names as $valueKey => $smsName) {
+            if (! array_key_exists($valueKey, $values) || $values[$valueKey] === null || $values[$valueKey] === '') {
+                continue;
+            }
+
             $parameters[] = [
-                'name' => $name,
-                'value' => $value,
+                'name' => $smsName,
+                'value' => $values[$valueKey],
             ];
         }
 
         return $parameters;
+    }
+
+    private function parameterValue(?string $value): string
+    {
+        return Str::limit(trim((string) $value), $this->parameterMaxLength(), '');
+    }
+
+    private function parameterMaxLength(): int
+    {
+        $max = (int) config('sms.parameter_max_length', 25);
+
+        return $max > 0 ? $max : 25;
     }
 }

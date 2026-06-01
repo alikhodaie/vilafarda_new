@@ -45,6 +45,8 @@ class AdminController extends Controller
 
             if (auth()->user()->can('adminAssignRole', User::class)) {
                 $admin->assignRole($request->get('role'));
+                User::forgetOrderSmsCache();
+                app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
             }
 
             if ($request->hasFile('avatar')){
@@ -100,6 +102,8 @@ class AdminController extends Controller
 
             if (auth()->user()->can('adminUpdateRole', $admin)) {
                 $admin->syncRoles($request->get('role'));
+                User::forgetOrderSmsCache();
+                app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
             }
 
             DB::commit();
