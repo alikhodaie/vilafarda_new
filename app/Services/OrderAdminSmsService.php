@@ -88,7 +88,17 @@ class OrderAdminSmsService
         ];
     }
 
-    public function buildGuestSmsParameters(Order $order, ?User $rotatingAdmin): array
+    public function resolveGuestConsultant(?User $rotatingAdmin): ?User
+    {
+        if ($rotatingAdmin) {
+            return $rotatingAdmin;
+        }
+
+        return $this->getAlwaysAdmins()->first()
+            ?? User::getAdminsThatCanGetOrdersSms()->first();
+    }
+
+    public function buildGuestSmsParameters(Order $order, ?User $consultantAdmin): array
     {
         $parameters = [
             [
@@ -97,14 +107,14 @@ class OrderAdminSmsService
             ],
         ];
 
-        if ($rotatingAdmin) {
+        if ($consultantAdmin) {
             $parameters[] = [
-                'name' => 'CONSULTANT_NAME',
-                'value' => Str::limit($rotatingAdmin->full_name, 25, ''),
+                'name' => 'consultant_name',
+                'value' => Str::limit($consultantAdmin->full_name, 25, ''),
             ];
             $parameters[] = [
-                'name' => 'CONSULTANT_MOBILE',
-                'value' => $rotatingAdmin->mobile,
+                'name' => 'consultant_mobile',
+                'value' => $consultantAdmin->mobile,
             ];
         }
 

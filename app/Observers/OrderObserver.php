@@ -26,11 +26,12 @@ class OrderObserver
     public function created(Order $order)
     {
         $rotatingAdmin = $this->orderAdminSmsService->pickNextRotatingAdmin();
+        $consultantAdmin = $this->orderAdminSmsService->resolveGuestConsultant($rotatingAdmin);
 
         SMS::sendPattern(
             $order->renter->mobile,
             config('sms.patterns.order_created_renter'),
-            $this->orderAdminSmsService->buildGuestSmsParameters($order, $rotatingAdmin)
+            $this->orderAdminSmsService->buildGuestSmsParameters($order, $consultantAdmin)
         );
 
         SMS::sendPattern($order->owner->mobile, config('sms.patterns.order_created_owner'), [

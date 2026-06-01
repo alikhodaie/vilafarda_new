@@ -8,8 +8,8 @@ return [
         'trigger' => 'ایجاد سفارش (رزرو)',
         'source' => 'OrderObserver::created',
         'category' => 'orders',
-        'parameters' => ['HOME_NAME', 'CONSULTANT_NAME', 'CONSULTANT_MOBILE'],
-        'description' => 'مشاور شما (#CONSULTANT_NAME#) — برای سوالات بیشتر با مشاور خود تماس بگیرید: #CONSULTANT_MOBILE#',
+        'parameters' => ['HOME_NAME', 'consultant_name', 'consultant_mobile'],
+        'description' => 'مشاور شما (#consultant_name#) — برای سوالات بیشتر با مشاور خود تماس بگیرید: #consultant_mobile#',
     ],
     'order_created_owner' => [
         'pattern_id' => '233577',
