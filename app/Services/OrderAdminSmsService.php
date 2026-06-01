@@ -18,14 +18,24 @@ class OrderAdminSmsService
 
     public function pickNextRotatingAdmin(): ?User
     {
-        $admins = User::getAdminsWithRotatingOrderSms();
+        $admins = User::getAdminsWithRotatingOrderSms()->values();
 
         if ($admins->isEmpty()) {
             return null;
         }
 
-        $lastId = (int) setting(self::LAST_ADMIN_SETTING_KEY, 0);
-        $next = $admins->first(fn (User $admin) => $admin->id > $lastId) ?? $admins->first();
+        if ($admins->count() === 1) {
+            $next = $admins->first();
+        } else {
+            $lastId = (int) setting(self::LAST_ADMIN_SETTING_KEY, 0);
+            $currentIndex = $admins->search(fn (User $admin) => $admin->id === $lastId);
+
+            if ($currentIndex === false) {
+                $next = $admins->first();
+            } else {
+                $next = $admins->get(($currentIndex + 1) % $admins->count());
+            }
+        }
 
         Setting::query()->updateOrCreate(
             ['key' => self::LAST_ADMIN_SETTING_KEY],
@@ -54,11 +64,11 @@ class OrderAdminSmsService
                 'value' => $order->count_guest,
             ],
             [
-                'name' => 'START_DATE',
+                'name' => 'START-DATE',
                 'value' => $order->persianDate('start_at', '%A d F Y'),
             ],
             [
-                'name' => 'END_DATE',
+                'name' => 'END-DATE',
                 'value' => persianDate($order->end_at->copy()->addDay())->format('%A d F Y'),
             ],
             [
@@ -66,36 +76,22 @@ class OrderAdminSmsService
                 'value' => number_format($order->price),
             ],
             [
-                'name' => 'GUEST_NAME',
+                'name' => 'GUEST-NAME',
                 'value' => Str::limit($order->renter->full_name, 25, ''),
             ],
             [
-                'name' => 'GUEST_MOBILE',
+                'name' => 'GUEST-MOBILE',
                 'value' => $order->renter->mobile,
             ],
             [
-                'name' => 'OWNER_NAME',
+                'name' => 'OWNER-NAME',
                 'value' => Str::limit($order->owner->full_name, 25, ''),
             ],
             [
-                'name' => 'OWNER_MOBILE',
+                'name' => 'OWNER-MOBILE',
                 'value' => $order->owner->mobile,
             ],
-            [
-                'name' => 'CALENDAR_LINK',
-                'value' => $this->calendarEditUrl($order),
-            ],
         ];
-    }
-
-    public function resolveGuestConsultant(?User $rotatingAdmin): ?User
-    {
-        if ($rotatingAdmin) {
-            return $rotatingAdmin;
-        }
-
-        return $this->getAlwaysAdmins()->first()
-            ?? User::getAdminsThatCanGetOrdersSms()->first();
     }
 
     public function buildGuestSmsParameters(Order $order, ?User $consultantAdmin): array

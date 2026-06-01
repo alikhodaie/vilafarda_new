@@ -27,7 +27,7 @@ return [
         'trigger' => 'ایجاد سفارش (رزرو)',
         'source' => 'OrderObserver::created',
         'category' => 'orders',
-        'parameters' => ['ID', 'COUNT', 'START_DATE', 'END_DATE', 'AMOUNT', 'GUEST_NAME', 'GUEST_MOBILE', 'OWNER_NAME', 'OWNER_MOBILE', 'CALENDAR_LINK'],
+        'parameters' => ['ID', 'COUNT', 'START-DATE', 'END-DATE', 'AMOUNT', 'GUEST-NAME', 'GUEST-MOBILE', 'OWNER-NAME', 'OWNER-MOBILE'],
     ],
     'order_awaiting_payment' => [
         'pattern_id' => '328688',
