@@ -54,64 +54,38 @@ class OrderAdminSmsService
 
     public function buildAdminSmsParameters(Order $order): array
     {
-        return [
-            [
-                'name' => 'ID',
-                'value' => Str::limit($order->home->code, 25, ''),
-            ],
-            [
-                'name' => 'COUNT',
-                'value' => $order->count_guest,
-            ],
-            [
-                'name' => 'START-DATE',
-                'value' => $order->persianDate('start_at', '%A d F Y'),
-            ],
-            [
-                'name' => 'END-DATE',
-                'value' => persianDate($order->end_at->copy()->addDay())->format('%A d F Y'),
-            ],
-            [
-                'name' => 'AMOUNT',
-                'value' => number_format($order->price),
-            ],
-            [
-                'name' => 'GUEST-NAME',
-                'value' => Str::limit($order->renter->full_name, 25, ''),
-            ],
-            [
-                'name' => 'GUEST-MOBILE',
-                'value' => $order->renter->mobile,
-            ],
-            [
-                'name' => 'OWNER-NAME',
-                'value' => Str::limit($order->owner->full_name, 25, ''),
-            ],
-            [
-                'name' => 'OWNER-MOBILE',
-                'value' => $order->owner->mobile,
-            ],
-        ];
+        return array_merge(
+            $this->smsParam(['ID'], Str::limit($order->home->code, 25, '')),
+            $this->smsParam(['COUNT'], $order->count_guest),
+            $this->smsParam(['START-DATE', 'START_DATE'], $order->persianDate('start_at', '%A d F Y')),
+            $this->smsParam(['END-DATE', 'END_DATE'], persianDate($order->end_at->copy()->addDay())->format('%A d F Y')),
+            $this->smsParam(['AMOUNT'], number_format($order->price)),
+            $this->smsParam(['GUEST-NAME', 'GUEST_NAME', 'guest_name'], Str::limit($order->renter->full_name, 25, '')),
+            $this->smsParam(['GUEST-MOBILE', 'GUEST_MOBILE', 'guest_mobile'], $order->renter->mobile),
+            $this->smsParam(['OWNER-NAME', 'OWNER_NAME', 'owner_name'], Str::limit($order->owner->full_name, 25, '')),
+            $this->smsParam(['OWNER-MOBILE', 'OWNER_MOBILE', 'owner_mobile'], $order->owner->mobile),
+        );
     }
 
     public function buildGuestSmsParameters(Order $order, ?User $consultantAdmin): array
     {
-        $parameters = [
-            [
-                'name' => 'HOME_NAME',
-                'value' => Str::limit($order->home->name, 25, ''),
-            ],
-        ];
+        $parameters = $this->smsParam(
+            ['HOME_NAME', 'HOME-NAME', 'home_name'],
+            Str::limit($order->home->name, 25, '')
+        );
 
         if ($consultantAdmin) {
-            $parameters[] = [
-                'name' => 'consultant_name',
-                'value' => Str::limit($consultantAdmin->full_name, 25, ''),
-            ];
-            $parameters[] = [
-                'name' => 'consultant_mobile',
-                'value' => $consultantAdmin->mobile,
-            ];
+            $parameters = array_merge(
+                $parameters,
+                $this->smsParam(
+                    ['consultant_name', 'CONSULTANT_NAME', 'CONSULTANT-NAME'],
+                    Str::limit($consultantAdmin->full_name, 25, '')
+                ),
+                $this->smsParam(
+                    ['consultant_mobile', 'CONSULTANT_MOBILE', 'CONSULTANT-MOBILE'],
+                    $consultantAdmin->mobile
+                ),
+            );
         }
 
         return $parameters;
@@ -120,5 +94,19 @@ class OrderAdminSmsService
     public function calendarEditUrl(Order $order): string
     {
         return url(route('admin.homes.date.show', $order->home_id, false));
+    }
+
+    private function smsParam(array $names, mixed $value): array
+    {
+        $parameters = [];
+
+        foreach (array_unique($names) as $name) {
+            $parameters[] = [
+                'name' => $name,
+                'value' => $value,
+            ];
+        }
+
+        return $parameters;
     }
 }

@@ -89,7 +89,7 @@ class RoleController extends Controller
             User::forgetOrderSmsCache();
 
             DB::commit();
-            return redirect()->route('admin.roles.index')->with('success', __('text.success.update role', ['name' => $role->name]));
+            return redirect()->route('admin.roles.edit', $role->id)->with('success', __('text.success.update role', ['name' => $role->name]));
         }
         catch (Exception $e){
             DB::rollBack();
@@ -127,7 +127,15 @@ class RoleController extends Controller
     {
         $ordersSmsPermissionId = $this->ordersSmsPermissionId();
 
-        if (! $ordersSmsPermissionId || ! in_array($ordersSmsPermissionId, $request->get('permissions', []), true)) {
+        if (! $ordersSmsPermissionId) {
+            return null;
+        }
+
+        $permissionIds = collect($request->get('permissions', []))
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (! in_array((int) $ordersSmsPermissionId, $permissionIds, true)) {
             return null;
         }
 
