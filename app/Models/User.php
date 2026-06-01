@@ -90,7 +90,7 @@ class User extends Authenticatable
             } else {
                 $roles->where('order_sms_mode', OrderAdminSmsService::MODE_ROTATING);
             }
-        })->orderBy('id');
+        })->distinct()->orderBy('id');
     }
 
     public function rent(Home $home, Carbon $start_date, Carbon $end_date, int $main_guest, int $extra_guest, int $consultant_id = null)

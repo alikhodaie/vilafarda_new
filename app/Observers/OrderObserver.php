@@ -30,7 +30,8 @@ class OrderObserver
         SMS::sendPattern(
             $order->renter->mobile,
             config('sms.patterns.order_created_renter'),
-            $this->orderAdminSmsService->buildGuestSmsParameters($order, $rotatingAdmin)
+            $this->orderAdminSmsService->buildGuestSmsParameters($order, $rotatingAdmin),
+            ['related' => $order, 'source' => 'OrderObserver::created']
         );
 
         SMS::sendPattern($order->owner->mobile, config('sms.patterns.order_created_owner'), [
@@ -50,19 +51,9 @@ class OrderObserver
                 'name' => 'AMOUNT',
                 'value' => number_format($order->getPayoutAmount()),
             ],
-        ]);
+        ], ['related' => $order, 'source' => 'OrderObserver::created']);
 
-        $adminParameters = $this->orderAdminSmsService->buildAdminSmsParameters($order);
-        $adminPattern = config('sms.patterns.order_created_admin');
-        $alwaysAdminIds = $this->orderAdminSmsService->getAlwaysAdmins()->pluck('id');
-
-        foreach ($this->orderAdminSmsService->getAlwaysAdmins() as $admin) {
-            SMS::sendPattern($admin->mobile, $adminPattern, $adminParameters);
-        }
-
-        if ($rotatingAdmin && ! $alwaysAdminIds->contains($rotatingAdmin->id)) {
-            SMS::sendPattern($rotatingAdmin->mobile, $adminPattern, $adminParameters);
-        }
+        $this->orderAdminSmsService->sendAdminOrderSms($order, $rotatingAdmin);
     }
 
     /**

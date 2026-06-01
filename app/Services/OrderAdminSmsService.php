@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Classes\SMS;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
@@ -14,42 +15,71 @@ class OrderAdminSmsService
 
     public const MODE_ROTATING = 'rotating';
 
-    public const LAST_ADMIN_SETTING_KEY = 'order_sms:last_admin_id';
+    public const LAST_ROTATING_INDEX_KEY = 'order_sms:last_rotating_index';
 
     public function pickNextRotatingAdmin(): ?User
     {
-        $admins = User::getAdminsWithRotatingOrderSms()->values();
+        $admins = $this->getRotatingOnlyAdmins();
 
         if ($admins->isEmpty()) {
             return null;
         }
 
-        if ($admins->count() === 1) {
-            $next = $admins->first();
-        } else {
-            $lastId = (int) setting(self::LAST_ADMIN_SETTING_KEY, 0);
-            $currentIndex = $admins->search(fn (User $admin) => $admin->id === $lastId);
-
-            if ($currentIndex === false) {
-                $next = $admins->first();
-            } else {
-                $next = $admins->get(($currentIndex + 1) % $admins->count());
-            }
-        }
+        $lastIndex = (int) setting(self::LAST_ROTATING_INDEX_KEY, -1);
+        $nextIndex = ($lastIndex + 1) % $admins->count();
 
         Setting::query()->updateOrCreate(
-            ['key' => self::LAST_ADMIN_SETTING_KEY],
-            ['value' => (string) $next->id]
+            ['key' => self::LAST_ROTATING_INDEX_KEY],
+            ['value' => (string) $nextIndex]
         );
 
         forgetSettingsCache();
 
-        return $next;
+        return $admins->get($nextIndex);
+    }
+
+    public function getRotatingOnlyAdmins(): Collection
+    {
+        $alwaysIds = $this->getAlwaysAdmins()->pluck('id');
+
+        return User::getAdminsWithRotatingOrderSms()
+            ->reject(fn (User $admin) => $alwaysIds->contains($admin->id))
+            ->unique('id')
+            ->sortBy('id')
+            ->values();
     }
 
     public function getAlwaysAdmins(): Collection
     {
-        return User::getAdminsWithAlwaysOrderSms();
+        return User::getAdminsWithAlwaysOrderSms()->unique('id')->values();
+    }
+
+    public function sendAdminOrderSms(Order $order, ?User $rotatingAdmin): void
+    {
+        $parameters = $this->buildAdminSmsParameters($order);
+        $pattern = config('sms.patterns.order_created_admin');
+        $sentMobiles = [];
+
+        foreach ($this->getAlwaysAdmins() as $admin) {
+            if (in_array($admin->mobile, $sentMobiles, true)) {
+                continue;
+            }
+
+            SMS::sendPattern($admin->mobile, $pattern, $parameters, [
+                'user_id' => $admin->id,
+                'related' => $order,
+                'source' => 'OrderObserver::created',
+            ]);
+            $sentMobiles[] = $admin->mobile;
+        }
+
+        if ($rotatingAdmin && ! in_array($rotatingAdmin->mobile, $sentMobiles, true)) {
+            SMS::sendPattern($rotatingAdmin->mobile, $pattern, $parameters, [
+                'user_id' => $rotatingAdmin->id,
+                'related' => $order,
+                'source' => 'OrderObserver::created',
+            ]);
+        }
     }
 
     public function buildAdminSmsParameters(Order $order): array
@@ -64,6 +94,10 @@ class OrderAdminSmsService
             $this->smsParam(['GUEST-MOBILE', 'GUEST_MOBILE', 'guest_mobile'], $order->renter->mobile),
             $this->smsParam(['OWNER-NAME', 'OWNER_NAME', 'owner_name'], Str::limit($order->owner->full_name, 25, '')),
             $this->smsParam(['OWNER-MOBILE', 'OWNER_MOBILE', 'owner_mobile'], $order->owner->mobile),
+            $this->smsParam(
+                ['calendar_link', 'CALENDAR_LINK', 'CALENDAR-LINK'],
+                Str::limit($this->calendarEditUrl($order), 200, '')
+            ),
         );
     }
 
