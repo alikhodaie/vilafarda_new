@@ -163,7 +163,7 @@
                         @endcan
                     </li>
                 @endif
-                @if(auth()->user()->can('index', \App\Models\Newsletter::class) || auth()->user()->can('index', \App\Models\Withdraw::class) || auth()->user()->can('index', \App\Models\NewsletterSubscriber::class) || auth()->user()->can('index', \App\Models\Contact::class) || auth()->user()->can('index', \App\Models\Comment::class) || auth()->user()->can('index', \App\Models\Ticket::class) || auth()->user()->can('index', \App\Support\SmsTemplates::class))
+                @if(auth()->user()->can('index', \App\Models\Newsletter::class) || auth()->user()->can('index', \App\Models\Withdraw::class) || auth()->user()->can('index', \App\Models\NewsletterSubscriber::class) || auth()->user()->can('index', \App\Models\Contact::class) || auth()->user()->can('index', \App\Models\Comment::class) || auth()->user()->can('index', \App\Models\Ticket::class) || auth()->user()->can('index', \App\Support\SmsTemplates::class) || auth()->user()->can('index', \App\Models\SmsLog::class))
                     <li class="nav-item">
                         <!-- label-->
                         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
@@ -188,6 +188,14 @@
                                 <div class="d-flex align-items-center">
                                     <span class="nav-link-icon"><span class="fas fa-sms"></span></span>
                                     <span class="nav-link-text ps-1">{{ __('title.sms_templates') }}</span>
+                                </div>
+                            </a>
+                        @endcan
+                        @can('index', \App\Models\SmsLog::class)
+                            <a class="nav-link @if($active === 'sms-logs') active @endif" href="{{ route('admin.sms-logs.index') }}" role="button" aria-expanded="false">
+                                <div class="d-flex align-items-center">
+                                    <span class="nav-link-icon"><span class="fas fa-paper-plane"></span></span>
+                                    <span class="nav-link-text ps-1">{{ __('title.sms_logs') }}</span>
                                 </div>
                             </a>
                         @endcan

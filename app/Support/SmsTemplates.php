@@ -33,4 +33,13 @@ class SmsTemplates
     {
         return self::all()->groupBy('category');
     }
+
+    public static function titleForPatternId(string $patternId): ?string
+    {
+        $template = self::all()->first(
+            fn (array $template) => (string) ($template['pattern_id'] ?? '') === (string) $patternId
+        );
+
+        return $template['title'] ?? null;
+    }
 }

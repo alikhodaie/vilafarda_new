@@ -197,6 +197,7 @@ class PermissionTableSeeder extends Seeder
 
             # region SMS Templates
             ['name' => 'sms-templates:index', 'fa_name' => 'مشاهده قالب‌های پیامک', 'group' => 'sms', 'fa_group' => 'پیامک', 'guard_name' => 'web'],
+            ['name' => 'sms-logs:index', 'fa_name' => 'مشاهده لاگ پیامک‌ها', 'group' => 'sms', 'fa_group' => 'پیامک', 'guard_name' => 'web'],
             # endregion
 
             # region Discounts
@@ -216,6 +217,6 @@ class PermissionTableSeeder extends Seeder
             );
         }
 
-        Role::where('name', 'super-admin')->first()?->givePermissionTo('sms-templates:index');
+        Role::where('name', 'super-admin')->first()?->givePermissionTo(['sms-templates:index', 'sms-logs:index']);
     }
 }

@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\Newsletter\NewsletterSubscriberController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\SmsLogController;
 use App\Http\Controllers\Admin\SmsTemplateController;
 use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\Ticket\MessageController as AdminTicketMessageController;
@@ -508,6 +509,8 @@ Route::prefix('/admin')->name('admin.')->middleware(['auth', 'admin'])->group(fu
 
     # region SMS Templates
     Route::get('/sms-templates', [SmsTemplateController::class, 'index'])->name('sms-templates.index');
+    Route::get('/sms-logs', [SmsLogController::class, 'index'])->name('sms-logs.index');
+    Route::get('/sms-logs/{smsLog}', [SmsLogController::class, 'show'])->name('sms-logs.show');
     # endregion
 
     # region Discounts

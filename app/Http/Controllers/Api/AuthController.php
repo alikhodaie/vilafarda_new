@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Classes\SMS;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -12,7 +13,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Log;
-use GuzzleHttp\Client;
 
 class AuthController extends Controller
 {
@@ -58,29 +58,12 @@ class AuthController extends Controller
         Cache::put('otp_time_' . $phone, now(), now()->addMinutes(5));
 
         // Send SMS via sms.ir
-        try {
-            $client = new Client();
-            $apiKey = 'LlXbcNiUXH4qBivDHxOF7QofNUpTouBpk8BeTq6xnr0r4daI0DvplaYDvd8SfaDj';
-            $templateId = '120268';
-            $smsBody = [
-                'mobile' => $phone,
-                'templateId' => $templateId,
-                'parameters' => [
-                    [ 'name' => 'code', 'value' => $otp ]
-                ]
-            ];
-            $client->post('https://api.sms.ir/v1/send/verify', [
-                'headers' => [
-                    'Content-Type' => 'application/json',
-                    'Accept' => 'text/plain',
-                    'x-api-key' => $apiKey,
-                ],
-                'body' => json_encode($smsBody),
-                'timeout' => 10
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error sending SMS: ' . $e->getMessage());
-        }
+        SMS::sendPattern($phone, '120268', [
+            ['name' => 'code', 'value' => $otp],
+        ], [
+            'source' => 'AuthController::checkPhone',
+            'user_id' => $user?->id,
+        ]);
 
         return response()->json([
             'success' => true,

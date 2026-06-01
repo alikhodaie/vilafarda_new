@@ -17,6 +17,7 @@ use App\Models\Navbar;
 use App\Models\Order;
 use App\Models\Safety;
 use App\Models\Setting;
+use App\Models\SmsLog;
 use App\Models\Ticket;
 use App\Models\TicketMessage;
 use App\Models\User;
@@ -46,6 +47,7 @@ use App\Policies\User\UserPolicy;
 use App\Policies\VariablePolicy;
 use App\Policies\HostPayoutPolicy;
 use App\Policies\LandingPagePolicy;
+use App\Policies\SmsLogPolicy;
 use App\Policies\SmsTemplatePolicy;
 use App\Policies\WithdrawPolicy;
 use App\Support\SmsTemplates;
@@ -84,6 +86,7 @@ class AuthServiceProvider extends ServiceProvider
         Discount::class => DiscountPolicy::class,
         LandingPage::class => LandingPagePolicy::class,
         SmsTemplates::class => SmsTemplatePolicy::class,
+        SmsLog::class => SmsLogPolicy::class,
     ];
 
     /**
