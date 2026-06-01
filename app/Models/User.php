@@ -78,6 +78,7 @@ class User extends Authenticatable
     protected static function queryAdminsByOrderSmsMode(string $mode): Builder
     {
         return self::query()
+            ->admin()
             ->whereHas('roles', function ($roles) use ($mode) {
                 $roles->whereHas('permissions', function ($permissions) {
                     $permissions->where('name', 'orders:sms');
