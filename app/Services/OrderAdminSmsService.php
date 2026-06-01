@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class OrderAdminSmsService
@@ -17,6 +18,8 @@ class OrderAdminSmsService
 
     public const LAST_ROTATING_INDEX_KEY = 'order_sms:last_rotating_index';
 
+    public const LAST_ROTATING_COUNT_KEY = 'order_sms:last_rotating_count';
+
     public function pickNextRotatingAdmin(): ?User
     {
         $admins = $this->getRotatingOnlyAdmins();
@@ -25,17 +28,44 @@ class OrderAdminSmsService
             return null;
         }
 
-        $lastIndex = (int) setting(self::LAST_ROTATING_INDEX_KEY, -1);
-        $nextIndex = ($lastIndex + 1) % $admins->count();
+        if ($admins->count() === 1) {
+            return $admins->first();
+        }
 
-        Setting::query()->updateOrCreate(
-            ['key' => self::LAST_ROTATING_INDEX_KEY],
-            ['value' => (string) $nextIndex]
-        );
+        return DB::transaction(function () use ($admins) {
+            $setting = Setting::query()
+                ->where('key', self::LAST_ROTATING_INDEX_KEY)
+                ->lockForUpdate()
+                ->first();
 
-        forgetSettingsCache();
+            $countSetting = Setting::query()
+                ->where('key', self::LAST_ROTATING_COUNT_KEY)
+                ->lockForUpdate()
+                ->first();
 
-        return $admins->get($nextIndex);
+            $lastIndex = $setting ? (int) $setting->value : -1;
+            $storedCount = $countSetting ? (int) $countSetting->value : 0;
+
+            if ($storedCount !== $admins->count() || $lastIndex >= $admins->count()) {
+                $lastIndex = -1;
+            }
+
+            $nextIndex = ($lastIndex + 1) % $admins->count();
+
+            Setting::query()->updateOrCreate(
+                ['key' => self::LAST_ROTATING_INDEX_KEY],
+                ['value' => (string) $nextIndex]
+            );
+
+            Setting::query()->updateOrCreate(
+                ['key' => self::LAST_ROTATING_COUNT_KEY],
+                ['value' => (string) $admins->count()]
+            );
+
+            forgetSettingsCache();
+
+            return $admins->get($nextIndex);
+        });
     }
 
     public function getRotatingOnlyAdmins(): Collection

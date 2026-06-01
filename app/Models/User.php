@@ -63,16 +63,12 @@ class User extends Authenticatable
 
     public static function getAdminsWithAlwaysOrderSms(): Collection
     {
-        return cache()->rememberForever(self::ADMIN_ORDER_SMS_ALWAYS_CACHE_KEY, function () {
-            return self::queryAdminsByOrderSmsMode(OrderAdminSmsService::MODE_ALWAYS)->get();
-        });
+        return self::queryAdminsByOrderSmsMode(OrderAdminSmsService::MODE_ALWAYS)->get();
     }
 
     public static function getAdminsWithRotatingOrderSms(): Collection
     {
-        return cache()->rememberForever(self::ADMIN_ORDER_SMS_ROTATING_CACHE_KEY, function () {
-            return self::queryAdminsByOrderSmsMode(OrderAdminSmsService::MODE_ROTATING)->get();
-        });
+        return self::queryAdminsByOrderSmsMode(OrderAdminSmsService::MODE_ROTATING)->get();
     }
 
     protected static function queryAdminsByOrderSmsMode(string $mode): Builder
