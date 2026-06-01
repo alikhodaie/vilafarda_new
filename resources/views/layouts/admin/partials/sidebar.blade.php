@@ -191,14 +191,16 @@
                                 </div>
                             </a>
                         @endcan
-                        @can('index', \App\Models\SmsLog::class)
-                            <a class="nav-link @if($active === 'sms-logs') active @endif" href="{{ route('admin.sms-logs.index') }}" role="button" aria-expanded="false">
-                                <div class="d-flex align-items-center">
-                                    <span class="nav-link-icon"><span class="fas fa-paper-plane"></span></span>
-                                    <span class="nav-link-text ps-1">{{ __('title.sms_logs') }}</span>
-                                </div>
-                            </a>
-                        @endcan
+                        @if(Route::has('admin.sms-logs.index'))
+                            @can('index', \App\Models\SmsLog::class)
+                                <a class="nav-link @if($active === 'sms-logs') active @endif" href="{{ route('admin.sms-logs.index') }}" role="button" aria-expanded="false">
+                                    <div class="d-flex align-items-center">
+                                        <span class="nav-link-icon"><span class="fas fa-paper-plane"></span></span>
+                                        <span class="nav-link-text ps-1">{{ __('title.sms_logs') }}</span>
+                                    </div>
+                                </a>
+                            @endcan
+                        @endif
                         @can('index', \App\Models\Contact::class)
                             <!-- parent pages-->
                             <a class="nav-link @if($active === 'contacts') active @endif" href="{{ route('admin.contacts.index') }}" role="button" aria-expanded="false">
