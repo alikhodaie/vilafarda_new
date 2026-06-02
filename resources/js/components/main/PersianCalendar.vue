@@ -386,17 +386,10 @@ export default {
             this.$emit('dates-cleared');
         },
         isReservedDate(dateStr) {
-            if (!this.reservedDates || !this.reservedDates.length) {
-                return false;
-            }
-            const formatted = moment(dateStr).format('YYYY/MM/DD');
-            return this.reservedDates.some((d) => {
-                if (!d) {
-                    return false;
-                }
-                return moment(d).format('YYYY/MM/DD') === formatted
-                    || String(d).replace(/-/g, '/') === formatted;
-            });
+            return this.isDateInReservedList(dateStr, this.reservedDates);
+        },
+        isOrderBlockedDate(dateStr) {
+            return this.isDateInReservedList(dateStr, this.reservedDates);
         },
         hasCustomPrice(dateStr) {
             if (!this.customPrices) {
@@ -504,11 +497,13 @@ export default {
                 };
             }
 
+            const isBooked = this.isOrderBlockedDate(dateStr);
+
             return {
                 disabled: disabledForCheckIn,
                 checkoutBlocked: false,
                 checkoutAvailable: false,
-                available: !disabledForCheckIn,
+                available: !disabledForCheckIn && !isBooked,
             };
         },
         isSelected(dateStr) {
@@ -1842,11 +1837,11 @@ export default {
     color: #92400e;
 }
 
-.persian-calendar--stacked .calendar-day.reserved:not(.disabled) .day-content {
+.persian-calendar--stacked .calendar-day.reserved .day-content {
     background: #fef2f2;
 }
 
-.persian-calendar--stacked .calendar-day.reserved:not(.disabled) .day-content::after {
+.persian-calendar--stacked .calendar-day.reserved .day-content::after {
     content: 'پر';
     position: absolute;
     top: 2px;
@@ -1858,6 +1853,16 @@ export default {
     border-radius: 3px;
     padding: 0 3px;
     line-height: 1.3;
+}
+
+.persian-calendar--stacked .calendar-day.reserved.disabled {
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.persian-calendar--stacked .calendar-day.reserved.disabled .day-number,
+.persian-calendar--stacked .calendar-day.reserved.disabled .day-price {
+    color: #9ca3af;
 }
 
 .persian-calendar--stacked .calendar-day.custom-price:not(.reserved):not(.selected-multiple) .day-content {

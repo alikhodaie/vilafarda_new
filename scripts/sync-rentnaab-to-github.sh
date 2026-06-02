@@ -18,14 +18,20 @@ fi
 rm -f "$DST/.write-test"
 
 FILES=(
+  app/Exceptions/Handler.php
   app/Helpers/helpers.php
   app/Http/Controllers/Admin/SettingController.php
   app/Http/Controllers/Api/AuthController.php
+  app/Jobs/CancelUndeterminedOrders.php
+  app/Models/Order.php
   app/Services/IndexBannerVideoEncoder.php
   resources/views/admin/setting/pages/index-page.blade.php
   resources/views/main/auth/login-mobile.blade.php
   resources/js/components/admin/IndexBannerVideoUpload.vue
+  resources/js/components/main/PersianCalendar.vue
+  resources/js/components/main/ReserveHome.vue
   resources/js/src/compressUploadBannerVideo.js
+  resources/js/src/mixin.js
   public/js/mobile-login.js
   routes/web.php
   webpack.mix.js

@@ -153,32 +153,30 @@ Vue.mixin({
             return 1;
         },
 
-        isDateInDisabledList(dateValue, disableDates) {
-            if (!disableDates || !disableDates.length) {
+        isSameCalendarDayAsList(dateValue, listDates) {
+            if (!listDates || !listDates.length) {
                 return false;
             }
 
-            const formatted = moment(dateValue).format('YYYY/MM/DD');
+            const target = this.parseCalendarMoment(dateValue);
 
-            return disableDates.includes(formatted)
-                || disableDates.some((disabledDate) => moment(disabledDate).format('YYYY/MM/DD') === formatted);
+            if (!target) {
+                return false;
+            }
+
+            return listDates.some((listDate) => {
+                const parsed = this.parseCalendarMoment(listDate);
+
+                return parsed && target.isSame(parsed, 'day');
+            });
+        },
+
+        isDateInDisabledList(dateValue, disableDates) {
+            return this.isSameCalendarDayAsList(dateValue, disableDates);
         },
 
         isDateInReservedList(dateValue, reservedDates) {
-            if (!reservedDates || !reservedDates.length) {
-                return false;
-            }
-
-            const formatted = moment(dateValue).format('YYYY/MM/DD');
-
-            return reservedDates.some((reservedDate) => {
-                if (!reservedDate) {
-                    return false;
-                }
-
-                return moment(reservedDate).format('YYYY/MM/DD') === formatted
-                    || String(reservedDate).replace(/-/g, '/') === formatted;
-            });
+            return this.isSameCalendarDayAsList(dateValue, reservedDates);
         },
 
         isNightUnavailableForMinStay(dateValue, options = {}) {

@@ -473,16 +473,7 @@ class Order extends Model
             return false;
         }
 
-        $result = $this->cancel();
-
-        if ($result && $this->home) {
-            $this->home->custom_dates()->updateOrCreate(
-                ['date' => $this->start_at],
-                ['price' => 0]
-            );
-        }
-
-        return $result;
+        return $this->cancel();
     }
 
     public function cancelDueToPaymentTimeout(): bool

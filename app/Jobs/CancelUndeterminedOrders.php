@@ -34,10 +34,8 @@ class CancelUndeterminedOrders implements ShouldQueue
         $orders = Order::query()->where('status', Order::PENDING)
             ->where('created_at', '<', Order::getMaxPendingTime())->get();
 
-        foreach ($orders as $order){
-            $order->cancel();
-            // set custom reserved for that day
-            $order->home->custom_dates()->updateOrCreate(['date' => $order->start_at], ['price' => 0]);
+        foreach ($orders as $order) {
+            $order->cancelDueToHostTimeout();
         }
     }
 }
