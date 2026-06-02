@@ -719,11 +719,28 @@ export default {
                 form.submit();
             }
         },
+        parsePropArray(prop) {
+            if (Array.isArray(prop)) {
+                return prop;
+            }
+
+            if (typeof prop === 'string' && prop.trim()) {
+                try {
+                    const parsed = JSON.parse(prop);
+
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            return [];
+        },
         initializeDates() {
-            this.order_blocked_dates = [...(this.order_blocked_dates_prop || [])];
-            this.host_closed_dates = [...(this.host_closed_dates_prop || [])];
+            this.order_blocked_dates = this.parsePropArray(this.order_blocked_dates_prop);
+            this.host_closed_dates = this.parsePropArray(this.host_closed_dates_prop);
             this.disable_dates = [
-                ...(this.disable_dates_prop || []),
+                ...this.parsePropArray(this.disable_dates_prop),
                 ...this.host_closed_dates,
                 ...this.order_blocked_dates,
             ];
@@ -731,10 +748,28 @@ export default {
         },
         initializeCustomPrices() {
             const prices = {};
-            $.each(this.custom_prices_prop, (index, price) => {
-                // Convert date to YYYY-MM-DD format
-                const dateKey = moment(index).format('YYYY-MM-DD');
-                prices[dateKey] = price;
+            let source = this.custom_prices_prop;
+
+            if (typeof source === 'string' && source.trim()) {
+                try {
+                    source = JSON.parse(source);
+                } catch (error) {
+                    source = {};
+                }
+            }
+
+            if (!source || typeof source !== 'object') {
+                this.custom_prices = prices;
+                return;
+            }
+
+            $.each(source, (index, price) => {
+                const parsed = this.parseCalendarMoment(index);
+
+                if (parsed) {
+                    prices[parsed.format('YYYY-MM-DD')] = price;
+                    prices[parsed.format('YYYY/MM/DD')] = price;
+                }
             });
             this.custom_prices = prices;
         },

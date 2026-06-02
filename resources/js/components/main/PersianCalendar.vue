@@ -305,7 +305,7 @@ export default {
                 disabled: day.disabled,
                 'checkout-blocked': day.checkoutBlocked,
                 'checkout-available': day.checkoutAvailable,
-                available: day.available && !day.disabled,
+                available: day.available && !day.disabled && !day.isReserved && !day.isHostClosed,
                 selected: day.selected,
                 'selected-multiple': this.selectionMode === 'multiple' && day.selected,
                 reserved: day.isReserved,
@@ -1680,7 +1680,23 @@ export default {
     pointer-events: none;
 }
 
-.persian-calendar--stacked .calendar-day.disabled .day-number {
+.persian-calendar--stacked .calendar-day.disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.persian-calendar--stacked .calendar-day.disabled .day-content {
+    background: #f3f4f6 !important;
+    box-shadow: none !important;
+}
+
+.persian-calendar--stacked .calendar-day.host-closed.disabled .day-content {
+    background: #f3f4f6 !important;
+}
+
+.persian-calendar--stacked .calendar-day.disabled .day-number,
+.persian-calendar--stacked .calendar-day.disabled .day-price {
     color: #d1d5db;
 }
 

@@ -1712,7 +1712,7 @@
             max_guest="{{ $home->main_guest }}"
             max_extra_guest="{{ $home->extra_guest }}"
             price_per_surplus="{{ $home->price_per_surplus }}"
-            :custom_prices_prop="{{ $home->custom_prices->pluck('price', 'date') }}"
+            :custom_prices_prop='@json($home->custom_prices->pluck("price", "date"))'
             :custom_min_nights_prop='@json($home->custom_min_nights_map)'
             off="{{ $home->off }}"
             daily_off="{{ $home->daily_off }}"
