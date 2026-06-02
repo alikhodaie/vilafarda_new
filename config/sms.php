@@ -18,7 +18,7 @@ return [
             'guest_mobile' => 'GUEST-MOBILE',
             'owner_name' => 'OWNER-NAME',
             'owner_mobile' => 'OWNER-MOBILE',
-            'calendar_link' => 'calendar_link',
+            'calendar_link' => 'CALENDAR_LINK',
         ],
         'order_created_renter' => [
             'home_name' => 'HOME_NAME',
