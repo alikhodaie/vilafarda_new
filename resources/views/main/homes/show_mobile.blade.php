@@ -1723,11 +1723,11 @@
             fri_price="{{ $home->fri_price }}"
             min_date="{{ \App\Models\Order::getMinReserveDate() }}"
             max_date="{{ \App\Models\Order::getMaxReserveDate() }}"
-            :disable_dates_prop="{{ $home->disable_dates }}"
-            :order_blocked_dates_prop="{{ $home->disable_order_dates }}"
-            :host_closed_dates_prop="{{ $home->disable_custom_dates }}"
-            :fast_reserve_dates="{{ $home->fast_reserve_dates }}"
-            :prop_holidays="{{ \App\Classes\Date::holidayList() }}"
+            :disable_dates_prop='@json($home->disable_dates)'
+            :order_blocked_dates_prop='@json($home->disable_order_dates)'
+            :host_closed_dates_prop='@json($home->disable_custom_dates)'
+            :fast_reserve_dates='@json($home->fast_reserve_dates)'
+            :prop_holidays='@json(\App\Classes\Date::holidayList())'
             text_start_date="{{ __('text.start_date_text', ['hour' => \App\Models\Order::START_DATE_HOUR, 'time' => __('title.noon')]) }}"
             text_end_date="{{ __('text.end_date_text', ['hour' => \App\Models\Order::END_DATE_HOUR, 'time' => __('title.noon')]) }}"
         ></reserve-home>

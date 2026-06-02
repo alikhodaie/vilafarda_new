@@ -32,6 +32,8 @@ FILES=(
   resources/js/components/main/ReserveHome.vue
   resources/js/src/compressUploadBannerVideo.js
   resources/js/src/mixin.js
+  resources/views/main/homes/show.blade.php
+  resources/views/main/homes/show_mobile.blade.php
   public/js/mobile-login.js
   routes/web.php
   webpack.mix.js
