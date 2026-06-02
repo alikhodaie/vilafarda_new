@@ -125,7 +125,7 @@ class OrderAdminSmsService
             'guest_mobile' => $this->parameterValue($order->renter->mobile),
             'owner_name' => $this->parameterValue($order->owner->full_name),
             'owner_mobile' => $this->parameterValue($order->owner->mobile),
-            'calendar_link' => $this->parameterValue($this->shortCalendarLink($order)),
+            'calendar_link' => $this->parameterValue($this->calendarLink($order), 'calendar_link'),
         ];
 
         return $this->buildParametersFromMap($names, $values);
@@ -146,9 +146,9 @@ class OrderAdminSmsService
         return $this->buildParametersFromMap($names, $values);
     }
 
-    public function shortCalendarLink(Order $order): string
+    public function calendarLink(Order $order): string
     {
-        return route('admin.homes.date.show', $order->home_id, false);
+        return url(route('admin.homes.date.show', $order->home_id, false));
     }
 
     private function buildParametersFromMap(array $names, array $values): array
@@ -169,13 +169,19 @@ class OrderAdminSmsService
         return $parameters;
     }
 
-    private function parameterValue(?string $value): string
+    private function parameterValue(?string $value, ?string $key = null): string
     {
-        return Str::limit(trim((string) $value), $this->parameterMaxLength(), '');
+        return Str::limit(trim((string) $value), $this->parameterMaxLength($key), '');
     }
 
-    private function parameterMaxLength(): int
+    private function parameterMaxLength(?string $key = null): int
     {
+        if ($key === 'calendar_link') {
+            $max = (int) config('sms.calendar_link_max_length', 120);
+
+            return $max > 0 ? $max : 120;
+        }
+
         $max = (int) config('sms.parameter_max_length', 25);
 
         return $max > 0 ? $max : 25;
