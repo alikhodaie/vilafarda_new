@@ -309,6 +309,7 @@ export default {
                 selected: day.selected,
                 'selected-multiple': this.selectionMode === 'multiple' && day.selected,
                 reserved: day.isReserved,
+                'host-closed': day.isHostClosed && !day.isReserved,
                 'custom-price': day.hasCustomPrice,
                 'in-range': day.inRange,
                 'check-in': day.isCheckIn,
@@ -366,6 +367,7 @@ export default {
                     isCheckOut: this.isSameCalendarDay(dateStr, this.endDate),
                     isFriday: gregorianDate.getDay() === 5,
                     isReserved: this.isReservedDate(dateStr),
+                    isHostClosed: this.isHostClosed(dateStr),
                     hasCustomPrice: this.hasCustomPrice(dateStr)
                 };
 
@@ -416,21 +418,37 @@ export default {
             return this.isDateInDisabledList(dateStr, this.hostClosedDates);
         },
         isDisabledForCheckIn(dateStr, gregorianDate) {
+            const date = this.parseCalendarDate(dateStr);
+
+            if (!date || !date.isValid()) {
+                return true;
+            }
+
             if (this.minDate) {
-                const minMoment = moment(this.minDate);
-                if (moment(dateStr).isBefore(minMoment, 'day')) {
+                const minMoment = this.parseCalendarMoment(this.minDate);
+
+                if (minMoment && date.isBefore(minMoment, 'day')) {
                     return true;
                 }
             }
 
             if (this.maxDate) {
-                const maxMoment = moment(this.maxDate);
-                if (moment(dateStr).isAfter(maxMoment, 'day')) {
+                const maxMoment = this.parseCalendarMoment(this.maxDate);
+
+                if (maxMoment && date.isAfter(maxMoment, 'day')) {
                     return true;
                 }
             }
 
-            return this.isDateInDisabledList(dateStr, this.disableDates);
+            if (this.isDateInDisabledList(dateStr, this.disableDates)) {
+                return true;
+            }
+
+            if (this.isDateInDisabledList(dateStr, this.hostClosedDates)) {
+                return true;
+            }
+
+            return false;
         },
         hasBlockedStayNightsBetween(startDateStr, endDateStr) {
             const start = this.parseCalendarDate(startDateStr);
@@ -1835,6 +1853,11 @@ export default {
 .persian-calendar--stacked .calendar-day.selected-multiple .day-number,
 .persian-calendar--stacked .calendar-day.selected-multiple .day-price {
     color: #92400e;
+}
+
+.persian-calendar--stacked .calendar-day.host-closed.disabled .day-number,
+.persian-calendar--stacked .calendar-day.host-closed.disabled .day-price {
+    color: #d1d5db;
 }
 
 .persian-calendar--stacked .calendar-day.reserved .day-content {

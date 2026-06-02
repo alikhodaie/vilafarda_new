@@ -720,9 +720,13 @@ export default {
             }
         },
         initializeDates() {
-            this.disable_dates = [...(this.disable_dates_prop || [])];
             this.order_blocked_dates = [...(this.order_blocked_dates_prop || [])];
             this.host_closed_dates = [...(this.host_closed_dates_prop || [])];
+            this.disable_dates = [
+                ...(this.disable_dates_prop || []),
+                ...this.host_closed_dates,
+                ...this.order_blocked_dates,
+            ];
             this.disable_end_dates = [...this.disable_dates];
         },
         initializeCustomPrices() {
