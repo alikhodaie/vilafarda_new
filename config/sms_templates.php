@@ -28,6 +28,7 @@ return [
         'source' => 'OrderObserver::created',
         'category' => 'orders',
         'parameters' => ['ID', 'COUNT', 'START_DATE', 'END_DATE', 'AMOUNT', 'GUEST_NAME', 'GUEST_MOBILE', 'OWNER_NAME', 'OWNER_MOBILE', 'CALENDAR_LINK'],
+        'description' => 'لینک تقویم: در متن قالب ثابت بنویسید https://vilafarda.com/#CALENDAR_LINK# — مقدار ارسالی h/شناسه_اقامتگاه است (حداکثر ۲۵ کاراکتر).',
     ],
     'order_awaiting_payment' => [
         'pattern_id' => '328688',

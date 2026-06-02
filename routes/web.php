@@ -336,6 +336,14 @@ Route::prefix('/dashboard')->name('dashboard.')->middleware(['auth', 'detect.mob
 });
 # endregion
 
+# لینک کوتاه تقویم ادمین در پیامک (h/123 → تقویم همان اقامتگاه)
+Route::get('/h/{home}', function (int $home) {
+    return redirect()->route('admin.homes.date.show', $home);
+})
+    ->where('home', '[0-9]+')
+    ->middleware(['web', 'auth', 'admin'])
+    ->name('admin.homes.calendar.short');
+
 # region Admin
 Route::prefix('/admin')->name('admin.')->middleware(['auth', 'admin'])->group(function (){
     Route::get('/', [AdminMainController::class, 'index'])->name('index');

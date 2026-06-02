@@ -27,5 +27,4 @@ return [
         ],
     ],
     'parameter_max_length' => (int) env('SMS_PARAMETER_MAX_LENGTH', 25),
-    'calendar_link_max_length' => (int) env('SMS_CALENDAR_LINK_MAX_LENGTH', 120),
 ];

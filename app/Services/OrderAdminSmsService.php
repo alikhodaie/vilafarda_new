@@ -125,7 +125,7 @@ class OrderAdminSmsService
             'guest_mobile' => $this->parameterValue($order->renter->mobile),
             'owner_name' => $this->parameterValue($order->owner->full_name),
             'owner_mobile' => $this->parameterValue($order->owner->mobile),
-            'calendar_link' => $this->parameterValue($this->calendarLink($order), 'calendar_link'),
+            'calendar_link' => $this->parameterValue($this->calendarLink($order)),
         ];
 
         return $this->buildParametersFromMap($names, $values);
@@ -146,9 +146,13 @@ class OrderAdminSmsService
         return $this->buildParametersFromMap($names, $values);
     }
 
+    /**
+     * مسیر کوتاه برای قالب sms.ir (حداکثر ۲۵ کاراکتر برای هر پارامتر).
+     * دامنه را در متن قالب ثابت بگذارید: https://vilafarda.com/#CALENDAR_LINK#
+     */
     public function calendarLink(Order $order): string
     {
-        return url(route('admin.homes.date.show', $order->home_id, false));
+        return 'h/'.$order->home_id;
     }
 
     private function buildParametersFromMap(array $names, array $values): array
@@ -169,19 +173,13 @@ class OrderAdminSmsService
         return $parameters;
     }
 
-    private function parameterValue(?string $value, ?string $key = null): string
+    private function parameterValue(?string $value): string
     {
-        return Str::limit(trim((string) $value), $this->parameterMaxLength($key), '');
+        return Str::limit(trim((string) $value), $this->parameterMaxLength(), '');
     }
 
-    private function parameterMaxLength(?string $key = null): int
+    private function parameterMaxLength(): int
     {
-        if ($key === 'calendar_link') {
-            $max = (int) config('sms.calendar_link_max_length', 120);
-
-            return $max > 0 ? $max : 120;
-        }
-
         $max = (int) config('sms.parameter_max_length', 25);
 
         return $max > 0 ? $max : 25;
