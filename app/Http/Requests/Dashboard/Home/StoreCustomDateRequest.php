@@ -92,15 +92,38 @@ class StoreCustomDateRequest extends FormRequest
         ];
     }
 
+    protected function isHostCalendarRequest(): bool
+    {
+        $home = $this->route('home');
+
+        return $home
+            && $this->user()
+            && (int) $this->user()->id === (int) $home->user_id;
+    }
+
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            /** @var \App\Models\Home $home */
+            $home = $this->route('home');
+
+            if ($this->isHostCalendarRequest()) {
+                foreach ($this->input('dates', []) as $date) {
+                    if ($home->hasActiveOrderOnCalendarDay($date)) {
+                        $validator->errors()->add(
+                            'dates',
+                            __('text.host_cannot_edit_booked_date', [
+                                'date' => persianDate($home->resolveCalendarDayCarbon($date))->format('Y/m/d'),
+                            ])
+                        );
+                    }
+                }
+            }
+
             if ($this->input('is_active') === 'false' || (int) $this->input('min_nights', 1) <= 1) {
                 return;
             }
 
-            /** @var \App\Models\Home $home */
-            $home = $this->route('home');
             $minNights = (int) $this->input('min_nights');
 
             foreach ($this->input('dates', []) as $date) {
@@ -110,7 +133,8 @@ class StoreCustomDateRequest extends FormRequest
                     continue;
                 }
 
-                if (in_array($explanation['reason'], ['host_closed_checkin', 'order_checkin'], true)) {
+                if ($this->isHostCalendarRequest()
+                    && in_array($explanation['reason'], ['host_closed_checkin', 'order_checkin'], true)) {
                     $validator->errors()->add('min_nights', $explanation['message']);
                 }
             }

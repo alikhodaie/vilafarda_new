@@ -27,4 +27,21 @@ class DestroyCustomDateRequest extends FormRequest
             'date' => ['required', 'date_format:Y/m/d'],
         ];
     }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            /** @var \App\Models\Home $home */
+            $home = $this->route('home');
+
+            if ($home->hasActiveOrderOnCalendarDay($this->input('date'))) {
+                $validator->errors()->add(
+                    'date',
+                    __('text.host_cannot_edit_booked_date', [
+                        'date' => persianDate($home->resolveCalendarDayCarbon($this->input('date')))->format('Y/m/d'),
+                    ])
+                );
+            }
+        });
+    }
 }

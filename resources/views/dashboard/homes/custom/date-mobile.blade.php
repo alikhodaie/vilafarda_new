@@ -27,6 +27,7 @@
 
                 <div class="home-calendar-mobile__picker">
                     <custom-date
+                        calendar_audience="host"
                         stacked_calendar="true"
                         max_date_prop="{{ Order::getMaxReserveDate() }}"
                         home_edit_url="{{ route('dashboard.homes.edit', $home) }}"
@@ -42,10 +43,10 @@
                         fri_price="{{ $home->fri_price }}"
                         min_date="{{ Order::getMinReserveDate() }}"
                         :all_custom_dates='@json($home->custom_dates)'
-                        :custom_dates="{{ $home->disable_custom_dates }}"
-                        :custom_prices_prop="{{ $home->custom_prices->pluck('price', 'date') }}"
+                        :order_blocked_dates_prop='@json($home->disable_order_dates)'
+                        :host_closed_dates_prop='@json($home->disable_custom_dates)'
+                        :custom_prices_prop='@json($home->custom_prices->pluck("price", "date"))'
                         :custom_min_nights_prop='@json($home->custom_min_nights_map)'
-                        :disable_dates_prop="{{ $home->disable_order_dates }}"
                         :holidays_prop="{{ \App\Classes\Date::holidayList() }}"
                         text_submit="@lang('title.submit')"
                         button_cancel_text="@lang('title.cancel')"
@@ -68,6 +69,7 @@
                         text_min_nights_blocked_order_night="@lang('text.min_nights_blocked_order_night')"
                         text_min_nights_blocked_host_closed_checkin="@lang('text.min_nights_blocked_host_closed_checkin')"
                         text_min_nights_blocked_order_checkin="@lang('text.min_nights_blocked_order_checkin')"
+                        text_host_cannot_select_booked_date="@lang('text.host_cannot_select_booked_date')"
                         text_min_nights_blocked_max_date="@lang('text.min_nights_blocked_max_date')"
                         text_min_nights_saved_with_limits="@lang('text.min_nights_saved_with_limits')"
                     ></custom-date>

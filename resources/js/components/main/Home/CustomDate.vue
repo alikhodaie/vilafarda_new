@@ -18,8 +18,11 @@
                     :selected-dates="selectedDates"
                     :min-date="min_date"
                     :max-date="max_date"
-                    :disable-dates="disable_dates"
-                    :reserved-dates="reserved_dates"
+                    :calendar-audience="calendarAudience"
+                    :order-blocked-dates="order_blocked_dates"
+                    :host-closed-dates="host_closed_dates"
+                    :disable-dates="host_closed_dates"
+                    :reserved-dates="order_blocked_dates"
                     :custom-prices="custom_prices_map"
                     :custom-min-nights="custom_min_nights"
                     :holidays="holidays"
@@ -272,7 +275,8 @@ import moment from "moment-jalaali";
 
 export default {
     name: "CustomDate",
-    props: ['min_date', 'max_date_prop', 'disable_dates_prop', 'holidays_prop', 'date_name', 'text_submit', 'custom_dates',
+    props: ['min_date', 'max_date_prop', 'disable_dates_prop', 'order_blocked_dates_prop', 'host_closed_dates_prop',
+            'calendar_audience', 'holidays_prop', 'date_name', 'text_submit', 'custom_dates',
             'week_price', 'wed_price', 'thu_price', 'fri_price', 'price_name', 'csrf', 'route', 'all_custom_dates',
             'text_set_custom_price', 'text_set_custom_reserve', 'button_cancel_text', 'custom_prices_prop', 'select_range_days',
             'text_delete_changes', 'placeholder', 'text_edit', 'text_remove_selected', 'text_day_selected', 'text_price',
@@ -280,7 +284,7 @@ export default {
             'text_price_set_based_on_selected_first_date', 'text_percentage', 'text_no_off', 'stacked_calendar', 'home_edit_url', 'custom_min_nights_prop',
             'text_min_nights_warning_intro', 'text_min_nights_confirm_save', 'text_min_nights_blocked_order_night',
             'text_min_nights_blocked_host_closed_checkin', 'text_min_nights_blocked_order_checkin',
-            'text_min_nights_blocked_max_date', 'text_min_nights_saved_with_limits'],
+            'text_min_nights_blocked_max_date', 'text_min_nights_saved_with_limits', 'text_host_cannot_select_booked_date'],
     data(){
         return {
             max_min_nights: 30,
@@ -290,6 +294,8 @@ export default {
             off_percentages: [null, 10, 20, 25, 50],
             holidays: [],
             disable_dates: [],
+            order_blocked_dates: [],
+            host_closed_dates: [],
             reserved_dates: [],
             custom_prices: [],
             custom_prices_map: {},
@@ -314,6 +320,11 @@ export default {
                 || this.stacked_calendar === 'true'
                 || this.stacked_calendar === 1
                 || this.stacked_calendar === '1';
+        },
+        calendarAudience() {
+            const audience = String(this.calendar_audience || 'host').trim().toLowerCase();
+
+            return ['admin', 'host', 'guest'].includes(audience) ? audience : 'host';
         },
         hasSelection() {
             return this.selectedDates.length > 0;
@@ -359,9 +370,9 @@ export default {
         minNightsCheckOptions() {
             return {
                 maxDate: this.max_date,
-                disableDates: [...this.disable_dates, ...this.reserved_dates],
-                reservedDates: this.reserved_dates,
-                orderBlockedDates: this.disable_dates,
+                disableDates: [...this.order_blocked_dates, ...this.host_closed_dates],
+                reservedDates: this.host_closed_dates,
+                orderBlockedDates: this.order_blocked_dates,
                 messages: {
                     order_night: this.text_min_nights_blocked_order_night || '',
                     host_closed_checkin: this.text_min_nights_blocked_host_closed_checkin || '',
@@ -404,27 +415,30 @@ export default {
     created() {
         this.max_date = this.max_date_prop || moment().add(8, 'month').format('YYYY-MM-DD');
 
-        const dates = [];
-        $.each(this.disable_dates_prop, function( index, date ) {
-            dates.push(date)
-        });
-        this.disable_dates = dates;
+        const orderBlockedSource = this.order_blocked_dates_prop ?? this.disable_dates_prop;
+        const hostClosedSource = this.host_closed_dates_prop ?? this.custom_dates;
 
-        const reserved = [];
-        if (typeof this.custom_dates === 'object' && this.custom_dates !== null) {
-            Object.values(this.custom_dates).forEach((date) => reserved.push(date));
-        } else if (Array.isArray(this.custom_dates)) {
-            this.custom_dates.forEach((date) => reserved.push(date));
-        }
-        this.reserved_dates = reserved;
+        this.syncCalendarDateProps();
 
         const prices = {};
-        $.each(this.custom_prices_prop, function( index, price ) {
-            prices[new Date(index)] = price;
-            prices[moment(index).format('YYYY-MM-DD')] = price;
+        const priceSource = this.custom_prices_prop && typeof this.custom_prices_prop === 'object'
+            ? this.custom_prices_prop
+            : {};
+
+        Object.keys(priceSource).forEach((index) => {
+            if (/^\d{1,2}$/.test(String(index))) {
+                return;
+            }
+
+            const parsed = this.parseCalendarMoment(index);
+
+            if (parsed) {
+                prices[parsed.format('YYYY-MM-DD')] = priceSource[index];
+                prices[parsed.format('YYYY/MM/DD')] = priceSource[index];
+            }
         });
         this.custom_prices = prices;
-        this.custom_prices_map = { ...this.custom_prices_prop };
+        this.custom_prices_map = { ...priceSource };
 
         this.custom_min_nights = this.buildCustomMinNightsMap(
             this.custom_min_nights_prop,
@@ -477,6 +491,15 @@ export default {
         }
     },
     methods: {
+        syncCalendarDateProps() {
+            const orderBlockedSource = this.order_blocked_dates_prop ?? this.disable_dates_prop;
+            const hostClosedSource = this.host_closed_dates_prop ?? this.custom_dates;
+
+            this.order_blocked_dates = this.normalizePropDateList(orderBlockedSource);
+            this.host_closed_dates = this.normalizePropDateList(hostClosedSource);
+            this.disable_dates = [...this.order_blocked_dates, ...this.host_closed_dates];
+            this.reserved_dates = this.order_blocked_dates;
+        },
         toPersianNum(num) {
             const digits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
             return String(num).replace(/\d/g, (d) => digits[parseInt(d, 10)]);
@@ -750,12 +773,31 @@ export default {
             this.min_nights = Math.max(1, parseInt(this.min_nights, 10) || 1);
             this.syncCustomMinNightsForSelection();
 
+            if (this.calendarAudience === 'host') {
+                const bookedSelections = this.selectedDates.filter((dateValue) => (
+                    this.isDateInDisabledList(dateValue, this.order_blocked_dates)
+                ));
+
+                if (bookedSelections.length) {
+                    event.preventDefault();
+                    const labels = bookedSelections.map((dateValue) => this.formatJalaliDateLabel(dateValue)).join('، ');
+                    const message = (this.text_host_cannot_select_booked_date || '')
+                        .replace(':dates', labels);
+
+                    this.$root.showAlert(message || labels, 'error');
+                    return false;
+                }
+            }
+
             if (!this.is_active || this.min_nights <= 1) {
                 return true;
             }
 
             const issues = this.getMinNightsIssuesForSelection();
-            const blocking = issues.filter((issue) => ['host_closed_checkin', 'order_checkin'].includes(issue.code));
+            const blockingCodes = this.calendarAudience === 'host'
+                ? ['host_closed_checkin', 'order_checkin']
+                : [];
+            const blocking = issues.filter((issue) => blockingCodes.includes(issue.code));
 
             if (blocking.length) {
                 event.preventDefault();

@@ -16,6 +16,8 @@ return [
     'min_nights_blocked_order_night' => 'برای ورود در :checkin_date، شب :blocking_date رزرو شده است؛ مهمان حداکثر :effective شب می‌تواند رزرو کند (شما :configured شب تنظیم کرده‌اید).',
     'min_nights_blocked_host_closed_checkin' => 'تاریخ :date در تقویم بسته (پر) است؛ امکان ورود و اعمال حداقل چندشبه وجود ندارد.',
     'min_nights_blocked_order_checkin' => 'تاریخ :date قبلاً رزرو شده است؛ امکان ورود در این روز وجود ندارد.',
+    'host_cannot_edit_booked_date' => 'تاریخ :date دارای رزرو فعال است و امکان تغییر توسط میزبان وجود ندارد.',
+    'host_cannot_select_booked_date' => 'روزهای دارای رزرو فعال (:dates) قابل انتخاب نیستند.',
     'min_nights_blocked_max_date' => 'از تاریخ :date به بعد به انتهای بازه رزرو رسیده‌اید و :configured شب متوالی ممکن نیست.',
     'min_nights_saved_with_limits' => 'تنظیمات ذخیره شد. توجه: برای برخی تاریخ‌ها مهمان نمی‌تواند حداقل شب تنظیم‌شده را کامل رزرو کند.',
     'inventory_not_enough' => 'موجودی حساب کافی نیست!',

@@ -22,12 +22,20 @@ FILES=(
   app/Helpers/helpers.php
   app/Http/Controllers/Admin/SettingController.php
   app/Http/Controllers/Api/AuthController.php
+  app/Http/Requests/Dashboard/Home/DestroyCustomDateRequest.php
+  app/Http/Requests/Dashboard/Home/StoreCustomDateRequest.php
   app/Jobs/CancelUndeterminedOrders.php
+  app/Models/Home.php
   app/Models/Order.php
   app/Services/IndexBannerVideoEncoder.php
+  resources/lang/fa/text.php
+  resources/views/admin/homes/date.blade.php
   resources/views/admin/setting/pages/index-page.blade.php
+  resources/views/dashboard/homes/custom/date-mobile.blade.php
+  resources/views/dashboard/homes/custom/date.blade.php
   resources/views/main/auth/login-mobile.blade.php
   resources/js/components/admin/IndexBannerVideoUpload.vue
+  resources/js/components/main/Home/CustomDate.vue
   resources/js/components/main/PersianCalendar.vue
   resources/js/components/main/ReserveHome.vue
   resources/js/src/compressUploadBannerVideo.js

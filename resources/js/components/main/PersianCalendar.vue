@@ -1,5 +1,10 @@
 <template>
-    <div class="persian-calendar" :class="{ 'persian-calendar--stacked': stackedMonths }">
+    <div
+        class="persian-calendar"
+        :class="{
+            'persian-calendar--stacked': stackedMonths,
+            'persian-calendar--manage': isManageCalendar(),
+        }">
         <template v-if="stackedMonths">
             <div v-if="selectionMode === 'range'" class="calendar-range-header">
                 <div class="calendar-range-cell" :class="{ 'is-active': !endDate && startDate, 'has-value': !!startDate }">
@@ -182,9 +187,17 @@ export default {
             type: Array,
             default: () => []
         },
+        orderBlockedDates: {
+            type: Array,
+            default: () => []
+        },
         hostClosedDates: {
             type: Array,
             default: () => []
+        },
+        calendarAudience: {
+            type: String,
+            default: 'guest',
         },
         minEndDate: {
             type: String,
@@ -206,8 +219,45 @@ export default {
             monthNames: [
                 'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
                 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
-            ]
+            ],
+            _disabledDaySet: null,
+            _hostClosedDaySet: null,
+            _orderBlockedDaySet: null,
+            _reservedDaySet: null,
+            _blockedListCache: null,
         }
+    },
+    watch: {
+        disableDates: {
+            handler() {
+                this.refreshBlockedDaySets();
+            },
+            deep: true,
+        },
+        hostClosedDates: {
+            handler() {
+                this.refreshBlockedDaySets();
+            },
+            deep: true,
+        },
+        reservedDates: {
+            handler() {
+                this.refreshBlockedDaySets();
+            },
+            deep: true,
+        },
+        orderBlockedDates: {
+            handler() {
+                this.refreshBlockedDaySets();
+            },
+            deep: true,
+        },
+        calendarAudience() {
+            this.refreshBlockedDaySets();
+        },
+    },
+    created() {
+        this.refreshBlockedDaySets();
     },
     computed: {
         currentYear() {
@@ -223,17 +273,24 @@ export default {
             return parseInt(this.currentDate.format('jYYYY'));
         },
         calendarDays() {
-            const selectionKey = `${this.startDate}|${this.endDate}|${this.minEndDate}`;
-            void selectionKey;
+            void this.selectionStateKey;
             return this.buildDaysForMonth(this.currentYearNum, this.currentMonth);
+        },
+        selectionStateKey() {
+            if (this.selectionMode === 'multiple') {
+                return Array.isArray(this.selectedDates) ? this.selectedDates.join('|') : '';
+            }
+
+            return `${this.startDate}|${this.endDate}|${this.minEndDate}`;
         },
         stackedMonthList() {
             if (!this.stackedMonths || !this.minDate || !this.maxDate) {
                 return [];
             }
 
-            // Ensure checkout selection state triggers month grid refresh.
-            const selectionKey = `${this.startDate}|${this.endDate}|${this.minEndDate}`;
+            if (this.selectionMode === 'range') {
+                void this.selectionStateKey;
+            }
 
             const months = [];
             let cursor = moment(this.minDate).startOf('jMonth');
@@ -243,7 +300,7 @@ export default {
                 const jYear = parseInt(cursor.format('jYYYY'), 10);
                 const jMonth = parseInt(cursor.format('jM'), 10);
                 months.push({
-                    key: `${cursor.format('jYYYY-jMM')}-${selectionKey}`,
+                    key: cursor.format('jYYYY-jMM'),
                     title: `${this.monthNames[jMonth - 1]} ${this.toPersianNum(cursor.format('jYYYY'))}`,
                     days: this.buildDaysForMonth(jYear, jMonth)
                 });
@@ -272,6 +329,85 @@ export default {
         }
     },
     methods: {
+        refreshBlockedDaySets() {
+            this._blockedListCache = new Map();
+            this._hostClosedDaySet = this.buildBlockedDaySet([this.hostClosedDates]);
+            const orderSources = this.normalizePropDateList(this.orderBlockedDates).length
+                ? this.orderBlockedDates
+                : this.reservedDates;
+            this._orderBlockedDaySet = this.buildBlockedDaySet([orderSources]);
+            this._disabledDaySet = this.buildBlockedDaySet([
+                this.disableDates,
+                this.hostClosedDates,
+            ]);
+            this._reservedDaySet = this._orderBlockedDaySet;
+            this.rememberBlockedListCache(this.disableDates, this._disabledDaySet);
+            this.rememberBlockedListCache(this.hostClosedDates, this._hostClosedDaySet);
+            this.rememberBlockedListCache(orderSources, this._orderBlockedDaySet);
+            this.rememberBlockedListCache(this.reservedDates, this._orderBlockedDaySet);
+        },
+        isManageCalendar() {
+            return this.calendarAudience === 'admin' || this.calendarAudience === 'host';
+        },
+        isOutsideSelectableRange(dateStr) {
+            const date = this.parseCalendarDate(dateStr);
+
+            if (!date || !date.isValid()) {
+                return true;
+            }
+
+            if (this.minDate) {
+                const minMoment = this.parseCalendarMoment(this.minDate);
+
+                if (minMoment && date.isBefore(minMoment, 'day')) {
+                    return true;
+                }
+            }
+
+            if (this.maxDate) {
+                const maxMoment = this.parseCalendarMoment(this.maxDate);
+
+                if (maxMoment && date.isAfter(maxMoment, 'day')) {
+                    return true;
+                }
+            }
+
+            return false;
+        },
+        isOrderBlockedDay(dateStr) {
+            const target = this.parseCalendarMoment(dateStr);
+
+            return !!(target && this._orderBlockedDaySet && this._orderBlockedDaySet.has(target.clone().startOf('day').valueOf()));
+        },
+        canSelectDayInCalendar(day) {
+            if (!day || day.empty) {
+                return false;
+            }
+
+            if (this.isOutsideSelectableRange(day.date)) {
+                return false;
+            }
+
+            if (this.calendarAudience === 'admin') {
+                return true;
+            }
+
+            if (this.calendarAudience === 'host') {
+                return !this.isOrderBlockedDay(day.date);
+            }
+
+            return !day.disabled && day.available;
+        },
+        isBlockedDay(dateStr) {
+            const target = this.parseCalendarMoment(dateStr);
+
+            return !!(target && this._disabledDaySet && this._disabledDaySet.has(target.clone().startOf('day').valueOf()));
+        },
+        isReservedDay(dateStr) {
+            const target = this.parseCalendarMoment(dateStr);
+
+            return !!(target && this._reservedDaySet && this._reservedDaySet.has(target.clone().startOf('day').valueOf()));
+        },
         toPersianNum(num) {
             const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
             return num.toString().replace(/\d/g, (digit) => persianDigits[parseInt(digit)]);
@@ -301,15 +437,26 @@ export default {
                 return { empty: true };
             }
 
+            const selected = this.isSelected(day.date);
+
+            const isGuest = this.calendarAudience === 'guest';
+            const isBooked = !!(day.isOrderBlocked || day.isReserved);
+            const isHostClosedOnly = day.isHostClosed && !isBooked;
+            const guestUnavailable = isGuest && (day.disabled || isBooked || isHostClosedOnly);
+            const showAsAvailable = this.isManageCalendar()
+                ? day.available && !isBooked
+                : !guestUnavailable && day.available;
+
             return {
-                disabled: day.disabled,
+                disabled: isGuest ? guestUnavailable : day.disabled,
                 'checkout-blocked': day.checkoutBlocked,
                 'checkout-available': day.checkoutAvailable,
-                available: day.available && !day.disabled && !day.isReserved && !day.isHostClosed,
-                selected: day.selected,
-                'selected-multiple': this.selectionMode === 'multiple' && day.selected,
-                reserved: day.isReserved,
-                'host-closed': day.isHostClosed && !day.isReserved,
+                available: showAsAvailable,
+                selected,
+                'selected-multiple': this.selectionMode === 'multiple' && selected,
+                reserved: !isGuest && isBooked,
+                booked: !isGuest && isBooked,
+                'host-closed': !isGuest && isHostClosedOnly,
                 'custom-price': day.hasCustomPrice,
                 'in-range': day.inRange,
                 'check-in': day.isCheckIn,
@@ -366,7 +513,8 @@ export default {
                     isCheckIn: this.isSameCalendarDay(dateStr, this.startDate),
                     isCheckOut: this.isSameCalendarDay(dateStr, this.endDate),
                     isFriday: gregorianDate.getDay() === 5,
-                    isReserved: this.isReservedDate(dateStr),
+                    isOrderBlocked: this.isOrderBlockedDay(dateStr),
+                    isReserved: this.isOrderBlockedDay(dateStr),
                     isHostClosed: this.isHostClosed(dateStr),
                     hasCustomPrice: this.hasCustomPrice(dateStr)
                 };
@@ -388,10 +536,10 @@ export default {
             this.$emit('dates-cleared');
         },
         isReservedDate(dateStr) {
-            return this.isDateInReservedList(dateStr, this.reservedDates);
+            return this.isOrderBlockedDay(dateStr);
         },
         isOrderBlockedDate(dateStr) {
-            return this.isDateInReservedList(dateStr, this.reservedDates);
+            return this.isOrderBlockedDay(dateStr);
         },
         hasCustomPrice(dateStr) {
             if (!this.customPrices) {
@@ -415,7 +563,9 @@ export default {
             return !!(this.startDate && !this.endDate && this.selectionMode === 'range');
         },
         isHostClosed(dateStr) {
-            return this.isDateInDisabledList(dateStr, this.hostClosedDates);
+            const target = this.parseCalendarMoment(dateStr);
+
+            return !!(target && this._hostClosedDaySet && this._hostClosedDaySet.has(target.clone().startOf('day').valueOf()));
         },
         isDisabledForCheckIn(dateStr, gregorianDate) {
             const date = this.parseCalendarDate(dateStr);
@@ -440,11 +590,7 @@ export default {
                 }
             }
 
-            if (this.isDateInDisabledList(dateStr, this.disableDates)) {
-                return true;
-            }
-
-            if (this.isDateInDisabledList(dateStr, this.hostClosedDates)) {
+            if (this.isBlockedDay(dateStr)) {
                 return true;
             }
 
@@ -461,7 +607,7 @@ export default {
             let current = start.clone().startOf('day');
 
             while (current.isBefore(end, 'day')) {
-                if (this.isDateInDisabledList(current.format('YYYY/MM/DD'), this.disableDates)) {
+                if (this.isBlockedDay(current.format('YYYY/MM/DD'))) {
                     return true;
                 }
                 current.add(1, 'day');
@@ -496,6 +642,26 @@ export default {
             return !this.hasBlockedStayNightsBetween(this.startDate, dateStr);
         },
         resolveDayState(dateStr, gregorianDate) {
+            if (this.selectionMode === 'multiple' && this.isManageCalendar()) {
+                const orderBlocked = this.isOrderBlockedDay(dateStr);
+                const hostClosed = this.isHostClosed(dateStr);
+                const outOfRange = this.isOutsideSelectableRange(dateStr);
+                let canSelect = !outOfRange;
+
+                if (this.calendarAudience === 'host' && orderBlocked) {
+                    canSelect = false;
+                }
+
+                return {
+                    disabled: !canSelect,
+                    checkoutBlocked: false,
+                    checkoutAvailable: false,
+                    available: canSelect,
+                    isOrderBlocked: orderBlocked,
+                    isHostClosed: hostClosed,
+                };
+            }
+
             const disabledForCheckIn = this.isDisabledForCheckIn(dateStr, gregorianDate);
             const isCheckIn = this.isSameCalendarDay(dateStr, this.startDate);
 
@@ -515,13 +681,16 @@ export default {
                 };
             }
 
-            const isBooked = this.isOrderBlockedDate(dateStr);
+            const isBooked = this.isOrderBlockedDay(dateStr);
+            const hostClosed = this.isHostClosed(dateStr);
 
             return {
                 disabled: disabledForCheckIn,
                 checkoutBlocked: false,
                 checkoutAvailable: false,
                 available: !disabledForCheckIn && !isBooked,
+                isOrderBlocked: isBooked,
+                isHostClosed: hostClosed,
             };
         },
         isSelected(dateStr) {
@@ -632,11 +801,10 @@ export default {
                 return;
             }
 
-            if (day.disabled || !day.available) {
-                return;
-            }
-
             if (this.selectionMode === 'multiple') {
+                if (!this.canSelectDayInCalendar(day)) {
+                    return;
+                }
                 const next = Array.isArray(this.selectedDates) ? [...this.selectedDates] : [];
                 const index = next.indexOf(day.date);
                 if (index >= 0) {
@@ -646,6 +814,10 @@ export default {
                 }
                 next.sort();
                 this.$emit('dates-changed', next);
+                return;
+            }
+
+            if (day.disabled || !day.available) {
                 return;
             }
 
@@ -1691,7 +1863,7 @@ export default {
     box-shadow: none !important;
 }
 
-.persian-calendar--stacked .calendar-day.host-closed.disabled .day-content {
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.host-closed.disabled .day-content {
     background: #f3f4f6 !important;
 }
 
@@ -1871,16 +2043,18 @@ export default {
     color: #92400e;
 }
 
-.persian-calendar--stacked .calendar-day.host-closed.disabled .day-number,
-.persian-calendar--stacked .calendar-day.host-closed.disabled .day-price {
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.host-closed.disabled .day-number,
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.host-closed.disabled .day-price {
     color: #d1d5db;
 }
 
-.persian-calendar--stacked .calendar-day.reserved .day-content {
-    background: #fef2f2;
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.reserved .day-content,
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.booked .day-content {
+    background: #fef2f2 !important;
 }
 
-.persian-calendar--stacked .calendar-day.reserved .day-content::after {
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.reserved .day-content::after,
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.booked .day-content::after {
     content: 'پر';
     position: absolute;
     top: 2px;
@@ -1892,19 +2066,46 @@ export default {
     border-radius: 3px;
     padding: 0 3px;
     line-height: 1.3;
+    z-index: 2;
 }
 
-.persian-calendar--stacked .calendar-day.reserved.disabled {
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.booked:not(.disabled):not(.selected-multiple) {
+    cursor: pointer;
+    opacity: 1;
+}
+
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.booked.disabled {
     cursor: not-allowed;
     opacity: 1;
 }
 
-.persian-calendar--stacked .calendar-day.reserved.disabled .day-number,
-.persian-calendar--stacked .calendar-day.reserved.disabled .day-price {
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.reserved.disabled .day-number,
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.reserved.disabled .day-price,
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.booked:not(.selected-multiple) .day-number,
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.booked:not(.selected-multiple) .day-price {
     color: #9ca3af;
 }
 
-.persian-calendar--stacked .calendar-day.custom-price:not(.reserved):not(.selected-multiple) .day-content {
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.host-closed:not(.booked):not(.reserved) .day-content {
+    background: #f3f4f6 !important;
+}
+
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.host-closed:not(.booked):not(.reserved) .day-content::after {
+    content: 'بسته';
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 8px;
+    font-weight: 700;
+    color: #fff;
+    background: #6b7280;
+    border-radius: 3px;
+    padding: 0 3px;
+    line-height: 1.3;
+    z-index: 2;
+}
+
+.persian-calendar--manage.persian-calendar--stacked .calendar-day.custom-price:not(.reserved):not(.selected-multiple) .day-content {
     background: #f0fdf4;
 }
 

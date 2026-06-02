@@ -1243,7 +1243,29 @@ class Home extends Model
             }
         }
 
-        return $dates;
+        return $dates->unique()->sort()->values();
+    }
+
+    /**
+     * آیا در این روز رزرو فعال (در انتظار پرداخت، تأییدشده یا در حال اقامت) وجود دارد؟
+     */
+    public function hasActiveOrderOnCalendarDay(Carbon|string $date): bool
+    {
+        $day = $this->resolveCalendarDayCarbon($date)->startOfDay();
+
+        $orders = $this->orders()
+            ->whereIn('status', [Order::AWAITING_PAYMENT, Order::WAITING_FOR_RENTER, Order::IN_RENT])
+            ->get(['start_at', 'end_at']);
+
+        foreach ($orders as $order) {
+            foreach (CarbonPeriod::create($order->start_at, $order->end_at) as $periodDay) {
+                if ($periodDay->isSameDay($day)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public function getCustomPricesAttribute(): Collection
@@ -1597,27 +1619,22 @@ class Home extends Model
 
     public function getDisableCustomDatesAttribute(): Collection
     {
-        $dates  = collect([]);
-        foreach ($this->custom_dates()->where('price', 0)->get() as $custom_date){
-            $dates->push($custom_date->date->format('Y/m/d'));
+        $dates = collect([]);
+
+        foreach ($this->custom_dates()->where('price', 0)->get() as $custom_date) {
+            $dates->push($this->resolveCalendarDayCarbon($custom_date->date)->format('Y/m/d'));
         }
 
-        return $dates->sort();
+        return $dates->unique()->sort()->values();
     }
 
     public function getDisableDatesAttribute(): Collection
     {
-        $dates = collect([]);
-
-        foreach ($this->disable_custom_dates as $date){
-            $dates->add($date);
-        }
-        foreach ($this->disable_order_dates as $date){
-            $dates->add($date);
-        }
-
-
-        return $dates->unique()->sort();
+        return $this->disable_custom_dates
+            ->merge($this->disable_order_dates)
+            ->unique()
+            ->sort()
+            ->values();
     }
 
     public function getAddressTextAttribute(): string

@@ -720,21 +720,7 @@ export default {
             }
         },
         parsePropArray(prop) {
-            if (Array.isArray(prop)) {
-                return prop;
-            }
-
-            if (typeof prop === 'string' && prop.trim()) {
-                try {
-                    const parsed = JSON.parse(prop);
-
-                    return Array.isArray(parsed) ? parsed : [];
-                } catch (error) {
-                    return [];
-                }
-            }
-
-            return [];
+            return this.normalizePropDateList(prop);
         },
         initializeDates() {
             this.order_blocked_dates = this.parsePropArray(this.order_blocked_dates_prop);

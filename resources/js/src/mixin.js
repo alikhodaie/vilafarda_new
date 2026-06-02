@@ -153,8 +153,54 @@ Vue.mixin({
             return 1;
         },
 
+        normalizePropDateList(prop) {
+            if (Array.isArray(prop)) {
+                return prop;
+            }
+
+            if (prop && typeof prop === 'object') {
+                return Object.values(prop);
+            }
+
+            if (typeof prop === 'string' && prop.trim()) {
+                try {
+                    const parsed = JSON.parse(prop);
+
+                    if (Array.isArray(parsed)) {
+                        return parsed;
+                    }
+
+                    if (parsed && typeof parsed === 'object') {
+                        return Object.values(parsed);
+                    }
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            return [];
+        },
+
+        buildBlockedDaySet(dateLists) {
+            const set = new Set();
+
+            (dateLists || []).forEach((listDates) => {
+                this.normalizePropDateList(listDates).forEach((listDate) => {
+                    const parsed = this.parseCalendarMoment(listDate);
+
+                    if (parsed) {
+                        set.add(parsed.clone().startOf('day').valueOf());
+                    }
+                });
+            });
+
+            return set;
+        },
+
         isSameCalendarDayAsList(dateValue, listDates) {
-            if (!listDates || !listDates.length) {
+            const normalized = this.normalizePropDateList(listDates);
+
+            if (!normalized.length) {
                 return false;
             }
 
@@ -164,11 +210,26 @@ Vue.mixin({
                 return false;
             }
 
-            return listDates.some((listDate) => {
+            const targetMs = target.clone().startOf('day').valueOf();
+            const cache = this._blockedListCache;
+
+            if (cache instanceof Map && cache.has(listDates)) {
+                return cache.get(listDates).has(targetMs);
+            }
+
+            return normalized.some((listDate) => {
                 const parsed = this.parseCalendarMoment(listDate);
 
                 return parsed && target.isSame(parsed, 'day');
             });
+        },
+
+        rememberBlockedListCache(listDates, set) {
+            if (!this._blockedListCache) {
+                this._blockedListCache = new Map();
+            }
+
+            this._blockedListCache.set(listDates, set);
         },
 
         isDateInDisabledList(dateValue, disableDates) {
