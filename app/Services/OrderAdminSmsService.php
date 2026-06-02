@@ -147,12 +147,13 @@ class OrderAdminSmsService
     }
 
     /**
-     * مسیر کوتاه برای قالب sms.ir (حداکثر ۲۵ کاراکتر برای هر پارامتر).
-     * دامنه را در متن قالب ثابت بگذارید: https://vilafarda.com/#CALENDAR_LINK#
+     * مسیر تقویم بدون دامنه (حداکثر ۲۵ کاراکتر در sms.ir).
+     * در متن قالب sms.ir حتماً قبل از متغیر بنویسید: https://vilafarda.ir/
+     * نتیجه: https://vilafarda.ir/admin/homes/117/date
      */
     public function calendarLink(Order $order): string
     {
-        return 'h/'.$order->home_id;
+        return ltrim(route('admin.homes.date.show', $order->home_id, false), '/');
     }
 
     private function buildParametersFromMap(array $names, array $values): array

@@ -27,4 +27,6 @@ return [
         ],
     ],
     'parameter_max_length' => (int) env('SMS_PARAMETER_MAX_LENGTH', 25),
+    // پیشوند ثابت در متن قالب sms.ir (نه در API): https://vilafarda.ir/ + #CALENDAR_LINK#
+    'calendar_url_prefix' => env('SMS_CALENDAR_URL_PREFIX', 'https://vilafarda.ir/'),
 ];
