@@ -8,6 +8,8 @@ use App\Services\AnalyticsService;
 use App\Models\Home;
 use App\Models\Province;
 use App\Models\Setting;
+use App\Models\Transaction;
+use App\Services\PaymentGatewayService;
 use App\Rules\HomeRasterImageUpload;
 use App\Services\IndexBannerVideoEncoder;
 use App\Support\UploadValidation;
@@ -85,16 +87,27 @@ class SettingController extends Controller
             DB::beginTransaction();
 
             $data = [
-                'zarinpal:merchant-id' => $request->get('merchant_id'),
-                'zarinpal:gate' => $request->filled('gate'),
-                'zarinpal:sandbox' => $request->filled('sandbox'),
+                PaymentGatewayService::settingKey(Transaction::ZARINPAL) => $request->boolean('gateway_zarinpal') ? '1' : '0',
+                PaymentGatewayService::settingKey(Transaction::IDPAY) => $request->boolean('gateway_idpay') ? '1' : '0',
+                PaymentGatewayService::settingKey(Transaction::WALLET) => $request->boolean('gateway_wallet') ? '1' : '0',
+                PaymentGatewayService::settingKey(Transaction::SIZPAY) => $request->boolean('gateway_sizpay') ? '1' : '0',
+                'zarinpal:merchant-id' => trim((string) $request->get('merchant_id')),
+                'zarinpal:gate' => $request->boolean('gate') ? '1' : '0',
+                'zarinpal:sandbox' => $request->boolean('sandbox') ? '1' : '0',
+                'idpay:api-key' => trim((string) $request->get('idpay_api_key')),
+                'idpay:sandbox' => $request->boolean('idpay_sandbox') ? '1' : '0',
+                'sizpay:merchant-id' => trim((string) $request->get('sizpay_merchant_id')),
+                'sizpay:terminal-id' => trim((string) $request->get('sizpay_terminal_id')),
+                'sizpay:username' => trim((string) $request->get('sizpay_username')),
+                'sizpay:password' => trim((string) $request->get('sizpay_password')),
+                'sizpay:sign-data' => trim((string) $request->get('sizpay_sign_data')),
             ];
 
             foreach ($data as $key => $value){
                 Setting::query()->updateOrCreate(['key' => $key], ['value' => $value]);
             }
 
-            cache()->clear();
+            forgetSettingsCache();
             DB::commit();
             return redirect()->route('admin.setting.index', ['active' => 'payment'])->with('success', __('text.success.setting_payment'));
         }

@@ -1,0 +1,181 @@
+.rent-pay-page {
+    padding: 1rem 1rem 2rem;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.rent-pay-page__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.rent-pay-page__back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: #f3f4f6;
+    color: #111827;
+    text-decoration: none;
+}
+
+.rent-pay-page__title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.rent-pay-page__home {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.rent-pay-page__home-name {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.rent-pay-page__home-meta {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+.rent-pay-page__deadline {
+    margin-bottom: 1rem;
+}
+
+.rent-pay-page__amount {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ecfdf3;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.rent-pay-page__amount-label {
+    color: #166534;
+    font-size: 0.875rem;
+}
+
+.rent-pay-page__amount-value {
+    font-weight: 700;
+    color: #15803d;
+}
+
+.rent-pay-page__section-title {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 0.9375rem;
+}
+
+.rent-pay-page__gateways {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    margin-bottom: 1.25rem;
+}
+
+.rent-pay-gateway {
+    display: block;
+    margin: 0;
+    cursor: pointer;
+}
+
+.rent-pay-gateway input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.rent-pay-gateway__body {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.rent-pay-gateway input:checked + .rent-pay-gateway__body {
+    border-color: #2e9e5a;
+    background: #f3fbf6;
+}
+
+.rent-pay-gateway__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 10px;
+    background: #ecfdf3;
+    color: #15803d;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.rent-pay-gateway__text {
+    flex: 1;
+    min-width: 0;
+}
+
+.rent-pay-gateway__title {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9375rem;
+}
+
+.rent-pay-gateway__desc {
+    display: block;
+    font-size: 0.8125rem;
+    color: #6b7280;
+    margin-top: 0.125rem;
+}
+
+.rent-pay-gateway__check {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    border: 2px solid #d1d5db;
+    flex-shrink: 0;
+}
+
+.rent-pay-gateway input:checked + .rent-pay-gateway__body .rent-pay-gateway__check {
+    border-color: #2e9e5a;
+    background: #2e9e5a;
+    box-shadow: inset 0 0 0 3px #fff;
+}
+
+.rent-pay-page__error {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin: -0.5rem 0 1rem;
+}
+
+.rent-pay-page__submit {
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    padding: 0.875rem 1rem;
+    background: #2e9e5a;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.rent-pay-page__submit:active {
+    opacity: 0.9;
+}

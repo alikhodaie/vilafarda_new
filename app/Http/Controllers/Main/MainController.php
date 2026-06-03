@@ -13,6 +13,7 @@ use App\Models\Province;
 use App\Models\Setting;
 use App\Models\Transaction;
 use App\Services\HomeIndexSectionService;
+use App\Classes\Payment\SizpayClient;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
@@ -162,6 +163,24 @@ class MainController extends Controller
     public function addToHomeAndroid()
     {
         return view('main.add-to-home-android-mobile');
+    }
+
+    public function sizpayCheckout(Transaction $transaction)
+    {
+        abort_unless(auth()->id() === $transaction->user_id, 403);
+        abort_unless($transaction->gateway === Transaction::SIZPAY, 404);
+        abort_unless($transaction->status === Transaction::IN_PROCESS, 404);
+        abort_unless($transaction->code, 404);
+
+        $client = SizpayClient::fromSettings();
+
+        return response()->view('main.sizpay-checkout', [
+            'paymentUrl' => SizpayClient::PAYMENT_URL,
+            'merchantId' => $client->credentials()['merchant_id'],
+            'terminalId' => $client->credentials()['terminal_id'],
+            'token' => $transaction->code,
+            'signData' => $client->credentials()['sign_data'],
+        ]);
     }
 
     public function callBack(Request $request)

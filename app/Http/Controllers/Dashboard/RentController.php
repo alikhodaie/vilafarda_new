@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Dashboard;
 
 use App\Classes\Error;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dashboard\Rent\PayRentRequest;
 use App\Http\Requests\Dashboard\Rent\RentDiscountRequest;
 use App\Models\Discount;
 use App\Models\Order;
@@ -11,6 +12,7 @@ use App\Models\Transaction;
 use App\Services\OrderDeadlineService;
 use App\Services\OrderInvoiceService;
 use App\Services\OrderShowPresenter;
+use App\Services\PaymentGatewayService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -138,22 +140,53 @@ class RentController extends Controller
         }
     }
 
-    public function pay($order)
+    public function pay(Request $request, $order)
     {
-        $order = auth()->user()->rents()
-            ->where('status', Order::AWAITING_PAYMENT)
-            ->findOrFail($order);
-
-        $order = app(OrderDeadlineService::class)->expireOrderIfOverdue($order);
-
-        if (! app(OrderShowPresenter::class)->canRenterPay($order)) {
-            return redirect()->back()->with('danger', __('title.expired_guest_non_payment'));
+        $resolved = $this->resolvePayableOrder($order);
+        if ($resolved instanceof \Illuminate\Http\RedirectResponse) {
+            return $resolved;
         }
 
-        // اگر قبلاً پرداخت شده باشد، اجازه پرداخت مجدد نده
-        if ($order->paid_at) {
-            return redirect()->back()->with('info', __('text.already_paid'));
+        return $this->showPayCheckout($request, $resolved);
+    }
+
+    public function payStore(PayRentRequest $request, $order)
+    {
+        $resolved = $this->resolvePayableOrder($order);
+        if ($resolved instanceof \Illuminate\Http\RedirectResponse) {
+            return $resolved;
         }
+
+        return $this->processPay($request, $resolved);
+    }
+
+    private function showPayCheckout(Request $request, Order $order)
+    {
+        $gateways = app(PaymentGatewayService::class)->availableForCheckout(auth()->user(), $order);
+
+        if ($gateways === []) {
+            return redirect()
+                ->route('dashboard.rents.show', $order)
+                ->with('danger', __('text.no_payment_gateway_available'));
+        }
+
+        $data = [
+            'rent' => $order,
+            'gateways' => $gateways,
+            'invoice' => app(OrderInvoiceService::class)->breakdown($order),
+            'paymentDeadline' => $order->getPaymentDeadline(),
+        ];
+
+        if ($request->is_mobile ?? false) {
+            return view('dashboard.rents.pay-mobile', $data);
+        }
+
+        return view('dashboard.rents.pay', $data);
+    }
+
+    private function processPay(PayRentRequest $request, Order $order)
+    {
+        $gateway = $request->validated()['gateway'];
 
         try {
             DB::beginTransaction();
@@ -161,22 +194,59 @@ class RentController extends Controller
             $transaction = auth()->user()->transactions()->create([
                 'price' => $order->payable_price,
                 'description' => 'پرداخت سفارش',
-                'gateway' => Transaction::ZARINPAL,
+                'gateway' => $gateway,
                 'status' => Transaction::IN_PROCESS,
-                'type' => Transaction::PURCHASE
+                'type' => Transaction::PURCHASE,
             ]);
 
             $order->attachTransaction($transaction);
 
             DB::commit();
-        }
-        catch (Exception $e){
+        } catch (Exception $e) {
             DB::rollBack();
             Error::catch($e, __CLASS__, __FUNCTION__);
-            return redirect()->back()->with('danger', __('text.whoops'));
+
+            return redirect()
+                ->route('dashboard.rents.pay', $order)
+                ->with('danger', __('text.whoops'));
         }
 
-        return redirect($transaction->pay());
+        try {
+            return redirect($transaction->pay());
+        } catch (ValidationException $e) {
+            $message = collect($e->errors())->flatten()->first() ?: __('text.whoops');
+
+            return redirect()
+                ->route('dashboard.rents.pay', $order)
+                ->with('danger', $message);
+        }
+    }
+
+    /**
+     * @return Order|\Illuminate\Http\RedirectResponse
+     */
+    private function resolvePayableOrder($order)
+    {
+        $order = auth()->user()->rents()
+            ->where('status', Order::AWAITING_PAYMENT)
+            ->with(['home.province', 'home.city', 'discountModel'])
+            ->findOrFail($order);
+
+        $order = app(OrderDeadlineService::class)->expireOrderIfOverdue($order);
+
+        if (! app(OrderShowPresenter::class)->canRenterPay($order)) {
+            return redirect()
+                ->route('dashboard.rents.show', $order)
+                ->with('danger', __('title.expired_guest_non_payment'));
+        }
+
+        if ($order->paid_at) {
+            return redirect()
+                ->route('dashboard.rents.show', $order)
+                ->with('info', __('text.already_paid'));
+        }
+
+        return $order;
     }
 
     public function cancel($order)

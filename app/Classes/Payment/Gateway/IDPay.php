@@ -24,13 +24,18 @@ class IDPay implements GatewayInterface
         $this->transaction = $transaction;
 
         $this->call_back = route('main.call-back');
+        $apiKey = trim((string) setting('idpay:api-key', ''));
+        if ($apiKey === '') {
+            $apiKey = config('idpay.api_key');
+        }
+
         $headers = [
-            'X-API-KEY' => config('idpay.api_key'),
+            'X-API-KEY' => $apiKey,
             'Accept' => 'application/json',
-            'Content-Type' => 'application/json'
+            'Content-Type' => 'application/json',
         ];
 
-        if (config('idpay.sandbox_status')){
+        if (settingBoolean('idpay:sandbox') || config('idpay.sandbox_status')) {
             $headers['X-SANDBOX'] = true;
         }
 

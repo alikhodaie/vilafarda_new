@@ -67,6 +67,16 @@ return [
     'empty_list' => 'لیست خالی است!',
     'forget password' => 'کلمه عبور خود را فراموش کرده اید؟',
     'whoops' => 'متاسفانه مشکلی پیش آمده! لطفا بعدا دوباره امتحان کنید',
+    'already_paid' => 'این رزرو قبلاً پرداخت شده است.',
+    'payment_gateway_required' => 'لطفاً یک درگاه پرداخت انتخاب کنید.',
+    'payment_gateway_unavailable' => 'درگاه پرداخت انتخاب‌شده در دسترس نیست.',
+    'no_payment_gateway_available' => 'هیچ درگاه پرداختی فعال نیست. لطفاً با پشتیبانی تماس بگیرید.',
+    'payment_gateways_active_hint' => 'فقط درگاه‌های فعال و پیکربندی‌شده در صفحه پرداخت مهمان نمایش داده می‌شوند.',
+    'sizpay_settings_hint' => 'اطلاعات را از پنل شرکت سیزپی دریافت کنید. آدرس بازگشت (ReturnURL) به‌صورت خودکار روی /call-back تنظیم می‌شود.',
+    'sizpay_admin_not_ready' => 'برای فعال‌سازی: Merchant ID، Terminal ID، UserName، Password و SignData را پر کنید و افزونه PHP SOAP را نصب کنید.',
+    'sizpay_soap_required' => 'افزونه PHP SOAP روی سرور فعال نیست. با php-soap یا دستور sudo apt install php-soap آن را نصب کنید.',
+    'sizpay_not_configured' => 'درگاه سیزپی در پنل مدیریت پیکربندی نشده است.',
+    'sizpay_connection_failed' => 'اتصال به درگاه سیزپی برقرار نشد. تنظیمات را بررسی کنید.',
     'withdraw_bulk_none_pending' => 'هیچ مورد «در انتظار پرداخت» در انتخاب شما نبود.',
     'alert' => [
         'empty password' => 'اگر نمیخواهید رمز را تغییر دهید لطفا فیلد رمز را خالی بگذارید'

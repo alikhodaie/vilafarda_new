@@ -105,13 +105,11 @@
             @if(($canRenterPay ?? false) || ($canRenterCancel ?? false))
                 <div class="rent-status-card__actions">
                     @if($canRenterPay ?? false)
-                        <form action="{{ route('dashboard.rents.pay', $rent) }}" method="POST" class="m-0">
-                            @csrf
-                            <button type="submit" class="rent-status-card__btn rent-status-card__btn--pay w-100">
-                                <i class="bi bi-credit-card" aria-hidden="true"></i>
-                                پرداخت هزینه
-                            </button>
-                        </form>
+                        <a href="{{ route('dashboard.rents.pay', $rent) }}"
+                           class="rent-status-card__btn rent-status-card__btn--pay w-100 text-decoration-none">
+                            <i class="bi bi-credit-card" aria-hidden="true"></i>
+                            پرداخت هزینه
+                        </a>
                     @endif
 
                     @if($canRenterCancel ?? false)

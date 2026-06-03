@@ -25,8 +25,10 @@ class SettingServiceProvider extends ServiceProvider
     {
         config([
             'zarinpal.merchant_id' => setting('zarinpal:merchant-id'),
-            'zarinpal.gate' => setting('zarinpal:gate', false),
-            'zarinpal.sandbox' => setting('zarinpal:sandbox', false),
+            'zarinpal.gate' => settingBoolean('zarinpal:gate'),
+            'zarinpal.sandbox' => settingBoolean('zarinpal:sandbox'),
+            'idpay.api_key' => setting('idpay:api-key') ?: config('idpay.api_key'),
+            'idpay.sandbox_status' => settingBoolean('idpay:sandbox') || config('idpay.sandbox_status'),
         ]);
     }
 }

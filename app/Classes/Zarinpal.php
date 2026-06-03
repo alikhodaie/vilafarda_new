@@ -46,7 +46,7 @@ class Zarinpal
 		exit;
 	}
 
-	public function request($MerchantID, $Amount, $Description="", $Email="", $Mobile="", $CallbackURL, $SandBox=false, $ZarinGate=false)
+	public function request($MerchantID, $Amount, $CallbackURL, $Description = "", $Email = "", $Mobile = "", $SandBox = false, $ZarinGate = false)
 	{
 		// تعیین URL بر اساس sandbox
 		$apiUrl = $SandBox 
@@ -61,12 +61,15 @@ class Zarinpal
 			"description" => $Description ?: "پرداخت سفارش",
 		];
 
-		// اضافه کردن Email و Mobile اگر خالی نباشند
+		$metadata = [];
 		if (!empty($Email)) {
-			$data["metadata"]["email"] = $Email;
+			$metadata["email"] = $Email;
 		}
 		if (!empty($Mobile)) {
-			$data["metadata"]["mobile"] = $Mobile;
+			$metadata["mobile"] = $Mobile;
+		}
+		if ($metadata !== []) {
+			$data["metadata"] = $metadata;
 		}
 
 		// لاگ برای دیباگ
@@ -76,39 +79,7 @@ class Zarinpal
 			'SandBox' => $SandBox,
 		]);
 
-		// ارسال درخواست با file_get_contents
-		$context = stream_context_create([
-			'http' => [
-				'method'  => 'POST',
-				'header'  => "Content-Type: application/json\r\n",
-				'content' => json_encode($data, JSON_UNESCAPED_UNICODE),
-				'timeout' => 30,
-			]
-		]);
-
-		$result = @file_get_contents($apiUrl, false, $context);
-		
-		// اگر file_get_contents خطا داد، از CURL استفاده می‌کنیم
-		if ($result === false) {
-			$ch = curl_init($apiUrl);
-			curl_setopt($ch, CURLOPT_POST, true);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data, JSON_UNESCAPED_UNICODE));
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-			curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, [
-				'Content-Type: application/json',
-			]);
-			$result = curl_exec($ch);
-			$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-			$curlError = curl_error($ch);
-			curl_close($ch);
-
-			if ($curlError) {
-				\Log::error('Zarinpal CURL Error', ['error' => $curlError]);
-				$result = false;
-			}
-		}
+		$result = $this->postJson($apiUrl, $data);
 
 		// لاگ برای دیباگ
 		\Log::info('Zarinpal API v4 Response', [
@@ -138,14 +109,14 @@ class Zarinpal
 		// بررسی ساختار پاسخ API v4
 		$status = isset($result["data"]["code"]) ? (int)$result["data"]["code"] : 0;
 		$authority = isset($result["data"]["authority"]) ? $result["data"]["authority"] : "";
-		
+
 		// اگر status در ریشه response بود (برای سازگاری با API قدیم)
 		if ($status === 0 && isset($result["Status"])) {
 			$status = (int)$result["Status"];
 			$authority = isset($result["Authority"]) ? $result["Authority"] : "";
 		}
 
-		$message = $this->error_message($status);
+		$message = $this->parseApiMessage($result, $status);
 		
 		// ساخت URL پرداخت
 		$startPay = "";
@@ -200,38 +171,7 @@ class Zarinpal
 			'SandBox' => $SandBox,
 		]);
 
-		// ارسال درخواست با file_get_contents
-		$context = stream_context_create([
-			'http' => [
-				'method'  => 'POST',
-				'header'  => "Content-Type: application/json\r\n",
-				'content' => json_encode($data, JSON_UNESCAPED_UNICODE),
-				'timeout' => 30,
-			]
-		]);
-
-		$result = @file_get_contents($apiUrl, false, $context);
-		
-		// اگر file_get_contents خطا داد، از CURL استفاده می‌کنیم
-		if ($result === false) {
-			$ch = curl_init($apiUrl);
-			curl_setopt($ch, CURLOPT_POST, true);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data, JSON_UNESCAPED_UNICODE));
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-			curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-			curl_setopt($ch, CURLOPT_HTTPHEADER, [
-				'Content-Type: application/json',
-			]);
-			$result = curl_exec($ch);
-			$curlError = curl_error($ch);
-			curl_close($ch);
-
-			if ($curlError) {
-				\Log::error('Zarinpal Verify CURL Error', ['error' => $curlError]);
-				$result = false;
-			}
-		}
+		$result = $this->postJson($apiUrl, $data);
 
 		// لاگ برای دیباگ
 		\Log::info('Zarinpal API v4 Verify Response', [
@@ -268,7 +208,7 @@ class Zarinpal
 			$refId = isset($result["RefID"]) ? $result["RefID"] : "";
 		}
 
-		$message = $this->error_message($status);
+		$message = $this->parseApiMessage($result, $status);
 
 		return [
 			"Status" => $status,
@@ -276,5 +216,45 @@ class Zarinpal
 			"RefID" => $refId,
 			"Authority" => $authority
 		];
+	}
+
+	private function postJson(string $apiUrl, array $data)
+	{
+		$jsonData = json_encode($data, JSON_UNESCAPED_UNICODE);
+
+		$ch = curl_init($apiUrl);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'ZarinPal Rest Api v1');
+		curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, [
+			'Content-Type: application/json',
+			'Content-Length: ' . strlen($jsonData),
+		]);
+
+		$result = curl_exec($ch);
+		$curlError = curl_error($ch);
+		curl_close($ch);
+
+		if ($curlError) {
+			\Log::error('Zarinpal CURL Error', ['error' => $curlError, 'url' => $apiUrl]);
+
+			return false;
+		}
+
+		return $result;
+	}
+
+	private function parseApiMessage(array $result, int $status): string
+	{
+		if (! empty($result['errors']['message'])) {
+			$code = $result['errors']['code'] ?? $status;
+
+			return $result['errors']['message'] . ' (کد: ' . $code . ')';
+		}
+
+		return $this->error_message($status);
 	}
 }

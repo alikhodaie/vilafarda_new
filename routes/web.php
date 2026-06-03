@@ -94,6 +94,9 @@ Route::name('main.')->group(function (){
 
     Route::match(['get', 'post'], '/call-back', [MainController::class, 'callBack'])->name('call-back');
 
+    Route::middleware('auth')->get('/payment/sizpay/{transaction}', [MainController::class, 'sizpayCheckout'])
+        ->name('sizpay.checkout');
+
     Route::post('newsletter/subscribe', [NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
 
     # region Auth
@@ -301,7 +304,8 @@ Route::prefix('/dashboard')->name('dashboard.')->middleware(['auth', 'detect.mob
         Route::get('/{order}/contract', [DashboardRentController::class, 'contract'])->name('contract');
         Route::patch('/{order}/cancel', [DashboardRentController::class, 'cancel'])->name('cancel');
         Route::post('/{order}/discount', [DashboardRentController::class, 'discount'])->name('discount');
-        Route::post('/{order}/pay', [DashboardRentController::class, 'pay'])->name('pay');
+        Route::get('/{order}/pay', [DashboardRentController::class, 'pay'])->middleware('detect.mobile')->name('pay');
+        Route::post('/{order}/pay', [DashboardRentController::class, 'payStore'])->name('pay.store');
     });
     # endregion
 

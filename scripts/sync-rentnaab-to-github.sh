@@ -18,9 +18,22 @@ fi
 rm -f "$DST/.write-test"
 
 FILES=(
+  app/Classes/Zarinpal.php
+  app/Classes/Payment/SizpayClient.php
+  app/Classes/Payment/Gateway/Zarinpal.php
+  app/Classes/Payment/Gateway/IDPay.php
+  app/Classes/Payment/Gateway/Sizpay.php
   app/Exceptions/Handler.php
   app/Helpers/helpers.php
   app/Http/Controllers/Admin/SettingController.php
+  app/Http/Controllers/Dashboard/RentController.php
+  app/Http/Controllers/Main/MainController.php
+  app/Http/Requests/Dashboard/Rent/PayRentRequest.php
+  app/Models/Transaction.php
+  app/Providers/SettingServiceProvider.php
+  app/Services/PaymentGatewayService.php
+  database/migrations/2026_06_02_120000_add_payment_gateway_settings.php
+  database/migrations/2026_06_02_130000_add_sizpay_payment_gateway.php
   app/Http/Controllers/Api/AuthController.php
   app/Http/Requests/Dashboard/Home/DestroyCustomDateRequest.php
   app/Http/Requests/Dashboard/Home/StoreCustomDateRequest.php
@@ -29,10 +42,19 @@ FILES=(
   app/Models/Order.php
   app/Services/IndexBannerVideoEncoder.php
   resources/lang/fa/text.php
+  resources/lang/fa/title.php
+  resources/views/admin/setting/pages/payment.blade.php
   resources/views/admin/homes/date.blade.php
   resources/views/admin/setting/pages/index-page.blade.php
   resources/views/dashboard/homes/custom/date-mobile.blade.php
   resources/views/dashboard/homes/custom/date.blade.php
+  resources/views/dashboard/rents/pay.blade.php
+  resources/views/dashboard/rents/pay-mobile.blade.php
+  resources/views/dashboard/rents/partials/actions.blade.php
+  resources/views/dashboard/rents/show-mobile.blade.php
+  resources/views/dashboard/rents/index-mobile.blade.php
+  resources/views/main/sizpay-checkout.blade.php
+  public/assets/css/rent-pay-mobile.css
   resources/views/main/auth/login-mobile.blade.php
   resources/js/components/admin/IndexBannerVideoUpload.vue
   resources/js/components/main/Home/CustomDate.vue

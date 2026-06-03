@@ -158,10 +158,10 @@
                             @if($canPay || $canCancel)
                                 <div class="trip-card__extra-actions">
                                     @if($canPay)
-                                        <form action="{{ route('dashboard.rents.pay', $rent) }}" method="POST" class="flex-fill m-0">
-                                            @csrf
-                                            <button type="submit" class="trip-card__btn trip-card__btn--pay w-100">پرداخت</button>
-                                        </form>
+                                        <a href="{{ route('dashboard.rents.pay', $rent) }}"
+                                           class="trip-card__btn trip-card__btn--pay w-100 text-decoration-none flex-fill text-center">
+                                            پرداخت
+                                        </a>
                                     @endif
 
                                     @if($canCancel)

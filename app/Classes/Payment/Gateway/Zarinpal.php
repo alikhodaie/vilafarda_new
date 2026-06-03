@@ -22,15 +22,14 @@ class Zarinpal implements GatewayInterface
     {
         $this->transaction = $transaction;
         $this->call_back = route('main.call-back');
-        $this->is_sandbox = (bool) config('zarinpal.sandbox');
-        $this->is_gate = (bool) config('zarinpal.gate');
-        
+        $this->is_sandbox = settingBoolean('zarinpal:sandbox');
+        $this->is_gate = settingBoolean('zarinpal:gate');
+
         // برای سندباکس، از merchant_id تست استفاده می‌کنیم
         if ($this->is_sandbox) {
-            // Merchant ID تست زرین‌پال برای سندباکس
             $this->merchant_id = '71c705f8-bd37-11e6-aa0c-000c295eb8fc';
         } else {
-            $this->merchant_id = config('zarinpal.merchant_id');
+            $this->merchant_id = trim((string) setting('zarinpal:merchant-id', ''));
         }
         
         // لاگ برای دیباگ
@@ -101,10 +100,10 @@ class Zarinpal implements GatewayInterface
         $result = $zarinpal->request(
             $this->merchant_id,
             $amount,
+            $this->call_back,
             $description,
             $email,
             $mobile,
-            $this->call_back,
             $this->is_sandbox,
             $this->is_gate
         );

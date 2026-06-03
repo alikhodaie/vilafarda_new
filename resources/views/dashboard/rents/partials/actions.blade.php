@@ -32,12 +32,9 @@
         <div class="row g-2">
             @if($canPay)
                 <div class="col-6">
-                    <form method="post" action="{{ route('dashboard.rents.pay', $rent) }}">
-                        @csrf
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-credit-card-2-front me-1"></i> @lang('title.pay')
-                        </button>
-                    </form>
+                    <a href="{{ route('dashboard.rents.pay', $rent) }}" class="btn btn-success w-100">
+                        <i class="bi bi-credit-card-2-front me-1"></i> @lang('title.pay')
+                    </a>
                 </div>
             @endif
             @if($canCancel)

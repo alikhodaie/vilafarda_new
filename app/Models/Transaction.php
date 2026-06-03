@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Classes\Payment\Gateway\IDPay;
+use App\Classes\Payment\Gateway\Sizpay;
 use App\Classes\Payment\Gateway\Wallet;
 use App\Classes\Payment\Gateway\Zarinpal;
 use App\Classes\Traits\PersianDate;
@@ -23,9 +24,16 @@ class Transaction extends Model
     # region Const
     const IDPAY = 'idpay';
     const ZARINPAL = 'zarinpal';
+    const SIZPAY = 'sizpay';
     const WALLET = 'wallet';
 
     const GATEWAY = [
+        self::SIZPAY => [
+            'value' => self::SIZPAY,
+            'text' => 'درگاه پرداخت سیزپی',
+            'description' => 'انتقال به درگاه پرداخت آنلاین سیزپی (SizPay)',
+            'class' => Sizpay::class,
+        ],
         self::IDPAY => [
             'value' => self::IDPAY,
             'text' => 'درگاه پرداخت IDPay',
@@ -208,6 +216,13 @@ class Transaction extends Model
             $transaction = Transaction::query()->process()->where('code', $request->get('Authority'))->first();
 
             if ($request->get('Status') == 'OK') {
+                $success_payment = true;
+            }
+        }
+        if ($request->has('ResCod') && $request->filled('Token')) {
+            $transaction = Transaction::query()->process()->where('code', $request->get('Token'))->first();
+
+            if (in_array((string) $request->get('ResCod'), ['0', '00'], true)) {
                 $success_payment = true;
             }
         }

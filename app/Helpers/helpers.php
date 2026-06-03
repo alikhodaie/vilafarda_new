@@ -76,6 +76,19 @@ if (!function_exists('settingFilePath')){
     }
 }
 
+if (! function_exists('settingBoolean')) {
+    function settingBoolean(string $key, $default = false): bool
+    {
+        $value = setting($key, $default);
+
+        if ($value === null || $value === '') {
+            return (bool) $default;
+        }
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+}
+
 if (! function_exists('forgetSettingsCache')) {
     function forgetSettingsCache(): void
     {
