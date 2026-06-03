@@ -304,8 +304,9 @@ Route::prefix('/dashboard')->name('dashboard.')->middleware(['auth', 'detect.mob
         Route::get('/{order}/contract', [DashboardRentController::class, 'contract'])->name('contract');
         Route::patch('/{order}/cancel', [DashboardRentController::class, 'cancel'])->name('cancel');
         Route::post('/{order}/discount', [DashboardRentController::class, 'discount'])->name('discount');
-        Route::get('/{order}/pay', [DashboardRentController::class, 'pay'])->middleware('detect.mobile')->name('pay');
-        Route::post('/{order}/pay', [DashboardRentController::class, 'payStore'])->name('pay.store');
+        Route::match(['get', 'post'], '/{order}/pay', [DashboardRentController::class, 'pay'])
+            ->middleware('detect.mobile')
+            ->name('pay');
     });
     # endregion
 

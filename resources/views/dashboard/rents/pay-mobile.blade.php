@@ -38,7 +38,7 @@
             <span class="rent-pay-page__amount-value">{{ number_format($rent->payable_price) }} @lang('title.toman')</span>
         </div>
 
-        <form action="{{ route('dashboard.rents.pay.store', $rent) }}" method="POST" class="rent-pay-page__form">
+        <form action="{{ route('dashboard.rents.pay', $rent) }}" method="POST" class="rent-pay-page__form">
             @csrf
 
             <p class="rent-pay-page__section-title">@lang('title.choose_payment_gateway')</p>

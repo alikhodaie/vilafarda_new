@@ -147,17 +147,11 @@ class RentController extends Controller
             return $resolved;
         }
 
-        return $this->showPayCheckout($request, $resolved);
-    }
-
-    public function payStore(PayRentRequest $request, $order)
-    {
-        $resolved = $this->resolvePayableOrder($order);
-        if ($resolved instanceof \Illuminate\Http\RedirectResponse) {
-            return $resolved;
+        if ($request->isMethod('post')) {
+            return $this->processPay(app(PayRentRequest::class), $resolved);
         }
 
-        return $this->processPay($request, $resolved);
+        return $this->showPayCheckout($request, $resolved);
     }
 
     private function showPayCheckout(Request $request, Order $order)

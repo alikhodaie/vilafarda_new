@@ -36,7 +36,7 @@
                         @endif
                     </div>
 
-                    <form action="{{ route('dashboard.rents.pay.store', $rent) }}" method="POST">
+                    <form action="{{ route('dashboard.rents.pay', $rent) }}" method="POST">
                         @csrf
                         <p class="fw-semibold mb-3">@lang('title.choose_payment_gateway')</p>
 
