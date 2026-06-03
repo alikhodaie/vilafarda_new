@@ -14,8 +14,10 @@ use App\Services\OrderInvoiceService;
 use App\Services\OrderShowPresenter;
 use App\Services\PaymentGatewayService;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class RentController extends Controller
@@ -199,10 +201,15 @@ class RentController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
             Error::catch($e, __CLASS__, __FUNCTION__);
+            Log::error('Payment transaction create failed', [
+                'order_id' => $order->id,
+                'gateway' => $gateway,
+                'exception' => $e->getMessage(),
+            ]);
 
             return redirect()
                 ->route('dashboard.rents.pay', $order)
-                ->with('danger', __('text.whoops'));
+                ->with('danger', $this->paymentErrorMessage($e, $gateway));
         }
 
         try {
@@ -213,7 +220,32 @@ class RentController extends Controller
             return redirect()
                 ->route('dashboard.rents.pay', $order)
                 ->with('danger', $message);
+        } catch (Exception $e) {
+            Error::catch($e, __CLASS__, __FUNCTION__);
+            Log::error('Payment gateway redirect failed', [
+                'order_id' => $order->id,
+                'transaction_id' => $transaction->id,
+                'gateway' => $gateway,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('dashboard.rents.pay', $order)
+                ->with('danger', $this->paymentErrorMessage($e, $gateway));
         }
+    }
+
+    private function paymentErrorMessage(Exception $e, string $gateway): string
+    {
+        if ($e instanceof QueryException && str_contains($e->getMessage(), 'gateway')) {
+            return __('text.payment_gateway_db_migration');
+        }
+
+        if (config('app.debug')) {
+            return $e->getMessage();
+        }
+
+        return __('text.whoops');
     }
 
     /**

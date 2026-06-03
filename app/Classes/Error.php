@@ -23,6 +23,6 @@ class Error
         if (!empty($custom_message)){
             $message .= PHP_EOL. 'With message: ' .$custom_message;
         }
-        Log::debug($message);
+        Log::error($message);
     }
 }

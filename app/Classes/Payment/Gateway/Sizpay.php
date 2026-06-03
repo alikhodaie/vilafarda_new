@@ -45,12 +45,20 @@ class Sizpay implements GatewayInterface
             ]);
         }
 
-        $token = $client->getToken(
-            $amountRial,
-            (int) $this->transaction->id,
-            $this->callBack,
-            (string) $this->transaction->id
-        );
+        try {
+            $token = $client->getToken(
+                $amountRial,
+                (int) $this->transaction->id,
+                $this->callBack,
+                (string) $this->transaction->id
+            );
+        } catch (\RuntimeException $e) {
+            Error::catch($e, __CLASS__, __METHOD__, 'مشکل درگاه پرداخت سیزپی');
+
+            throw ValidationException::withMessages([
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         if ($token === null || $token === '') {
             Error::catch(new Exception('Sizpay GetToken2 returned empty token'), __CLASS__, __METHOD__, 'مشکل درگاه پرداخت سیزپی');
@@ -59,6 +67,12 @@ class Sizpay implements GatewayInterface
                 'error' => __('text.sizpay_connection_failed'),
             ]);
         }
+
+        \Log::info('Sizpay GetToken2 success', [
+            'transaction_id' => $this->transaction->id,
+            'callback' => $this->call_back,
+            'amount_rial' => $amountRial,
+        ]);
 
         $this->transaction->update(['code' => $token]);
 

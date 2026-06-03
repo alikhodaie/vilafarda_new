@@ -92,14 +92,42 @@ class SizpayClient
                 return $result['Token'] ?? null;
             }
 
-            \Log::warning('Sizpay GetToken2 failed', ['result' => $result, 'order_id' => $orderId]);
+            $apiMessage = self::formatApiError($result);
 
-            return null;
+            \Log::warning('Sizpay GetToken2 failed', [
+                'result' => $result,
+                'order_id' => $orderId,
+                'return_url' => $returnUrl,
+                'amount_rial' => $amountRial,
+                'message' => $apiMessage,
+            ]);
+
+            throw new \RuntimeException($apiMessage);
         } catch (SoapFault $e) {
-            \Log::error('Sizpay GetToken2 SOAP error', ['message' => $e->getMessage(), 'order_id' => $orderId]);
+            \Log::error('Sizpay GetToken2 SOAP error', [
+                'message' => $e->getMessage(),
+                'order_id' => $orderId,
+                'return_url' => $returnUrl,
+            ]);
 
-            return null;
+            throw new \RuntimeException('خطا در اتصال SOAP به سیزپی: '.$e->getMessage(), 0, $e);
         }
+    }
+
+    public static function formatApiError(?array $result): string
+    {
+        if ($result === null || $result === []) {
+            return 'پاسخ خالی از درگاه سیزپی';
+        }
+
+        $code = $result['ResCod'] ?? $result['resCod'] ?? $result['Code'] ?? 'نامشخص';
+        $message = $result['ResMsg'] ?? $result['resMsg'] ?? $result['Message'] ?? $result['message'] ?? null;
+
+        if ($message) {
+            return trim((string) $message).' (کد: '.$code.')';
+        }
+
+        return 'خطا از درگاه سیزپی (کد: '.$code.')';
     }
 
     public function confirm(string $token): bool

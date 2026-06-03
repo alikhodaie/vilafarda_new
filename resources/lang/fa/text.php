@@ -77,6 +77,8 @@ return [
     'sizpay_soap_required' => 'افزونه PHP SOAP روی سرور فعال نیست. با php-soap یا دستور sudo apt install php-soap آن را نصب کنید.',
     'sizpay_not_configured' => 'درگاه سیزپی در پنل مدیریت پیکربندی نشده است.',
     'sizpay_connection_failed' => 'اتصال به درگاه سیزپی برقرار نشد. تنظیمات را بررسی کنید.',
+    'payment_gateway_db_migration' => 'خطا در ثبت تراکنش. روی سرور دستور php artisan migrate را اجرا کنید (مایگریشن درگاه سیزپی).',
+    'payment_logs_hint' => 'جزئیات خطا در storage/logs/laravel.log با کلیدواژه Sizpay ثبت می‌شود.',
     'withdraw_bulk_none_pending' => 'هیچ مورد «در انتظار پرداخت» در انتخاب شما نبود.',
     'alert' => [
         'empty password' => 'اگر نمیخواهید رمز را تغییر دهید لطفا فیلد رمز را خالی بگذارید'
