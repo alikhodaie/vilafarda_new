@@ -70,7 +70,7 @@ class Sizpay implements GatewayInterface
 
         \Log::info('Sizpay GetToken2 success', [
             'transaction_id' => $this->transaction->id,
-            'callback' => $this->call_back,
+            'callback' => $this->callBack,
             'amount_rial' => $amountRial,
         ]);
 
