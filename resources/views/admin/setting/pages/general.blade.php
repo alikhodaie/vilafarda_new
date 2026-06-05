@@ -54,14 +54,32 @@
                 <label for="favicon">@lang('title.favicon')</label>
             </div>
             <div class="col-12 col-md-6">
+                @php
+                    $faviconStored = trim((string) setting('app:favicon', ''));
+                    $faviconAbsolute = $faviconStored
+                        ? public_path(\App\Models\Setting::FILE_PATH.ltrim($faviconStored, '/'))
+                        : null;
+                    $faviconOnDisk = $faviconAbsolute && is_file($faviconAbsolute);
+                    $faviconUrl = settingFilePath('app:favicon');
+                @endphp
                 <div class="input-group">
                     <input class="form-control" type="file" name="favicon" id="favicon" accept="image/png,image/x-icon,.ico">
-                    @if(settingFilePath('app:favicon'))
-                        <span class="input-group-text p-2">
-                            <img width="32" height="32" src="{{ settingFilePath('app:favicon') }}" alt="" style="object-fit: contain;">
+                    @if($faviconUrl && $faviconOnDisk)
+                        <span class="input-group-text p-2" title="{{ $faviconStored }}">
+                            <img width="32" height="32" src="{{ $faviconUrl }}" alt="" style="object-fit: contain;">
                         </span>
                     @endif
                 </div>
+                @if($faviconStored === '')
+                    <small class="text-warning d-block mt-1">فعلاً favicon در دیتابیس ثبت نشده — پیش‌نمایش خالی است.</small>
+                @elseif(! $faviconOnDisk)
+                    <small class="text-danger d-block mt-1">
+                        در DB ثبت شده (<code>{{ $faviconStored }}</code>) ولی فایل روی دیسک نیست.
+                        دسترسی نوشتن <code>public/files/setting/</code> را بررسی کنید.
+                    </small>
+                @else
+                    <small class="text-success d-block mt-1">فایل فعلی: <code>{{ $faviconStored }}</code></small>
+                @endif
                 <small class="text-muted d-block mt-2">
                     <strong>برای نمایش دایره‌ای در تب مرورگر و گوگل:</strong>
                     فایل PNG با <strong>پس‌زمینه شفاف</strong> (نه مربع تیره/سفید) آپلود کنید.

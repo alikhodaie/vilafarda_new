@@ -45,8 +45,16 @@ class SettingController extends Controller
 
             $data['app:site-name'] = trim((string) $request->get('site_name'));
 
-            if ($request->hasFile('favicon')) {
-                $data['app:favicon'] = Setting::saveFaviconFile($request->file('favicon'), 'app:favicon', 'favicon');
+            if ($request->file('favicon') !== null) {
+                $favicon = $request->file('favicon');
+                if (! $favicon->isValid()) {
+                    return redirect()
+                        ->route('admin.setting.index', ['active' => 'general'])
+                        ->withInput()
+                        ->with('danger', 'فایل favicon به سرور نرسید (حجم زیاد یا خطای آپلود PHP). مقدار upload_max_filesize و post_max_size را بررسی کنید.');
+                }
+
+                $data['app:favicon'] = Setting::saveFaviconFile($favicon, 'app:favicon', 'favicon');
             }
         }
 
