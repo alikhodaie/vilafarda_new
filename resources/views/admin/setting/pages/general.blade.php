@@ -55,7 +55,7 @@
             </div>
             <div class="col-12 col-md-6">
                 @php
-                    $faviconStored = trim((string) setting('app:favicon', ''));
+                    $faviconStored = trim((string) (\App\Models\Setting::rawValue('app:favicon', setting('app:favicon', '')));
                     $faviconAbsolute = $faviconStored
                         ? public_path(\App\Models\Setting::FILE_PATH.ltrim($faviconStored, '/'))
                         : null;

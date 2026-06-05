@@ -55,6 +55,8 @@ class SettingController extends Controller
                 }
 
                 $data['app:favicon'] = Setting::saveFaviconFile($favicon, 'app:favicon', 'favicon');
+                // saveFaviconFile خودش DB را به‌روز می‌کند؛ از تکرار در foreach جلوگیری می‌شود
+                unset($data['app:favicon']);
             }
         }
 

@@ -14,7 +14,9 @@ class FaviconStatus extends Command
 
     public function handle(): int
     {
-        $stored = setting('app:favicon');
+        $storedCache = setting('app:favicon');
+        $storedDb = Setting::rawValue('app:favicon');
+        $stored = $storedDb ?: $storedCache;
         $gitHead = $this->gitHead();
 
         $this->info('=== وضعیت deploy ===');
@@ -24,10 +26,20 @@ class FaviconStatus extends Command
 
         $this->newLine();
         $this->info('=== تنظیمات دیتابیس ===');
-        $this->line('app:favicon = '.($stored ?: '(خالی)'));
+        $this->line('DB مستقیم: '.($storedDb ?: '(خالی)'));
+        $this->line('کش setting(): '.($storedCache ?: '(خالی)'));
+
+        if ($storedDb && $storedCache !== $storedDb) {
+            $this->warn('کش با DB هم‌خوان نیست — php artisan cache:clear یا favicon:repair');
+        }
 
         if (! $stored) {
-            $this->warn('در دیتابیس favicon ثبت نشده — پیش‌نمایش ادمین هم خالی است.');
+            $latest = $this->latestFaviconOnDisk();
+            if ($latest) {
+                $this->warn('فایل روی دیسک هست ('.$latest.') ولی DB خالی — اجرا کنید: php artisan favicon:repair');
+            } else {
+                $this->warn('در دیتابیس favicon ثبت نشده.');
+            }
 
             return self::SUCCESS;
         }
@@ -60,6 +72,18 @@ class FaviconStatus extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function latestFaviconOnDisk(): ?string
+    {
+        $files = glob(public_path(Setting::FILE_PATH).'favicon-*-512.png') ?: [];
+        if ($files === []) {
+            return null;
+        }
+
+        usort($files, fn ($a, $b) => filemtime($b) <=> filemtime($a));
+
+        return basename($files[0]);
     }
 
     private function gitHead(): ?string

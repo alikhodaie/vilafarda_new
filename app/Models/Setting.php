@@ -33,6 +33,19 @@ class Setting extends Model
         return asset(self::FILE_PATH.$filename);
     }
 
+    public static function setValue(string $key, $value): void
+    {
+        static::query()->updateOrCreate(['key' => $key], ['value' => $value ?? '']);
+        forgetSettingsCache();
+    }
+
+    public static function rawValue(string $key, $default = null)
+    {
+        $value = static::query()->where('key', $key)->value('value');
+
+        return $value !== null && $value !== '' ? $value : $default;
+    }
+
     public static function rasterImageUrl(?string $value, string $subdir): ?string
     {
         if ($value === null || $value === '') {
@@ -149,13 +162,16 @@ class Setting extends Model
         if ($extension === 'ico') {
             $newFilename = 'favicon-'.time().'.ico';
             Storage::disk(self::FILE_DISK)->putFileAs(self::FILE_PATH, $file, $newFilename);
+            self::setValue($settingKey, $newFilename);
 
             return $newFilename;
         }
 
         $sourcePath = $file->getRealPath() ?: $file->getPathname();
+        $newFilename = FaviconProcessor::processFromPath($sourcePath);
+        self::setValue($settingKey, $newFilename);
 
-        return FaviconProcessor::processFromPath($sourcePath);
+        return $newFilename;
     }
 
     public static function faviconVariantFilename(?string $storedFilename, int $size): ?string

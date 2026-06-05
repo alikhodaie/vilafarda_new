@@ -93,6 +93,11 @@ if (! function_exists('forgetSettingsCache')) {
     function forgetSettingsCache(): void
     {
         cache()->forget(Setting::CACHE_KEY);
+        try {
+            cache()->delete(Setting::CACHE_KEY);
+        } catch (\Throwable $e) {
+            // بعضی درایورهای کش فقط forget دارند
+        }
     }
 }
 
