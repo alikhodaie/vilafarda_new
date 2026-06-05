@@ -15,10 +15,71 @@
     var dateState = { startIso: '', endIso: '' };
     var guestCount = 2;
     var calendar = null;
-    var onDateApplied = null;
-    var onGuestApplied = null;
+    var onDateAppliedCallbacks = [];
+    var onGuestAppliedCallbacks = [];
 
     function $(id) { return document.getElementById(id); }
+
+    function isDesktopHomesPopup() {
+        return !!document.querySelector('.homes-desktop-page') &&
+            window.matchMedia('(min-width: 992px)').matches;
+    }
+
+    function positionDesktopDateSheet() {
+        if (!dateSheet || !isDesktopHomesPopup()) {
+            dateSheet?.classList.remove('map-travel-sheet--desktop-popup');
+            return;
+        }
+
+        var badge = $('filterDateBadgeBtn');
+        var dock = dateSheet.querySelector('.mobile-reserve-sheet__dock');
+        if (!badge || !dock) return;
+
+        dateSheet.classList.add('map-travel-sheet--desktop-popup');
+
+        var rect = badge.getBoundingClientRect();
+        var width = Math.min(460, window.innerWidth - 32);
+        var right = Math.max(16, window.innerWidth - rect.right);
+        if (right + width > window.innerWidth - 16) {
+            right = Math.max(16, window.innerWidth - width - 16);
+        }
+
+        dock.style.position = 'fixed';
+        dock.style.top = (rect.bottom + 8) + 'px';
+        dock.style.right = right + 'px';
+        dock.style.left = 'auto';
+        dock.style.bottom = 'auto';
+        dock.style.width = width + 'px';
+        dock.style.maxWidth = 'calc(100vw - 32px)';
+        dock.style.transform = 'none';
+    }
+
+    function resetDesktopDateSheetPosition() {
+        if (!dateSheet) return;
+        dateSheet.classList.remove('map-travel-sheet--desktop-popup');
+        var dock = dateSheet.querySelector('.mobile-reserve-sheet__dock');
+        if (!dock) return;
+        dock.style.position = '';
+        dock.style.top = '';
+        dock.style.right = '';
+        dock.style.left = '';
+        dock.style.bottom = '';
+        dock.style.width = '';
+        dock.style.maxWidth = '';
+        dock.style.transform = '';
+    }
+
+    function getInitialMonthOffset(allMonths, startIso) {
+        if (!startIso || !global.MapJalaliUtils?.jalaliFromIso) return 0;
+        var j = global.MapJalaliUtils.jalaliFromIso(String(startIso));
+        if (!j) return 0;
+        var idx = -1;
+        allMonths.forEach(function (mo, i) {
+            if (mo.year === j.year && mo.month === j.month) idx = i;
+        });
+        if (idx < 0) return 0;
+        return Math.max(0, Math.min(idx, Math.max(0, allMonths.length - 2)));
+    }
 
     function persianDigit(value) {
         return global.MapJalaliUtils
@@ -37,6 +98,9 @@
         if (!sheet.classList.contains('is-open')) return;
         sheet.classList.remove('is-open');
         sheet.classList.add('is-closing');
+        if (sheet === dateSheet) {
+            resetDesktopDateSheetPosition();
+        }
         window.setTimeout(function () {
             sheet.classList.remove('is-closing');
             sheet.setAttribute('aria-hidden', 'true');
@@ -61,12 +125,23 @@
         var mount = $('mapFilterCalendarMount');
         if (!mount || !global.MapJalaliCalendar) return;
 
+        var dualMonth = isDesktopHomesPopup();
+        var monthOffset = 0;
+        if (dualMonth && global.MapJalaliUtils?.monthsInRangeFor) {
+            monthOffset = getInitialMonthOffset(
+                global.MapJalaliUtils.monthsInRangeFor(config.minDate, config.maxDate),
+                dateState.startIso
+            );
+        }
+
         calendar = new global.MapJalaliCalendar(mount, {
             minDate: config.minDate,
             maxDate: config.maxDate,
             startDate: dateState.startIso,
             endDate: dateState.endIso,
             showClearButton: false,
+            dualMonth: dualMonth,
+            monthOffset: monthOffset,
             onChange: function (payload) {
                 dateState.startIso = payload.startDate || '';
                 dateState.endIso = payload.endDate || '';
@@ -85,7 +160,7 @@
             start_at: global.MapJalaliUtils.isoToJalaliSlash(dateState.startIso),
             end_at: global.MapJalaliUtils.isoToJalaliSlash(dateState.endIso),
         };
-        if (onDateApplied) onDateApplied(payload);
+        onDateAppliedCallbacks.forEach(function (fn) { fn(payload); });
         closeSheet(dateSheet);
     }
 
@@ -93,17 +168,17 @@
         dateState.startIso = '';
         dateState.endIso = '';
         if (calendar) calendar.clear();
-        if (onDateApplied) onDateApplied({ start_at: '', end_at: '' });
+        onDateAppliedCallbacks.forEach(function (fn) { fn({ start_at: '', end_at: '' }); });
         closeSheet(dateSheet);
     }
 
     function applyGuest() {
-        if (onGuestApplied) onGuestApplied({ guest_count: String(guestCount) });
+        onGuestAppliedCallbacks.forEach(function (fn) { fn({ guest_count: String(guestCount) }); });
         closeSheet(guestSheet);
     }
 
     function clearGuest() {
-        if (onGuestApplied) onGuestApplied({ guest_count: '' });
+        onGuestAppliedCallbacks.forEach(function (fn) { fn({ guest_count: '' }); });
         closeSheet(guestSheet);
     }
 
@@ -113,8 +188,10 @@
         dateState.endIso = global.MapJalaliUtils.jalaliSlashToIso(initial.end_at || '');
         calendar = null;
         openSheet(dateSheet);
+        positionDesktopDateSheet();
         window.setTimeout(function () {
             initCalendar();
+            positionDesktopDateSheet();
             scrollCalendarToSelection();
         }, 80);
     }
@@ -168,6 +245,12 @@
         });
         $('mapFilterGuestApply')?.addEventListener('click', applyGuest);
         $('mapFilterGuestClear')?.addEventListener('click', clearGuest);
+
+        window.addEventListener('resize', function () {
+            if (dateSheet && dateSheet.classList.contains('is-open')) {
+                positionDesktopDateSheet();
+            }
+        });
     }
 
     global.MapTravelFilter = {
@@ -177,7 +260,15 @@
         },
         openDateFilter: openDateFilter,
         openGuestFilter: openGuestFilter,
-        onDateApplied: function (fn) { onDateApplied = fn; },
-        onGuestApplied: function (fn) { onGuestApplied = fn; },
+        onDateApplied: function (fn) {
+            if (typeof fn === 'function') {
+                onDateAppliedCallbacks.push(fn);
+            }
+        },
+        onGuestApplied: function (fn) {
+            if (typeof fn === 'function') {
+                onGuestAppliedCallbacks.push(fn);
+            }
+        },
     };
 })(window);

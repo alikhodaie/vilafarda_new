@@ -153,9 +153,9 @@ class HomeSmartSearchService
             return;
         }
 
-        $optionIds = $this->resolveOptionIds($normalized);
-        if ($optionIds !== []) {
-            $parsed->optionIds = array_values(array_unique(array_merge($parsed->optionIds, $optionIds)));
+        $provinceIds = $this->resolveProvinceIds($normalized);
+        if ($provinceIds !== []) {
+            $parsed->provinceIds = array_values(array_unique(array_merge($parsed->provinceIds, $provinceIds)));
 
             return;
         }
@@ -167,9 +167,9 @@ class HomeSmartSearchService
             return;
         }
 
-        $provinceIds = $this->resolveProvinceIds($normalized);
-        if ($provinceIds !== []) {
-            $parsed->provinceIds = array_values(array_unique(array_merge($parsed->provinceIds, $provinceIds)));
+        $optionIds = $this->resolveOptionIds($normalized);
+        if ($optionIds !== []) {
+            $parsed->optionIds = array_values(array_unique(array_merge($parsed->optionIds, $optionIds)));
         }
     }
 
@@ -345,13 +345,21 @@ class HomeSmartSearchService
 
     private function applyBroadTextSearch(Builder $query, string $term): void
     {
+        $normalized = $this->normalize($term);
         $like = '%'.$term.'%';
+        $normalizedLike = $normalized !== '' ? '%'.$normalized.'%' : $like;
 
-        $query->where(function (Builder $q) use ($like) {
+        $query->where(function (Builder $q) use ($like, $normalizedLike) {
             $q->where('name', 'LIKE', $like)
                 ->orWhere('code', 'LIKE', $like)
-                ->orWhereHas('city', fn (Builder $city) => $city->where('name', 'LIKE', $like))
-                ->orWhereHas('province', fn (Builder $province) => $province->where('name', 'LIKE', $like));
+                ->orWhereHas('city', function (Builder $city) use ($like, $normalizedLike) {
+                    $city->where('name', 'LIKE', $like)
+                        ->orWhereRaw($this->normalizedNameSql('name').' LIKE ?', [$normalizedLike]);
+                })
+                ->orWhereHas('province', function (Builder $province) use ($like, $normalizedLike) {
+                    $province->where('name', 'LIKE', $like)
+                        ->orWhereRaw($this->normalizedNameSql('name').' LIKE ?', [$normalizedLike]);
+                });
         });
     }
 

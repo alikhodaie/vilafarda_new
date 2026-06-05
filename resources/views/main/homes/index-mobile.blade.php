@@ -1,5 +1,9 @@
 @extends('layouts.main.main_mobile')
 
+@section('meta')
+    @include('main.homes.partials.homes-seo-pagination-meta')
+@endsection
+
 <link href="{{ asset('assets/css/map-travel-sheet.css') }}" rel="stylesheet">
 <link href="{{ asset('assets/css/mobile-price-range.css') }}" rel="stylesheet">
 
@@ -488,6 +492,7 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
     padding: 0;
     list-style: none;
     display: flex;
+    flex-wrap: nowrap;
     justify-content: center;
     align-items: center;
     gap: 8px;
@@ -555,16 +560,20 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
     font-weight: 600;
 }
 
-/* Dots */
-.pagination .page-item .page-link[aria-label*="..."] {
+/* Ellipsis */
+.pagination .page-item--ellipsis .page-link {
+    width: auto;
+    min-width: 32px;
+    padding: 0 4px;
     background: transparent;
     border: none;
     color: #6c757d;
     cursor: default;
     box-shadow: none;
+    letter-spacing: 2px;
 }
 
-.pagination .page-item .page-link[aria-label*="..."]:hover {
+.pagination .page-item--ellipsis .page-link:hover {
     background: transparent;
     border: none;
     color: #6c757d;
@@ -588,13 +597,6 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
     
     .pagination-wrapper {
         padding: 12px !important;
-    }
-}
-
-/* Hide some page numbers on very small screens */
-@media (max-width: 400px) {
-    .pagination .page-item:nth-child(n+4):nth-last-child(n+4) {
-        display: none;
     }
 }
 
@@ -1005,507 +1007,14 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
     <!-- Page Header -->
     <div class="container px-3 py-3">
         <div class="page-header-card">
-            <h1 class="page-header-title">جستجوی اقامتگاه</h1>
-            <p class="page-header-subtitle">پیدا کردن اقامتگاه مناسب</p>
+            <h1 class="page-header-title">{{ $homesSeoContext['h1'] ?? 'اجاره ویلا و سوئیت' }}</h1>
+            <p class="page-header-subtitle">جستجو و رزرو آنلاین ویلا، سوئیت و اقامتگاه</p>
             
         </div>
     </div>
 
-    @php
-            $provinces = \App\Models\Province::getFromCache();
-            $selectedProvince = request('province');
-            $cities = $selectedProvince ? \App\Models\City::where('province_id', $selectedProvince)->get() : collect();
-            $selectedCity = request('city');
-            $selectedType = request('type');
-            $selectedGuestCount = request('guest_count');
-            $selectedMinPrice = request('min_price');
-            $selectedMaxPrice = request('max_price');
-            $selectedFeatures = request('features', []);
-            if(!is_array($selectedFeatures)) {
-                $selectedFeatures = [$selectedFeatures];
-            }
-            
-            // Get selected labels for display
-            $provinceLabel = $selectedProvince ? $provinces->firstWhere('id', $selectedProvince)?->name : null;
-            $cityLabel = $selectedCity ? $cities->firstWhere('id', $selectedCity)?->name : null;
-            $typeLabels = ['villa' => 'ویلا', 'apartment' => 'آپارتمان', 'house' => 'خانه'];
-            $typeLabel = $selectedType ? ($typeLabels[$selectedType] ?? $selectedType) : null;
-            $guestLabel = $selectedGuestCount ? ($selectedGuestCount == '10' ? '10+ نفر' : $selectedGuestCount . ' نفر') : null;
-            $priceLabel = null;
-            if($selectedMinPrice || $selectedMaxPrice) {
-                if($selectedMinPrice && $selectedMaxPrice) {
-                    $priceLabel = number_format($selectedMinPrice) . ' - ' . number_format($selectedMaxPrice);
-                } elseif($selectedMinPrice) {
-                    $priceLabel = 'از ' . number_format($selectedMinPrice);
-                } elseif($selectedMaxPrice) {
-                    $priceLabel = 'تا ' . number_format($selectedMaxPrice);
-                }
-            }
-            $featureLabels = ['wifi' => 'وای‌فای', 'parking' => 'پارکینگ', 'pool' => 'استخر', 'garden' => 'باغ'];
-        @endphp
-
-    <!-- Search bar + active filter chips -->
-    <div class="container px-3 pt-2 pb-2">
-        @include('main.homes.partials.mobile-search-bar')
-    </div>
-
-    <!-- Filter Badges (Single Row Scrollable) -->
-    <div class="container px-3 pb-3">
-        <div class="filter-badges-scroll" style="overflow-x: auto; overflow-y: hidden; white-space: nowrap; padding: 8px 0; -webkit-overflow-scrolling: touch; scroll-behavior: smooth;">
-            <div class="filter-badges-wrapper" style="display: inline-flex; gap: 8px; align-items: center; padding: 0 4px;">
-                <!-- Province Filter -->
-                <span class="filter-badge-btn {{ $selectedProvince ? 'active' : '' }}" 
-                      data-bs-toggle="modal" 
-                      data-bs-target="#filterProvinceModal"
-                      style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: {{ $selectedProvince ? '#D39D1A' : '#f0f0f0' }}; color: {{ $selectedProvince ? 'white' : '#666' }}; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; user-select: none; transition: all 0.2s ease; border: 2px solid {{ $selectedProvince ? '#D39D1A' : 'transparent' }};">
-                    <i class="bi bi-geo-alt" style="font-size: 14px;"></i>
-                    @if(!$selectedProvince)<span class="filter-badge-btn__label">استان</span>@endif
-                </span>
-                
-                <!-- City Filter (only if province is selected) -->
-                @if($selectedProvince)
-                <span class="filter-badge-btn {{ $selectedCity ? 'active' : '' }}" 
-                      data-bs-toggle="modal" 
-                      data-bs-target="#filterCityModal"
-                      style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: {{ $selectedCity ? '#D39D1A' : '#f0f0f0' }}; color: {{ $selectedCity ? 'white' : '#666' }}; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; user-select: none; transition: all 0.2s ease; border: 2px solid {{ $selectedCity ? '#D39D1A' : 'transparent' }};">
-                    <i class="bi bi-geo-alt-fill" style="font-size: 14px;"></i>
-                    @if(!$selectedCity)<span class="filter-badge-btn__label">شهر</span>@endif
-                </span>
-                @endif
-                
-                <!-- Type Filter -->
-                <span class="filter-badge-btn {{ $selectedType ? 'active' : '' }}" 
-                      data-bs-toggle="modal" 
-                      data-bs-target="#filterTypeModal"
-                      style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: {{ $selectedType ? '#D39D1A' : '#f0f0f0' }}; color: {{ $selectedType ? 'white' : '#666' }}; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; user-select: none; transition: all 0.2s ease; border: 2px solid {{ $selectedType ? '#D39D1A' : 'transparent' }};">
-                    <i class="bi bi-house" style="font-size: 14px;"></i>
-                    @if(!$selectedType)<span class="filter-badge-btn__label">نوع</span>@endif
-                </span>
-                
-                <!-- Guest Count Filter -->
-                <span class="filter-badge-btn {{ $selectedGuestCount ? 'active' : '' }}" 
-                      data-bs-toggle="modal" 
-                      data-bs-target="#filterGuestModal"
-                      style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: {{ $selectedGuestCount ? '#D39D1A' : '#f0f0f0' }}; color: {{ $selectedGuestCount ? 'white' : '#666' }}; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; user-select: none; transition: all 0.2s ease; border: 2px solid {{ $selectedGuestCount ? '#D39D1A' : 'transparent' }};">
-                    <i class="bi bi-people" style="font-size: 14px;"></i>
-                    @if(!$selectedGuestCount)<span class="filter-badge-btn__label">تعداد مهمان</span>@endif
-                </span>
-                
-                <!-- Price Filter -->
-                <span class="filter-badge-btn {{ $priceLabel ? 'active' : '' }}" 
-                      data-bs-toggle="modal" 
-                      data-bs-target="#filterPriceModal"
-                      style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: {{ $priceLabel ? '#D39D1A' : '#f0f0f0' }}; color: {{ $priceLabel ? 'white' : '#666' }}; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; user-select: none; transition: all 0.2s ease; border: 2px solid {{ $priceLabel ? '#D39D1A' : 'transparent' }};">
-                    <i class="bi bi-currency-exchange" style="font-size: 14px;"></i>
-                    @if(!$priceLabel)<span class="filter-badge-btn__label">قیمت</span>@endif
-                </span>
-                
-                <!-- Features Filter -->
-                <span class="filter-badge-btn {{ !empty($selectedFeatures) ? 'active' : '' }}" 
-                      data-bs-toggle="modal" 
-                      data-bs-target="#filterFeatureModal"
-                      style="display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: {{ !empty($selectedFeatures) ? '#D39D1A' : '#f0f0f0' }}; color: {{ !empty($selectedFeatures) ? 'white' : '#666' }}; border-radius: 20px; font-size: 13px; font-weight: 500; white-space: nowrap; cursor: pointer; user-select: none; transition: all 0.2s ease; border: 2px solid {{ !empty($selectedFeatures) ? '#D39D1A' : 'transparent' }};">
-                    <i class="bi bi-star" style="font-size: 14px;"></i>
-                    @if(empty($selectedFeatures))<span class="filter-badge-btn__label">امکانات</span>@endif
-                </span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Province Filter Modal -->
-    <div class="modal fade" id="filterProvinceModal" tabindex="-1" aria-labelledby="filterProvinceModalLabel" aria-hidden="true" style="z-index: 9999;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="filterProvinceModalLabel" style="font-size: 16px;">انتخاب استان</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="GET" action="{{ route('main.homes.index') }}" id="provinceFilterForm">
-                    <input type="hidden" name="city" value="{{ request('city') }}">
-                    <input type="hidden" name="type" value="{{ request('type') }}">
-                    <input type="hidden" name="guest_count" value="{{ request('guest_count') }}">
-                    <input type="hidden" name="min_price" value="{{ request('min_price') }}">
-                    <input type="hidden" name="max_price" value="{{ request('max_price') }}">
-                    @foreach(request('features', []) as $feature)
-                        <input type="hidden" name="features[]" value="{{ $feature }}">
-                    @endforeach
-                    <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
-                        <div class="list-group">
-                            <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ !$selectedProvince ? 'active' : '' }}" 
-                               onclick="selectProvince('')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                <i class="bi bi-geo-alt me-2"></i>همه استان‌ها
-                            </a>
-                            @foreach($provinces as $province)
-                                <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ $selectedProvince == $province->id ? 'active' : '' }}" 
-                                   onclick="selectProvince('{{ $province->id }}')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                    <i class="bi bi-geo-alt me-2"></i>{{ $province->name }}
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size: 14px; border-radius: 12px;">انصراف</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- City Filter Modal -->
-    @if($selectedProvince)
-    <div class="modal fade" id="filterCityModal" tabindex="-1" aria-labelledby="filterCityModalLabel" aria-hidden="true" style="z-index: 9999;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="filterCityModalLabel" style="font-size: 16px;">انتخاب شهر</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="GET" action="{{ route('main.homes.index') }}" id="cityFilterForm">
-                    <input type="hidden" name="province" value="{{ request('province') }}">
-                    <input type="hidden" name="type" value="{{ request('type') }}">
-                    <input type="hidden" name="guest_count" value="{{ request('guest_count') }}">
-                    <input type="hidden" name="min_price" value="{{ request('min_price') }}">
-                    <input type="hidden" name="max_price" value="{{ request('max_price') }}">
-                    @foreach(request('features', []) as $feature)
-                        <input type="hidden" name="features[]" value="{{ $feature }}">
-                    @endforeach
-                    <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
-                        <div class="list-group">
-                            <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ !$selectedCity ? 'active' : '' }}" 
-                               onclick="selectCity('')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                <i class="bi bi-geo-alt-fill me-2"></i>همه شهرها
-                            </a>
-                            @foreach($cities as $city)
-                                <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ $selectedCity == $city->id ? 'active' : '' }}" 
-                                   onclick="selectCity('{{ $city->id }}')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                    <i class="bi bi-geo-alt-fill me-2"></i>{{ $city->name }}
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size: 14px; border-radius: 12px;">انصراف</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    <!-- Type Filter Modal -->
-    <div class="modal fade" id="filterTypeModal" tabindex="-1" aria-labelledby="filterTypeModalLabel" aria-hidden="true" style="z-index: 9999;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="filterTypeModalLabel" style="font-size: 16px;">انتخاب نوع اقامتگاه</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="GET" action="{{ route('main.homes.index') }}" id="typeFilterForm">
-                    <input type="hidden" name="province" value="{{ request('province') }}">
-                    <input type="hidden" name="city" value="{{ request('city') }}">
-                    <input type="hidden" name="guest_count" value="{{ request('guest_count') }}">
-                    <input type="hidden" name="min_price" value="{{ request('min_price') }}">
-                    <input type="hidden" name="max_price" value="{{ request('max_price') }}">
-                    @foreach(request('features', []) as $feature)
-                        <input type="hidden" name="features[]" value="{{ $feature }}">
-                    @endforeach
-                    <div class="modal-body">
-                        <div class="list-group">
-                            <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ !$selectedType ? 'active' : '' }}" 
-                               onclick="selectType('')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                <i class="bi bi-house me-2"></i>همه انواع
-                            </a>
-                            <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ $selectedType == 'villa' ? 'active' : '' }}" 
-                               onclick="selectType('villa')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                <i class="bi bi-house me-2"></i>ویلا
-                            </a>
-                            <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ $selectedType == 'apartment' ? 'active' : '' }}" 
-                               onclick="selectType('apartment')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                <i class="bi bi-building me-2"></i>آپارتمان
-                            </a>
-                            <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ $selectedType == 'house' ? 'active' : '' }}" 
-                               onclick="selectType('house')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                <i class="bi bi-house-door me-2"></i>خانه
-                            </a>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size: 14px; border-radius: 12px;">انصراف</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Guest Count Filter Modal -->
-    <div class="modal fade" id="filterGuestModal" tabindex="-1" aria-labelledby="filterGuestModalLabel" aria-hidden="true" style="z-index: 9999;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="filterGuestModalLabel" style="font-size: 16px;">انتخاب تعداد مهمان</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="GET" action="{{ route('main.homes.index') }}" id="guestFilterForm">
-                    <input type="hidden" name="province" value="{{ request('province') }}">
-                    <input type="hidden" name="city" value="{{ request('city') }}">
-                    <input type="hidden" name="type" value="{{ request('type') }}">
-                    <input type="hidden" name="min_price" value="{{ request('min_price') }}">
-                    <input type="hidden" name="max_price" value="{{ request('max_price') }}">
-                    @foreach(request('features', []) as $feature)
-                        <input type="hidden" name="features[]" value="{{ $feature }}">
-                    @endforeach
-                    <div class="modal-body">
-                        <div class="list-group">
-                            <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ !$selectedGuestCount ? 'active' : '' }}" 
-                               onclick="selectGuestCount('')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                <i class="bi bi-people me-2"></i>همه
-                            </a>
-                            @foreach([1, 2, 4, 6, 8, 10] as $count)
-                                <a href="javascript:void(0)" class="list-group-item list-group-item-action {{ $selectedGuestCount == $count ? 'active' : '' }}" 
-                                   onclick="selectGuestCount('{{ $count }}')" style="border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
-                                    <i class="bi bi-people me-2"></i>{{ $count == 10 ? '10+' : $count }} نفر
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size: 14px; border-radius: 12px;">انصراف</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Price Filter Modal -->
-    <div class="modal fade" id="filterPriceModal" tabindex="-1" aria-labelledby="filterPriceModalLabel" aria-hidden="true" style="z-index: 9999;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="filterPriceModalLabel" style="font-size: 16px;">انتخاب محدوده قیمت</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="GET" action="{{ route('main.homes.index') }}" id="priceFilterForm">
-                    <input type="hidden" name="province" value="{{ request('province') }}">
-                    <input type="hidden" name="city" value="{{ request('city') }}">
-                    <input type="hidden" name="type" value="{{ request('type') }}">
-                    <input type="hidden" name="guest_count" value="{{ request('guest_count') }}">
-                    @foreach(request('features', []) as $feature)
-                        <input type="hidden" name="features[]" value="{{ $feature }}">
-                    @endforeach
-                    @foreach(request('q', []) as $term)
-                        @if(is_string($term) && trim($term) !== '')
-                            <input type="hidden" name="q[]" value="{{ $term }}">
-                        @endif
-                    @endforeach
-                    <div class="modal-body pt-2 overflow-hidden">
-                        <div class="mobile-price-range-col">
-                            @include('main.homes.partials.mobile-price-range', ['mprId' => 'mprModal'])
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size: 14px; border-radius: 12px;">انصراف</button>
-                        <button type="submit" class="btn btn-primary" style="background: #D39D1A; border-color: #D39D1A; color: white; font-size: 14px; border-radius: 12px;">
-                            <i class="bi bi-check-circle me-2"></i>
-                            اعمال
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Features Filter Modal -->
-    <div class="modal fade" id="filterFeatureModal" tabindex="-1" aria-labelledby="filterFeatureModalLabel" aria-hidden="true" style="z-index: 9999;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="filterFeatureModalLabel" style="font-size: 16px;">انتخاب امکانات</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="GET" action="{{ route('main.homes.index') }}" id="featureFilterForm">
-                    <input type="hidden" name="province" value="{{ request('province') }}">
-                    <input type="hidden" name="city" value="{{ request('city') }}">
-                    <input type="hidden" name="type" value="{{ request('type') }}">
-                    <input type="hidden" name="guest_count" value="{{ request('guest_count') }}">
-                    <input type="hidden" name="min_price" value="{{ request('min_price') }}">
-                    <input type="hidden" name="max_price" value="{{ request('max_price') }}">
-                    <div class="modal-body">
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <div class="form-check p-3" style="border: 2px solid #e0e0e0; border-radius: 12px; cursor: pointer;">
-                                    <input class="form-check-input" type="checkbox" name="features[]" value="wifi" 
-                                           id="feature_wifi" {{ in_array('wifi', $selectedFeatures) ? 'checked' : '' }} style="cursor: pointer;">
-                                    <label class="form-check-label" for="feature_wifi" style="cursor: pointer; font-size: 14px;">
-                                        <i class="bi bi-wifi me-2"></i>وای‌فای
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check p-3" style="border: 2px solid #e0e0e0; border-radius: 12px; cursor: pointer;">
-                                    <input class="form-check-input" type="checkbox" name="features[]" value="parking" 
-                                           id="feature_parking" {{ in_array('parking', $selectedFeatures) ? 'checked' : '' }} style="cursor: pointer;">
-                                    <label class="form-check-label" for="feature_parking" style="cursor: pointer; font-size: 14px;">
-                                        <i class="bi bi-p-square me-2"></i>پارکینگ
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check p-3" style="border: 2px solid #e0e0e0; border-radius: 12px; cursor: pointer;">
-                                    <input class="form-check-input" type="checkbox" name="features[]" value="pool" 
-                                           id="feature_pool" {{ in_array('pool', $selectedFeatures) ? 'checked' : '' }} style="cursor: pointer;">
-                                    <label class="form-check-label" for="feature_pool" style="cursor: pointer; font-size: 14px;">
-                                        <i class="bi bi-water me-2"></i>استخر
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-check p-3" style="border: 2px solid #e0e0e0; border-radius: 12px; cursor: pointer;">
-                                    <input class="form-check-input" type="checkbox" name="features[]" value="garden" 
-                                           id="feature_garden" {{ in_array('garden', $selectedFeatures) ? 'checked' : '' }} style="cursor: pointer;">
-                                    <label class="form-check-label" for="feature_garden" style="cursor: pointer; font-size: 14px;">
-                                        <i class="bi bi-tree me-2"></i>باغ
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size: 14px; border-radius: 12px;">انصراف</button>
-                        <button type="submit" class="btn btn-primary" style="background: #D39D1A; border-color: #D39D1A; color: white; font-size: 14px; border-radius: 12px;">
-                            <i class="bi bi-check-circle me-2"></i>
-                            اعمال
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Filter Modal -->
-    <div class="modal fade modal-above-map-explorer" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="filterModalLabel" style="font-size: 16px;">فیلتر اقامتگاه‌ها</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form method="GET" action="{{ route('main.homes.index') }}">
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <!-- Province -->
-                            <div class="col-12">
-                                <label for="province" class="form-label" style="font-size: 14px;">استان</label>
-                                <select name="province" id="province" class="form-select" style="font-size: 14px;">
-                                    <option value="">انتخاب استان</option>
-                                    @foreach(\App\Models\Province::getFromCache() as $province)
-                                        <option value="{{ $province->id }}" 
-                                                @if(request('province') == $province->id) selected @endif>
-                                            {{ $province->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <!-- City -->
-                            <div class="col-12">
-                                <label for="city" class="form-label" style="font-size: 14px;">شهر</label>
-                                <select name="city" id="city" class="form-select" style="font-size: 14px;">
-                                    <option value="">انتخاب شهر</option>
-                                    @if(request('province'))
-                                        @foreach(\App\Models\City::where('province_id', request('province'))->get() as $city)
-                                            <option value="{{ $city->id }}" 
-                                                    @if(request('city') == $city->id) selected @endif>
-                                                {{ $city->name }}
-                                            </option>
-                                        @endforeach
-                                    @endif
-                                </select>
-                            </div>
-
-                            <!-- Type -->
-                            <div class="col-6">
-                                <label for="type" class="form-label" style="font-size: 14px;">نوع اقامتگاه</label>
-                                <select name="type" id="type" class="form-select" style="font-size: 14px;">
-                                    <option value="">همه انواع</option>
-                                    <option value="villa" @if(request('type') == 'villa') selected @endif>ویلا</option>
-                                    <option value="apartment" @if(request('type') == 'apartment') selected @endif>آپارتمان</option>
-                                    <option value="house" @if(request('type') == 'house') selected @endif>خانه</option>
-                                </select>
-                            </div>
-
-                            <!-- Guest Count -->
-                            <div class="col-6">
-                                <label for="guest_count" class="form-label" style="font-size: 14px;">تعداد مهمان</label>
-                                <select name="guest_count" id="guest_count" class="form-select" style="font-size: 14px;">
-                                    <option value="">همه</option>
-                                    <option value="1" @if(request('guest_count') == '1') selected @endif>1 نفر</option>
-                                    <option value="2" @if(request('guest_count') == '2') selected @endif>2 نفر</option>
-                                    <option value="4" @if(request('guest_count') == '4') selected @endif>4 نفر</option>
-                                    <option value="6" @if(request('guest_count') == '6') selected @endif>6 نفر</option>
-                                    <option value="8" @if(request('guest_count') == '8') selected @endif>8 نفر</option>
-                                    <option value="10" @if(request('guest_count') == '10') selected @endif>10+ نفر</option>
-                                </select>
-                            </div>
-
-                            <!-- Price Range -->
-                            <div class="col-12 mobile-price-range-col">
-                                @include('main.homes.partials.mobile-price-range', ['mprId' => 'mprFilter'])
-                            </div>
-
-                            <!-- Features -->
-                            <div class="col-12">
-                                <label class="form-label" style="font-size: 14px;">امکانات</label>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="features[]" value="wifi" 
-                                                   id="wifi" @if(in_array('wifi', request('features', []))) checked @endif>
-                                            <label class="form-check-label" for="wifi" style="font-size: 12px;">
-                                                وای‌فای
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="features[]" value="parking" 
-                                                   id="parking" @if(in_array('parking', request('features', []))) checked @endif>
-                                            <label class="form-check-label" for="parking" style="font-size: 12px;">
-                                                پارکینگ
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="features[]" value="pool" 
-                                                   id="pool" @if(in_array('pool', request('features', []))) checked @endif>
-                                            <label class="form-check-label" for="pool" style="font-size: 12px;">
-                                                استخر
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="features[]" value="garden" 
-                                                   id="garden" @if(in_array('garden', request('features', []))) checked @endif>
-                                            <label class="form-check-label" for="garden" style="font-size: 12px;">
-                                                باغ
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size: 14px; border-radius: 12px;">انصراف</button>
-                        <button type="submit" class="btn btn-primary" style="background: #D39D1A; border-color: #D39D1A; color: white; font-size: 14px; border-radius: 12px;">
-                            <i class="bi bi-funnel me-2"></i>
-                            اعمال فیلتر
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+    <div class="container px-3 py-2">
+        @include('main.homes.partials.homes-filter-section')
     </div>
 
     <!-- دکمه ثابت نقشه (بالای نوار پایین) -->
@@ -1525,7 +1034,7 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
             @if($homes->hasPages())
                 <div class="d-flex justify-content-center mt-4 mb-4">
                     <div class="pagination-wrapper" style="background: #f8f9fa; padding: 16px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                        {{ $homes->appends(request()->query())->links() }}
+                        @include('main.homes.partials.homes-pagination')
                     </div>
                 </div>
             @endif
@@ -1614,68 +1123,8 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
         </div>
     </div>
 
-    <!-- شیت فیلتر تاریخ (مشابه رزرو — بدون npm) -->
-    <div id="mapDateFilterSheet" class="mobile-reserve-sheet map-travel-sheet" aria-hidden="true">
-        <div class="mobile-reserve-sheet__backdrop" data-map-date-close></div>
-        <div class="mobile-reserve-sheet__dock">
-            <button type="button" class="mobile-reserve-sheet__close" aria-label="بستن" data-map-date-close>
-                <i class="bi bi-x-lg"></i>
-                        </button>
-            <div class="mobile-reserve-sheet__panel map-date-sheet__panel">
-                <div class="mobile-reserve-sheet__calendar-header">
-                    <button type="button" class="mobile-reserve-sheet__calendar-back" id="mapFilterCalendarBack" aria-label="بستن">
-                        <i class="bi bi-arrow-right"></i>
-                    </button>
-                    <span class="mobile-reserve-sheet__calendar-title">انتخاب تاریخ سفر</span>
-                    </div>
-                <div class="mobile-reserve-sheet__calendar-mount" id="mapFilterCalendarMount"></div>
-                <div class="mobile-reserve-sheet__footer map-travel-sheet__actions-row map-date-sheet__footer">
-                    <button type="button" class="mobile-reserve-sheet__submit mobile-reserve-sheet__submit--secondary" id="mapFilterDateClear">پاک کردن</button>
-                    <button type="button" class="mobile-reserve-sheet__submit" id="mapFilterDateApply">اعمال</button>
-                </div>
-                        </div>
-        </div>
-                        </div>
-                        
-    <!-- شیت فیلتر تعداد نفرات -->
-    <div id="mapGuestFilterSheet" class="mobile-reserve-sheet map-travel-sheet" aria-hidden="true">
-        <div class="mobile-reserve-sheet__backdrop" data-map-guest-close></div>
-        <div class="mobile-reserve-sheet__dock">
-            <button type="button" class="mobile-reserve-sheet__close" aria-label="بستن" data-map-guest-close>
-                <i class="bi bi-x-lg"></i>
-            </button>
-            <div class="mobile-reserve-sheet__panel">
-                <div class="mobile-reserve-sheet__step mobile-reserve-sheet__step--form">
-                    <div class="mobile-reserve-sheet__body">
-                        <div class="mobile-reserve-sheet__field">
-                            <div class="mobile-reserve-sheet__guest-row">
-                                <div class="mobile-reserve-sheet__guest-info">
-                                    <div class="mobile-reserve-sheet__guest-title">
-                                        <i class="bi bi-people" aria-hidden="true"></i>
-                                        <span>تعداد مسافران</span>
-                        </div>
-                                    <p class="mobile-reserve-sheet__guest-breakdown" id="mapFilterGuestBreakdown"></p>
-                    </div>
-                                <div class="mobile-reserve-sheet__guest-counter">
-                                    <button type="button" class="mobile-reserve-sheet__guest-btn" id="mapFilterGuestMinus" aria-label="کم کردن">−</button>
-                                    <span class="mobile-reserve-sheet__guest-count" id="mapFilterGuestCount">۲</span>
-                                    <button type="button" class="mobile-reserve-sheet__guest-btn" id="mapFilterGuestPlus" aria-label="زیاد کردن">+</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mobile-reserve-sheet__info-banner">
-                            <i class="bi bi-info-circle" aria-hidden="true"></i>
-                            <span>کودک زیر دو سال جزو نفرات حساب نمی‌شود.</span>
-                        </div>
-                    </div>
-                    <div class="mobile-reserve-sheet__footer map-travel-sheet__actions-row">
-                        <button type="button" class="mobile-reserve-sheet__submit mobile-reserve-sheet__submit--secondary" id="mapFilterGuestClear">همه</button>
-                        <button type="button" class="mobile-reserve-sheet__submit" id="mapFilterGuestApply">اعمال</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    @include('main.homes.partials.homes-filter-modals')
+    @include('main.homes.partials.homes-travel-filter-sheets')
 
 @endsection
 
@@ -1688,181 +1137,20 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
     <script src="{{ asset('assets/js/homes-mobile-search.js') }}"></script>
     <script src="{{ asset('assets/js/mobile-price-range.js') }}"></script>
     <script src="{{ asset('assets/js/map-travel-filter.js') }}"></script>
+    <script src="{{ asset('assets/js/homes-filters.js') }}"></script>
+    <script src="{{ asset('assets/js/homes-date-filter.js') }}"></script>
 
     <script>
+        window.homesDateFilterConfig = {
+            minDate: @json(\App\Models\Order::getMinReserveDate()->format('Y-m-d')),
+            maxDate: @json(\App\Models\Order::getMaxReserveDate()->format('Y-m-d')),
+            startLabel: @json(__('title.date_enter')),
+            endLabel: @json(__('title.date_quit')),
+        };
         window.provinceMapCenters = @json($provinceMapCenters ?? []);
     </script>
 
     <script>
-        document.getElementById('filterPriceModal')?.addEventListener('shown.bs.modal', function () {
-            if (typeof window.initMobilePriceRanges === 'function') {
-                window.initMobilePriceRanges();
-            }
-        });
-        document.getElementById('filterModal')?.addEventListener('shown.bs.modal', function () {
-            if (typeof window.initMobilePriceRanges === 'function') {
-                window.initMobilePriceRanges();
-            }
-        });
-
-        // Filter selection functions
-        function selectProvince(value) {
-            const form = document.getElementById('provinceFilterForm');
-            if (value === '') {
-                form.querySelector('input[name="province"]')?.remove();
-            } else {
-                let input = form.querySelector('input[name="province"]');
-                if (!input) {
-                    input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'province';
-                    form.appendChild(input);
-                }
-                input.value = value;
-            }
-            // Clear city if province changes
-            if (value !== '{{ request('province') }}') {
-                const cityInput = form.querySelector('input[name="city"]');
-                if (cityInput) cityInput.remove();
-            }
-            form.submit();
-        }
-
-        function selectCity(value) {
-            const form = document.getElementById('cityFilterForm');
-            if (value === '') {
-                form.querySelector('input[name="city"]')?.remove();
-            } else {
-                let input = form.querySelector('input[name="city"]');
-                if (!input) {
-                    input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'city';
-                    form.appendChild(input);
-                }
-                input.value = value;
-            }
-            form.submit();
-        }
-
-        function selectType(value) {
-            const form = document.getElementById('typeFilterForm');
-            if (value === '') {
-                form.querySelector('input[name="type"]')?.remove();
-            } else {
-                let input = form.querySelector('input[name="type"]');
-                if (!input) {
-                    input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'type';
-                    form.appendChild(input);
-                }
-                input.value = value;
-            }
-            form.submit();
-        }
-
-        function selectGuestCount(value) {
-            const form = document.getElementById('guestFilterForm');
-            if (value === '') {
-                form.querySelector('input[name="guest_count"]')?.remove();
-            } else {
-                let input = form.querySelector('input[name="guest_count"]');
-                if (!input) {
-                    input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'guest_count';
-                    form.appendChild(input);
-                }
-                input.value = value;
-            }
-            form.submit();
-        }
-
-        function navigateWithParams(urlParams) {
-            let newUrl = window.location.pathname;
-            const queryString = urlParams.toString();
-            if (queryString) {
-                newUrl += '?' + queryString;
-            }
-            window.location.href = newUrl;
-        }
-
-        function removeAllFeatureParams(urlParams) {
-            [...urlParams.keys()].forEach(function (key) {
-                if (key === 'features[]' || key === 'features') {
-                    urlParams.delete(key);
-                }
-            });
-        }
-
-        // حذف فیلتر — از نوار جستجو یا badgeها
-        function clearFilter(filterType, value) {
-            const urlParams = new URLSearchParams(window.location.search);
-
-            if (filterType === 'province') {
-                urlParams.delete('province');
-                urlParams.delete('city');
-            } else if (filterType === 'price') {
-                urlParams.delete('min_price');
-                urlParams.delete('max_price');
-            } else if (filterType === 'features') {
-                removeAllFeatureParams(urlParams);
-            } else if (filterType === 'feature' && value) {
-                const kept = urlParams.getAll('features[]').filter(function (f) { return f !== value; });
-                removeAllFeatureParams(urlParams);
-                kept.forEach(function (f) { urlParams.append('features[]', f); });
-            } else if (filterType === 'travel_dates') {
-                urlParams.delete('start_at');
-                urlParams.delete('end_at');
-            } else if (filterType === 'name') {
-                urlParams.delete('name');
-                urlParams.delete('search');
-                urlParams.delete('q[]');
-            } else if (filterType === 'q' && value) {
-                const kept = urlParams.getAll('q[]').filter(function (t) { return t !== value; });
-                urlParams.delete('q[]');
-                urlParams.delete('name');
-                urlParams.delete('search');
-                kept.forEach(function (t) { urlParams.append('q[]', t); });
-            } else {
-                urlParams.delete(filterType);
-            }
-
-            navigateWithParams(urlParams);
-        }
-
-        function clearFilterChip(chipKey, chipValue) {
-            if (chipKey === 'feature') {
-                clearFilter('feature', chipValue);
-            } else if (chipKey === 'q') {
-                clearFilter('q', chipValue);
-            } else {
-                clearFilter(chipKey);
-            }
-        }
-
-        // Province change handler
-        document.getElementById('province').addEventListener('change', function() {
-            const provinceId = this.value;
-            const citySelect = document.getElementById('city');
-            
-            citySelect.innerHTML = '<option value="">انتخاب شهر</option>';
-            
-            if (provinceId) {
-                fetch(`/api/cities/${provinceId}`)
-                    .then(response => response.json())
-                    .then(cities => {
-                        cities.forEach(city => {
-                            const option = document.createElement('option');
-                            option.value = city.id;
-                            option.textContent = city.name;
-                            citySelect.appendChild(option);
-                        });
-                    });
-            }
-        });
-
         // Map explorer
         const initialMapSearch = new URLSearchParams(window.location.search);
         const shouldOpenMapExplorer = initialMapSearch.get('map') === '1';

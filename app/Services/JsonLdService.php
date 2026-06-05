@@ -43,7 +43,7 @@ class JsonLdService
 
         if (! empty($viewData['homes']) && $viewData['homes'] instanceof LengthAwarePaginator
             && $routeName === 'main.homes.index') {
-            return self::wrapGraph(self::forHomesIndex($viewData['homes']));
+            return self::wrapGraph(self::forHomesIndex($viewData['homes'], $request, $viewData));
         }
 
         return match ($routeName) {
@@ -333,8 +333,19 @@ class JsonLdService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public static function forHomesIndex(LengthAwarePaginator $homes): array
+    /**
+     * @param  array<string, mixed>  $viewData
+     * @return array<int, array<string, mixed>>
+     */
+    public static function forHomesIndex(LengthAwarePaginator $homes, ?Request $request = null, array $viewData = []): array
     {
+        $request = $request ?? request();
+        $context = SeoService::homesIndexContext($request, array_merge($viewData, ['homes' => $homes]));
+        $canonical = route('main.homes.index');
+        $title = (string) ($context['title_segment'] ?? 'اجاره ویلا و سوئیت');
+        $description = SeoService::truncate((string) ($context['description'] ?? ''), 500);
+        $listName = (string) ($context['list_name'] ?? 'لیست اقامتگاه‌ها');
+
         $items = [];
         $position = ($homes->currentPage() - 1) * $homes->perPage();
 
@@ -361,12 +372,31 @@ class JsonLdService
             ];
         }
 
-        return self::buildHomeItemList(
+        $list = self::buildHomeItemList(
             $homes,
-            route('main.homes.index').'#itemlist',
-            'لیست اقامتگاه‌ها',
-            route('main.homes.index'),
+            $canonical.'#itemlist',
+            $listName,
+            $canonical,
             $items
+        );
+
+        return array_merge(
+            [
+                [
+                    '@type' => 'WebPage',
+                    '@id' => $canonical.'#webpage',
+                    'url' => $canonical,
+                    'name' => $title,
+                    'description' => $description,
+                    'inLanguage' => 'fa-IR',
+                    'isPartOf' => ['@id' => url('/').'#website'],
+                ],
+                self::breadcrumbList([
+                    ['name' => siteName(), 'item' => route('main.index')],
+                    ['name' => 'اجاره ویلا و سوئیت', 'item' => $canonical],
+                ]),
+            ],
+            $list
         );
     }
 

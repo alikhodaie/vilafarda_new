@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use App\Models\Article;
+use App\Models\City;
 use App\Models\Home;
 use App\Models\LandingPage;
+use App\Models\Province;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 
 class SeoService
@@ -70,7 +73,160 @@ class SeoService
             return self::normalize(self::forLandingPage($viewData['landingPage']));
         }
 
+        if ($routeName === 'main.homes.index') {
+            return self::normalize(self::forHomesIndexPage($request, $viewData));
+        }
+
         return self::normalize(self::forRoute($routeName, $request, $viewTitle));
+    }
+
+    public static function homesIndexIsFiltered(Request $request): bool
+    {
+        if ((int) $request->get('page', 1) > 1) {
+            return true;
+        }
+
+        $query = $request->query();
+        unset($query['page']);
+
+        return $query !== [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $viewData
+     * @return array<string, mixed>
+     */
+    public static function homesIndexContext(Request $request, array $viewData = []): array
+    {
+        $defaultTitle = setting('seo:homes-title') ?: 'اجاره ویلا و سوئیت';
+        $defaultDescription = (string) (setting('seo:homes-meta-description') ?: self::defaultDescription());
+        $filtered = self::homesIndexIsFiltered($request);
+        $total = ($viewData['homes'] ?? null) instanceof LengthAwarePaginator
+            ? (int) $viewData['homes']->total()
+            : 0;
+
+        $location = self::homesIndexLocationLabel($request);
+        $searchTerms = self::homesIndexSearchTerms($request);
+
+        $h1 = $defaultTitle;
+        $titleSegment = $defaultTitle;
+        $listName = 'لیست اقامتگاه‌ها';
+        $description = $defaultDescription;
+
+        if ($location !== '') {
+            $h1 = "اجاره ویلا و سوئیت در {$location}";
+            $titleSegment = $h1;
+            $listName = "اقامتگاه‌های {$location}";
+            $description = self::homesIndexFilteredDescription($total, $location, $request);
+        } elseif ($searchTerms !== []) {
+            $termsLabel = implode('، ', $searchTerms);
+            $h1 = 'اجاره ویلا و سوئیت';
+            $titleSegment = "جستجوی {$termsLabel}";
+            $listName = "نتایج جستجو برای {$termsLabel}";
+            $description = self::homesIndexFilteredDescription($total, $termsLabel, $request);
+        }
+
+        return [
+            'filtered' => $filtered,
+            'h1' => $h1,
+            'title_segment' => $titleSegment,
+            'description' => $description,
+            'list_name' => $listName,
+            'location' => $location,
+            'search_terms' => $searchTerms,
+            'results_total' => $total,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $viewData
+     * @return array<string, mixed>
+     */
+    private static function forHomesIndexPage(Request $request, array $viewData): array
+    {
+        $context = self::homesIndexContext($request, $viewData);
+        $canonical = route('main.homes.index');
+        $ogImage = settingFilePath('seo:default-og-image') ?: settingFilePath('app:logo');
+        $description = self::truncate((string) $context['description']);
+        $titleSegment = trim((string) $context['title_segment']);
+
+        if ($description === '') {
+            $description = self::defaultDescription();
+        }
+
+        return [
+            'description' => $description,
+            'canonical' => $canonical,
+            'robots' => $context['filtered'] ? 'noindex, follow' : 'index, follow',
+            'title_segment' => $titleSegment,
+            'og' => [
+                'title' => $titleSegment,
+                'description' => $description,
+                'image' => $ogImage,
+                'url' => $canonical,
+                'type' => 'website',
+            ],
+            'twitter' => [
+                'card' => 'summary_large_image',
+                'title' => $titleSegment,
+                'description' => $description,
+                'image' => $ogImage,
+            ],
+        ];
+    }
+
+    private static function homesIndexLocationLabel(Request $request): string
+    {
+        if ($request->filled('city')) {
+            $city = City::query()->find($request->get('city'));
+
+            return trim((string) ($city?->name ?? ''));
+        }
+
+        if ($request->filled('province')) {
+            $province = Province::query()->find($request->get('province'));
+
+            return trim((string) ($province?->name ?? ''));
+        }
+
+        return '';
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function homesIndexSearchTerms(Request $request): array
+    {
+        $terms = $request->get('q', []);
+        if (! is_array($terms)) {
+            $terms = $terms ? [(string) $terms] : [];
+        }
+
+        return array_values(array_unique(array_filter(array_map(
+            fn ($term) => trim((string) $term),
+            $terms
+        ), fn ($term) => $term !== '')));
+    }
+
+    private static function homesIndexFilteredDescription(int $total, string $label, Request $request): string
+    {
+        $parts = [];
+
+        if ($total > 0) {
+            $parts[] = 'مشاهده و رزرو '.persianNumber($total).' ویلا و سوئیت';
+        } else {
+            $parts[] = 'جستجوی ویلا و سوئیت';
+        }
+
+        $parts[] = "در {$label}";
+
+        if ($request->filled('start_at') && $request->filled('end_at')) {
+            $parts[] = 'از '.$request->get('start_at').' تا '.$request->get('end_at');
+        }
+
+        $parts[] = 'با امکان فیلتر قیمت، تاریخ و امکانات.';
+
+        return self::truncate(implode(' ', $parts));
     }
 
     /**

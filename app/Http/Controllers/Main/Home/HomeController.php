@@ -19,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Jenssegers\Agent\Agent;
+use Morilog\Jalali\Jalalian;
 
 
 class HomeController extends Controller
@@ -45,16 +46,28 @@ class HomeController extends Controller
         $province = ($request->filled('province'))
             ? Province::query()->findOrFail($request->get('province')): null;
 
-        $homes = Home::query()->active()->withCount(['sleepPlaces' => function ($query) {
-            $query->where('is_share', false);
-        }])
-            ->search()->latest()->paginate(6)->appends($request->all());
+        [$travelStart, $travelEnd] = $this->resolveTravelDateRange($request);
 
-        // تنظیم متغیرهای مورد نیاز برای هر home
-        foreach ($homes as $home){
-            $home->show_price = $home->getPriceFormatted($is_today_price, false) .' '. __('title.toman');
+        $homesQuery = Home::query()->active()->withCount(['sleepPlaces' => function ($query) {
+            $query->where('is_share', false);
+        }]);
+
+        if ($travelStart && $travelEnd) {
+            $homesQuery->with('custom_dates');
+        }
+
+        $homes = $homesQuery->search()->latest()->paginate(6)->appends($request->all());
+
+        foreach ($homes as $home) {
+            $nightPrice = $is_today_price
+                ? $home->getPrice(now()->startOfDay())
+                : (int) $home->week_price;
+            $home->show_price = persianNumber($nightPrice) . ' ' . __('title.toman');
             $home->cover_path = $home->cover_path;
             $home->link = $home->link;
+            $home->range_total_price = ($travelStart && $travelEnd)
+                ? $home->calcPrice($travelStart, $travelEnd)
+                : null;
         }
 
         $priceBoundsMin = (int) (Home::query()->active()->min('week_price') ?? 0);
@@ -81,13 +94,22 @@ class HomeController extends Controller
         $min = $priceBoundsMin;
         $max = $priceBoundsMax;
 
-        foreach ($homes as $home){
-            $home->show_price = $home->price($is_today_price) .' '. __('title.toman');
-            $home->cover_path = $home->cover_path;
-            $home->link = $home->link;
-        }
+        $provinceMapCenters = Province::query()
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get()
+            ->mapWithKeys(fn (Province $p) => [(string) $p->id => $p->mapViewConfig()]);
 
-        return view('main.homes.index', compact(['homes', 'min', 'max', 'is_today_price', 'province']));
+        return view('main.homes.index', compact(
+            'homes',
+            'min',
+            'max',
+            'is_today_price',
+            'province',
+            'provinceMapCenters',
+            'priceBoundsMin',
+            'priceBoundsMax'
+        ));
     }
 
     public function show(Request $request, Home $home)
@@ -290,7 +312,7 @@ class HomeController extends Controller
                 'province' => $home->province->name ?? '',
                 'city' => $home->city->name ?? '',
                 'price' => $price,
-                'price_label' => $home->getPriceFormatted($isTodayPrice, false) . ' ' . __('title.toman'),
+                'price_label' => persianNumber($price) . ' ' . __('title.toman'),
                 'bedroom_count' => (int) ($home->bedroom_count ?? 0),
                 'infrastructure_meter' => (int) ($home->infrastructure_meter ?? 0),
                 'main_guest' => (int) $home->main_guest,
@@ -335,6 +357,16 @@ class HomeController extends Controller
             app(HomeSmartSearchService::class)->applyFeatureSlugs($query, $features);
         }
 
+        $options = $request->get('options', []);
+        if (is_array($options) && $options !== []) {
+            $optionIds = array_values(array_filter(array_map('intval', $options)));
+            if ($optionIds !== []) {
+                $query->whereHas('options', function (Builder $optionsQuery) use ($optionIds) {
+                    $optionsQuery->whereIn('option_id', $optionIds);
+                });
+            }
+        }
+
         if ($request->filled('guest_count')) {
             $query->whereRaw('(main_guest + COALESCE(extra_guest, 0)) >= ?', [(int) $request->get('guest_count')]);
         }
@@ -358,5 +390,32 @@ class HomeController extends Controller
         }
 
         return $query;
+    }
+
+    /**
+     * end_at در فیلتر جستجو = روز خروج (مثل فرم رزرو)، نه آخرین شب اقامت.
+     *
+     * @return array{0: ?Carbon, 1: ?Carbon}
+     */
+    private function resolveTravelDateRange(Request $request): array
+    {
+        if (! $request->filled('start_at') || ! $request->filled('end_at')) {
+            return [null, null];
+        }
+
+        try {
+            $start = Jalalian::fromFormat('Y/m/d', $request->get('start_at'))->toCarbon()->startOfDay();
+            $checkout = Jalalian::fromFormat('Y/m/d', $request->get('end_at'))->toCarbon()->startOfDay();
+
+            if ($checkout->lte($start)) {
+                return [null, null];
+            }
+
+            $lastNight = $checkout->copy()->subDay();
+
+            return [$start, $lastNight];
+        } catch (\Throwable $e) {
+            return [null, null];
+        }
     }
 }

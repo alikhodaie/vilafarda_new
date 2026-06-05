@@ -3,7 +3,7 @@
 @endphp
 <div class="bg-white rounded-3 p-3 mb-3" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
     <div class="position-relative mb-3 home-card-image-wrap">
-        <img src="{{ $home->cover_path }}" class="img-fluid rounded" alt="{{ $home->name }}"
+        <img src="{{ $home->cover_path }}" class="img-fluid rounded" alt="{{ homeImageAlt($home) }}"
              style="width: 100%; height: 200px; object-fit: cover;">
         <div class="home-card-status-badge">
             <span class="badge bg-success" style="font-size: 12px;">
@@ -75,11 +75,16 @@
     <div class="d-flex justify-content-between align-items-center">
         <div>
             <span class="fw-bold" style="font-size: 16px; color: #D39D1A;">
-                {{ $home->show_price ?? number_format($home->week_price ?? 0) . ' تومان' }}
+                {{ $home->show_price ?? persianNumber($home->week_price ?? 0) . ' تومان' }}
             </span>
             <small class="text-muted d-block" style="font-size: 12px;">شبانه</small>
+            @if(!empty($home->range_total_price))
+                <small class="d-block mt-1" style="font-size: 11px; color: #555; line-height: 1.5;">
+                    مجموع مبلغ تاریخ انتخابی شما {{ persianNumber($home->range_total_price) }} تومان است
+                </small>
+            @endif
         </div>
-        <a href="{{ route('main.homes.show', $home) }}" class="btn btn-primary" style="background: #D39D1A; border-color: #D39D1A; color: white; font-size: 14px; border-radius: 12px;">
+        <a href="{{ route('main.homes.show', $home) }}" class="btn btn-primary" title="مشاهده {{ $home->name }}" aria-label="مشاهده {{ $home->name }}" style="background: #D39D1A; border-color: #D39D1A; color: white; font-size: 14px; border-radius: 12px;">
             <i class="bi bi-eye me-1"></i>
             مشاهده
         </a>

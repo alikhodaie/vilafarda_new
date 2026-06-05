@@ -24,5 +24,9 @@ class SeoComposer
         if (! array_key_exists('jsonLd', $data)) {
             $view->with('jsonLd', JsonLdService::resolve(request(), $data));
         }
+
+        if (request()->routeIs('main.homes.index') && ! array_key_exists('homesSeoContext', $data)) {
+            $view->with('homesSeoContext', SeoService::homesIndexContext(request(), $data));
+        }
     }
 }

@@ -23,7 +23,8 @@ rsync -a --delete \
   --exclude '.env' \
   --exclude '.env.*' \
   --exclude 'node_modules/' \
-  --exclude 'vendor/' \
+  --exclude '/vendor/' \
+  --exclude '.user.ini' \
   --exclude 'storage/logs/' \
   --exclude 'storage/framework/cache/' \
   --exclude 'storage/framework/sessions/' \

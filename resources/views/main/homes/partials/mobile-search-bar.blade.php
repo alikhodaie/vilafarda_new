@@ -31,12 +31,15 @@
     if (request('start_at') && request('end_at')) {
         $searchChips[] = ['key' => 'travel_dates', 'label' => request('start_at') . ' – ' . request('end_at')];
     }
-    foreach ($selectedFeatures as $featureKey) {
-        $searchChips[] = [
-            'key' => 'feature',
-            'value' => $featureKey,
-            'label' => $featureLabels[$featureKey] ?? $featureKey,
-        ];
+    foreach ($selectedOptions ?? [] as $optionId) {
+        $option = ($filterOptions ?? collect())->firstWhere('id', (int) $optionId);
+        if ($option) {
+            $searchChips[] = [
+                'key' => 'option',
+                'value' => (string) $option->id,
+                'label' => $option->title,
+            ];
+        }
     }
 
     $hasSearchChips = count($searchChips) > 0;
@@ -74,8 +77,8 @@
         @if(request('sort'))
             <input type="hidden" name="sort" value="{{ request('sort') }}">
         @endif
-        @foreach($selectedFeatures as $feature)
-            <input type="hidden" name="features[]" value="{{ $feature }}">
+        @foreach($selectedOptions ?? [] as $optionId)
+            <input type="hidden" name="options[]" value="{{ $optionId }}">
         @endforeach
         @foreach($searchTerms as $term)
             <input type="hidden" name="q[]" value="{{ $term }}" data-search-term="1">

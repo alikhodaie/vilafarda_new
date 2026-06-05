@@ -158,6 +158,8 @@
         this.startDate = options.startDate || '';
         this.endDate = options.endDate || '';
         this.showClearButton = options.showClearButton !== false;
+        this.dualMonth = !!options.dualMonth;
+        this.monthOffset = options.monthOffset || 0;
         this.onChange = options.onChange || function () {};
         this.render();
     }
@@ -243,55 +245,49 @@
         return list;
     };
 
-    MapJalaliCalendar.prototype.render = function () {
-        var self = this;
-        var months = this.monthsInRange();
+    MapJalaliCalendar.prototype.buildRangeHeaderHtml = function () {
         var startLabel = jalaliLabel(this.startDate);
         var endLabel = jalaliLabel(this.endDate);
+        var checkinActive = !this.startDate;
+        var checkoutActive = this.startDate && !this.endDate;
+        var html = '<div class="calendar-range-header">';
+        html += '<div class="calendar-range-cell' + (checkinActive ? ' is-active' : '') + (this.startDate ? ' has-value' : '') + '">';
+        html += '<span class="calendar-range-label">تاریخ ورود</span><span class="calendar-range-value">' + startLabel + '</span></div>';
+        html += '<div class="calendar-range-cell' + (checkoutActive ? ' is-active' : '') + (this.endDate ? ' has-value' : '') + '">';
+        html += '<span class="calendar-range-label">تاریخ خروج</span><span class="calendar-range-value">' + endLabel + '</span></div>';
+        html += '</div>';
+        return html;
+    };
 
-        var html = '<div class="persian-calendar persian-calendar--stacked">';
-        html += '<div class="calendar-range-header">';
-        html += '<div class="calendar-range-cell' + (this.startDate && !this.endDate ? ' is-active' : '') + (this.startDate ? ' has-value' : '') + '">';
-        html += '<span class="calendar-range-label">ورود</span><span class="calendar-range-value">' + startLabel + '</span></div>';
-        html += '<div class="calendar-range-cell' + (this.startDate && !this.endDate ? ' is-active' : '') + (this.endDate ? ' has-value' : '') + '">';
-        html += '<span class="calendar-range-label">خروج</span><span class="calendar-range-value">' + endLabel + '</span></div>';
-        html += '</div><div class="calendar-scroll-months">';
-
-        months.forEach(function (mo) {
-            html += '<section class="calendar-month-block"><h4 class="calendar-month-title">';
-            html += MONTH_NAMES[mo.month - 1] + ' ' + toPersianNum(mo.year);
-            html += '</h4><div class="calendar-weekdays">';
-            WEEK_DAYS.forEach(function (wd) { html += '<div class="weekday">' + wd + '</div>'; });
-            html += '</div><div class="calendar-grid">';
-            self.buildMonth(mo.year, mo.month).forEach(function (cell) {
-                if (cell.empty) {
-                    html += '<div class="calendar-day empty"></div>';
-                    return;
-                }
-                var cls = 'calendar-day';
-                if (cell.disabled) cls += ' disabled';
-                else cls += ' available';
-                if (cell.selected) cls += ' selected';
-                if (cell.inRange) cls += ' in-range';
-                if (cell.checkIn) cls += ' check-in';
-                if (cell.checkOut) cls += ' check-out';
-                if (cell.isFriday) cls += ' is-friday';
-                html += '<div class="' + cls + '" data-iso="' + cell.iso + '"><div class="day-content">';
-                html += '<div class="day-number">' + cell.day + '</div></div></div>';
-            });
-            html += '</div></section>';
+    MapJalaliCalendar.prototype.buildMonthBlockHtml = function (mo, compact) {
+        var self = this;
+        var html = '<section class="calendar-month-block">';
+        html += '<h4 class="calendar-month-title">' + MONTH_NAMES[mo.month - 1] + ' ' + toPersianNum(mo.year) + '</h4>';
+        html += '<div class="calendar-weekdays">';
+        WEEK_DAYS.forEach(function (wd) { html += '<div class="weekday">' + wd + '</div>'; });
+        html += '</div><div class="calendar-grid' + (compact ? ' calendar-grid--compact' : '') + '">';
+        this.buildMonth(mo.year, mo.month).forEach(function (cell) {
+            if (cell.empty) {
+                html += '<div class="calendar-day empty"></div>';
+                return;
+            }
+            var cls = 'calendar-day';
+            if (cell.disabled) cls += ' disabled';
+            else cls += ' available';
+            if (cell.selected) cls += ' selected';
+            if (cell.inRange) cls += ' in-range';
+            if (cell.checkIn) cls += ' check-in';
+            if (cell.checkOut) cls += ' check-out';
+            if (cell.isFriday) cls += ' is-friday';
+            html += '<div class="' + cls + '" data-iso="' + cell.iso + '"><div class="day-content">';
+            html += '<div class="day-number">' + cell.day + '</div></div></div>';
         });
+        html += '</div></section>';
+        return html;
+    };
 
-        html += '</div>';
-        if (this.showClearButton) {
-            html += '<div class="calendar-stacked-footer">';
-            html += '<button type="button" class="calendar-clear-btn" data-action="clear"><i class="bi bi-trash"></i> پاک کردن</button>';
-            html += '</div>';
-        }
-        html += '</div>';
-
-        this.mountEl.innerHTML = html;
-
+    MapJalaliCalendar.prototype.bindDayEvents = function () {
+        var self = this;
         this.mountEl.querySelectorAll('.calendar-day[data-iso]').forEach(function (el) {
             el.addEventListener('click', function () {
                 self.selectIso(el.getAttribute('data-iso'));
@@ -305,11 +301,96 @@
         }
     };
 
+    MapJalaliCalendar.prototype.renderDualMonth = function () {
+        var self = this;
+        var allMonths = this.monthsInRange();
+        var maxOffset = Math.max(0, allMonths.length - 2);
+        this.monthOffset = Math.max(0, Math.min(this.monthOffset, maxOffset));
+        var visibleMonths = allMonths.slice(this.monthOffset, this.monthOffset + 2);
+
+        var html = '<div class="persian-calendar persian-calendar--dual">';
+        html += this.buildRangeHeaderHtml();
+        html += '<div class="calendar-dual-toolbar">';
+        html += '<button type="button" class="calendar-dual-nav-btn" data-action="prev-month"' + (this.monthOffset <= 0 ? ' disabled' : '') + ' aria-label="ماه قبل"><i class="bi bi-chevron-right"></i></button>';
+        html += '<button type="button" class="calendar-dual-nav-btn" data-action="next-month"' + (this.monthOffset >= maxOffset ? ' disabled' : '') + ' aria-label="ماه بعد"><i class="bi bi-chevron-left"></i></button>';
+        html += '</div><div class="calendar-dual-months">';
+        visibleMonths.forEach(function (mo) {
+            html += self.buildMonthBlockHtml(mo, true);
+        });
+        html += '</div></div>';
+
+        this.mountEl.innerHTML = html;
+        this.bindDayEvents();
+
+        var prevBtn = this.mountEl.querySelector('[data-action="prev-month"]');
+        var nextBtn = this.mountEl.querySelector('[data-action="next-month"]');
+        if (prevBtn) {
+            prevBtn.addEventListener('click', function () {
+                if (self.monthOffset <= 0) return;
+                self.monthOffset--;
+                self.renderDualMonth();
+            });
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', function () {
+                if (self.monthOffset >= maxOffset) return;
+                self.monthOffset++;
+                self.renderDualMonth();
+            });
+        }
+    };
+
+    MapJalaliCalendar.prototype.renderStacked = function () {
+        var self = this;
+        var months = this.monthsInRange();
+        var html = '<div class="persian-calendar persian-calendar--stacked">';
+        html += this.buildRangeHeaderHtml();
+        html += '<div class="calendar-scroll-months">';
+        months.forEach(function (mo) {
+            html += self.buildMonthBlockHtml(mo, false);
+        });
+        html += '</div>';
+        if (this.showClearButton) {
+            html += '<div class="calendar-stacked-footer">';
+            html += '<button type="button" class="calendar-clear-btn" data-action="clear"><i class="bi bi-trash"></i> پاک کردن</button>';
+            html += '</div>';
+        }
+        html += '</div>';
+
+        this.mountEl.innerHTML = html;
+        this.bindDayEvents();
+    };
+
+    MapJalaliCalendar.prototype.render = function () {
+        if (this.dualMonth) {
+            this.renderDualMonth();
+            return;
+        }
+        this.renderStacked();
+    };
+
+    function monthsInRangeFor(minDate, maxDate) {
+        if (!minDate || !maxDate) return [];
+        var minJ = jalaliFromIso(minDate);
+        var maxJ = jalaliFromIso(maxDate);
+        var list = [];
+        var y = minJ.year;
+        var m = minJ.month;
+        while (y < maxJ.year || (y === maxJ.year && m <= maxJ.month)) {
+            list.push({ year: y, month: m });
+            m++;
+            if (m > 12) { m = 1; y++; }
+        }
+        return list;
+    }
+
     global.MapJalaliUtils = {
         isoToJalaliSlash: isoToJalaliSlash,
         jalaliSlashToIso: jalaliSlashToIso,
         jalaliLabel: jalaliLabel,
+        jalaliFromIso: jalaliFromIso,
         toPersianNum: toPersianNum,
+        monthsInRangeFor: monthsInRangeFor,
     };
     global.MapJalaliCalendar = MapJalaliCalendar;
 })(window);

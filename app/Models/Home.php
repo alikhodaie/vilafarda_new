@@ -1270,6 +1270,10 @@ class Home extends Model
 
     public function getCustomPricesAttribute(): Collection
     {
+        if ($this->relationLoaded('custom_dates')) {
+            return $this->custom_dates->where('price', '!=', 0)->values();
+        }
+
         return $this->custom_dates()->where('price', '!=', 0)->get();
     }
 

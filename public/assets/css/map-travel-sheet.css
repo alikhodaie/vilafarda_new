@@ -555,6 +555,220 @@
     cursor: pointer;
 }
 
+/* تقویم دو ماهه — فیلتر تاریخ دسکتاپ */
+.persian-calendar--dual {
+    font-family: inherit;
+    padding: 0 !important;
+    width: 100% !important;
+}
+
+.persian-calendar--dual .calendar-range-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.map-travel-sheet .persian-calendar--dual .calendar-range-cell {
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 8px 10px;
+    text-align: center;
+    background: #fff;
+}
+
+.persian-calendar--dual .calendar-range-cell.is-active {
+    border-color: #D39D1A;
+    box-shadow: 0 0 0 1px #D39D1A;
+}
+
+.map-travel-sheet .persian-calendar--dual .calendar-range-label {
+    display: block;
+    font-size: 10px;
+    color: #6b7280;
+    margin-bottom: 2px;
+}
+
+.map-travel-sheet .persian-calendar--dual .calendar-range-value {
+    display: block;
+    font-size: 11px;
+    color: #9ca3af;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.map-travel-sheet .persian-calendar--dual .calendar-range-cell.has-value .calendar-range-value {
+    color: #111827;
+    font-size: 10px;
+}
+
+.persian-calendar--dual .calendar-dual-months {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+}
+
+.persian-calendar--dual .calendar-month-block {
+    min-width: 0;
+}
+
+.persian-calendar--dual .calendar-month-title {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    padding: 0;
+}
+
+.persian-calendar--dual .calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+    margin-bottom: 4px;
+}
+
+.persian-calendar--dual .weekday {
+    font-size: 10px;
+    color: #6b7280;
+    text-align: center;
+    font-weight: 600;
+}
+
+.persian-calendar--dual .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+}
+
+.persian-calendar--dual .calendar-day {
+    aspect-ratio: 1;
+    min-height: 0;
+    min-width: 0;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.persian-calendar--dual .calendar-day.empty {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.persian-calendar--dual .calendar-day.disabled {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.persian-calendar--dual .calendar-day.available .day-content {
+    background: #f9fafb;
+    border-radius: 6px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.persian-calendar--dual .calendar-day.is-friday:not(.disabled):not(.selected) .day-number {
+    color: #dc2626;
+}
+
+.persian-calendar--dual .calendar-day.in-range .day-content {
+    background: #dbeafe;
+}
+
+.persian-calendar--dual .calendar-day.check-in .day-content,
+.persian-calendar--dual .calendar-day.check-out .day-content {
+    background: #D39D1A;
+}
+
+.persian-calendar--dual .calendar-day.check-in .day-number,
+.persian-calendar--dual .calendar-day.check-out .day-number {
+    color: #fff;
+}
+
+.map-travel-sheet .persian-calendar--dual .day-number {
+    font-size: 11px;
+    font-weight: 700;
+}
+
 body.map-travel-sheet-open {
     overflow: hidden;
+}
+
+/* فیلتر امکانات — لیست داینامیک از ادمین */
+.homes-filter-options-grid {
+    width: 100%;
+}
+
+.homes-filter-option-item {
+    display: flex;
+    align-items: stretch;
+    min-height: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e8e8e8;
+    border-radius: 12px;
+    background: #fff;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.homes-filter-option-item.is-checked {
+    border-color: #D39D1A;
+    background: #fffaf0;
+}
+
+.homes-filter-option-item .form-check-input {
+    margin-top: 0.2rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.homes-filter-option-item .form-check-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #333;
+    margin-right: 0.35rem;
+}
+
+.homes-filter-option-item__title {
+    flex: 1;
+    min-width: 0;
+}
+
+.homes-filter-option-item__icon {
+    flex-shrink: 0;
+}
+
+.homes-filter-options-more {
+    margin-top: 8px;
+}
+
+.homes-filter-options-more__grid {
+    margin-top: 0;
+}
+
+.homes-filter-options-more-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border: 1px dashed #d8d8d8;
+    border-radius: 12px;
+    background: #fafafa;
+    color: #555;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.homes-filter-options-more-btn:hover {
+    background: #f3f3f3;
+    border-color: #cfcfcf;
 }

@@ -1,131 +1,135 @@
-@extends('layouts.main.main_mobile')
+@extends('layouts.main.main', ['title' => __('title.homes'), 'has_footer' => false])
 
-<style>
-    .leaflet-popup-content-wrapper {
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-}
-
-.leaflet-popup-content {
-    margin: 0 !important;
-    line-height: 1.2;
-}
-</style>
-
-@section('content')
-    @include('layouts.main.partials.navbar-mobile')
-    @include('main.partials.search-box')
-    @include('main.homes.partials.filter')
-    <div class="row pt-3">
-        @forelse($homes as $home)
-            <!-- Single Property -->
-            <div class="col-12 mb-4 px-5">
-                @include('main.homes.partials.new-home-card', ['home' => $home, 'is_today' => $is_today_price])
-            </div>
-            <!-- End Single Property -->
-        @empty
-            <div class="col-12 alert alert-danger text-center">@lang('text.empty search')</div>
-        @endforelse
-    </div>
-
-    <!-- دکمه شناور نقشه -->
-    <button id="mapToggleBtn" class="position-fixed" 
-            style="bottom: 100px; right: 20px; z-index: 1000; background-color: black; color: white; border: none; padding: 12px 20px; border-radius: 50px; display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-map-marker-alt"></i> نقشه
-    </button>
-
-    <!-- Modal نقشه تمام صفحه -->
-    <div id="mapModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:1050; background:white;">
-        <button id="closeMap" style="position:absolute; top:20px; right:20px; z-index:1001; background:black; color:white; border:none; padding:10px 15px; border-radius:50px;">بستن</button>
-        <div id="map" style="width:100%; height:100%;"></div>
-    </div>
-
+@section('meta')
+    @include('main.homes.partials.homes-seo-pagination-meta')
 @endsection
 
-@section('scripts')
-    <!-- Leaflet.js -->
+@section('top-assets')
+    <link href="{{ asset('vendor/bootstrap/css/bootstrap.rtl.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/map-travel-sheet.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/mobile-price-range.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/css/home-favorite.css') }}" rel="stylesheet">
+    <link href="{{ public_asset_version('assets/css/homes-desktop.css') }}" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('vendor/leaflet/dist/leaflet.css') }}" />
-    <script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
+@endsection
 
-    @php
-        $homesForMap = $homes->map(function($home){
-            return [
-                'lat' => $home->latitude,
-                'lng' => $home->longitude,
-                'name' => $home->name,
-                'link' => $home->link,
-                'price' => $home->show_price
-            ];
-        });
-    @endphp
+@section('content')
+    <div class="homes-desktop-page">
+        <div class="homes-desktop-header">
+            <div class="homes-desktop-header__inner">
+                <div class="homes-desktop-header__title-row">
+                    <div>
+                        <h1 class="homes-desktop-header__title">جستجوی اقامتگاه</h1>
+                        <p class="homes-desktop-header__subtitle">پیدا کردن اقامتگاه مناسب</p>
+                    </div>
+                </div>
+                @include('main.homes.partials.homes-filter-section')
+            </div>
+        </div>
 
-    <script>
-        const mapToggleBtn = document.getElementById('mapToggleBtn');
-        const mapModal = document.getElementById('mapModal');
-        const closeMap = document.getElementById('closeMap');
-
-        mapToggleBtn.addEventListener('click', () => {
-
-            mapModal.style.display = 'block';
-
-            if (!window.homeMap) {
-                const map = L.map('map').setView([32, 53], 5); // مرکز ایران
-                L.tileLayer('http://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}', {
-                    attribution: '© Google'
-                }).addTo(map);
-
-
-
-
-                window.homeMap = map;
-
-                // اضافه کردن مارکرها
-                const homes = @json($homesForMap);
-                
-
-                homes.forEach(h => {
-                console.log(h);
-                const popupContent = `
-                <a href="${h.link}">
-                    <div class="card shadow-sm border-0 p-2" 
-                        style="width: 20rem; border-radius: 16px; direction: rtl; text-align: right;">
-                        <div class="d-flex align-items-center">
-                            
-    
-                            <div class="flex-shrink-0 ms-2">
-                                <img src="https://images.pexels.com/photos/1134176/pexels-photo-1134176.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500" 
-                                    class="img-fluid" 
-                                    style="width: 90px; height: 90px; object-fit: cover; border-radius: 12px;"
-                                    alt="${h.name}">
-                            </div>
-                            
-        
-                            <div class="flex-grow-1 ms-2">
-                                <h5 class="fw-bold mb-1" style="font-size: 14px;">${h.name}</h5>
-                                <h6 class="fw-bold text-grey mb-0" style="font-size: 13px;">
-                                    ${h.price ? h.price + ' تومان / شب' : 'قیمت تماس بگیرید'}
-                                </h6>
-                            </div>
+        <div class="homes-desktop-split">
+            <div class="homes-desktop-list-panel">
+                <div class="homes-desktop-list-inner">
+                    <div class="homes-desktop-results-header">
+                        <div>
+                            <p class="homes-desktop-results-count">
+                                @if($homes->total() > 0)
+                                    {{ persianNumber($homes->total()) }} اقامتگاه
+                                    @if($min)
+                                        از {{ persianNumber($min) }} تومان
+                                    @endif
+                                @else
+                                    نتیجه‌ای یافت نشد
+                                @endif
+                            </p>
                         </div>
                     </div>
-                </a>
-                `;
 
+                    @if($homes->count() > 0)
+                        <div class="homes-desktop-cards-grid">
+                            @foreach($homes as $home)
+                                @include('main.homes.partials.mobile-home-card', ['home' => $home])
+                            @endforeach
+                        </div>
 
-                    L.marker([h.lat, h.lng], {
-                        icon: L.icon({
-                            iconUrl: 'https://static.thenounproject.com/png/658934-200.png',
-                            iconSize: [32, 32]
-                        })
-                    }).addTo(map)
-                      .bindPopup(popupContent);
-                });
-            }
-        });
+                        @if($homes->hasPages())
+                            <div class="homes-desktop-pagination">
+                                @include('main.homes.partials.homes-pagination')
+                            </div>
+                        @endif
+                    @else
+                        <div class="homes-desktop-empty">
+                            <i class="bi bi-house fs-1 text-muted mb-3 d-block"></i>
+                            <h5 class="text-muted">@lang('text.empty search')</h5>
+                            <p class="text-muted mb-3" style="font-size: 14px;">
+                                متأسفانه اقامتگاهی با این شرایط پیدا نشد
+                            </p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#filterModal" style="background: #D39D1A; border-color: #D39D1A; border-radius: 12px;">
+                                <i class="bi bi-funnel me-2"></i>
+                                تغییر فیلترها
+                            </button>
+                        </div>
+                    @endif
+                </div>
+            </div>
 
-        closeMap.addEventListener('click', () => {
-            mapModal.style.display = 'none';
-        });
+            <div class="homes-desktop-map-panel">
+                <div class="homes-desktop-map-shell">
+                    <div id="desktopHomesMap"></div>
+
+                    <div class="homes-desktop-map-controls">
+                        <button type="button" class="homes-desktop-map-control-btn" id="desktopMapZoomInBtn" aria-label="بزرگ‌نمایی">+</button>
+                        <button type="button" class="homes-desktop-map-control-btn" id="desktopMapZoomOutBtn" aria-label="کوچک‌نمایی">−</button>
+                        <button type="button" class="homes-desktop-map-control-btn" id="desktopMapMyLocationBtn" aria-label="موقعیت من">
+                            <i class="bi bi-crosshair"></i>
+                        </button>
+                    </div>
+
+                    <div id="desktopMapPropertyPreview" class="homes-desktop-map-preview" style="display: none;">
+                        <button type="button" class="homes-desktop-map-preview-close" id="desktopMapPreviewCloseBtn" aria-label="بستن">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                        <a href="#" id="desktopMapPreviewLink" class="homes-desktop-map-preview-link">
+                            <img src="" alt="" id="desktopMapPreviewImage" class="homes-desktop-map-preview-thumb">
+                            <div class="homes-desktop-map-preview-body">
+                                <h6 class="homes-desktop-map-preview-title" id="desktopMapPreviewTitle"></h6>
+                                <p class="homes-desktop-map-preview-meta" id="desktopMapPreviewMeta"></p>
+                                <p class="homes-desktop-map-preview-price" id="desktopMapPreviewPrice"></p>
+                                <span class="homes-desktop-map-preview-badge" id="desktopMapPreviewBadge" style="display: none;"></span>
+                            </div>
+                        </a>
+                    </div>
+
+                    <p class="homes-desktop-map-summary" id="desktopMapResultsSummary">در حال بارگذاری...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @include('main.homes.partials.homes-filter-modals')
+    @include('main.homes.partials.homes-travel-filter-sheets')
+@endsection
+
+@section('bottom-assets')
+    <script>
+        window.homesDateFilterConfig = {
+            minDate: @json(\App\Models\Order::getMinReserveDate()->format('Y-m-d')),
+            maxDate: @json(\App\Models\Order::getMaxReserveDate()->format('Y-m-d')),
+            startLabel: @json(__('title.date_enter')),
+            endLabel: @json(__('title.date_quit')),
+        };
+        window.provinceMapCenters = @json($provinceMapCenters ?? []);
+        window.homesDesktopMapConfig = {
+            mapDataUrl: @json(route('main.homes.map-data')),
+        };
     </script>
+    <script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
+    <script src="{{ asset('assets/js/guest-rating.js') }}"></script>
+    <script src="{{ asset('assets/js/map-travel-jalali-calendar.js') }}"></script>
+    <script src="{{ asset('assets/js/homes-mobile-search.js') }}"></script>
+    <script src="{{ asset('assets/js/mobile-price-range.js') }}"></script>
+    <script src="{{ asset('assets/js/map-travel-filter.js') }}"></script>
+    <script src="{{ asset('assets/js/homes-filters.js') }}"></script>
+    <script src="{{ asset('assets/js/homes-date-filter.js') }}"></script>
+    <script src="{{ public_asset_version('assets/js/homes-desktop-map.js') }}"></script>
 @endsection
