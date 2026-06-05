@@ -55,12 +55,12 @@
             </div>
             <div class="col-12 col-md-6">
                 @php
-                    $faviconStored = trim((string) (\App\Models\Setting::rawValue('app:favicon', setting('app:favicon', '')));
-                    $faviconAbsolute = $faviconStored
+                    $faviconStored = faviconStoredFilename();
+                    $faviconAbsolute = $faviconStored !== ''
                         ? public_path(\App\Models\Setting::FILE_PATH.ltrim($faviconStored, '/'))
                         : null;
                     $faviconOnDisk = $faviconAbsolute && is_file($faviconAbsolute);
-                    $faviconUrl = settingFilePath('app:favicon');
+                    $faviconUrl = $faviconStored !== '' ? settingFilePath('app:favicon') : null;
                 @endphp
                 <div class="input-group">
                     <input class="form-control" type="file" name="favicon" id="favicon" accept="image/png,image/x-icon,.ico">

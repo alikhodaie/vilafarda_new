@@ -111,6 +111,18 @@ if (! function_exists('siteName')) {
     }
 }
 
+if (! function_exists('faviconStoredFilename')) {
+    /** نام فایل favicon از DB (مستقیم) با fallback کش */
+    function faviconStoredFilename(): string
+    {
+        $key = 'app:favicon';
+        $cached = setting($key, '');
+        $raw = \App\Models\Setting::rawValue($key, $cached);
+
+        return trim((string) ($raw ?: ''));
+    }
+}
+
 if (! function_exists('settingFaviconUrl')) {
     /** آدرس favicon در اندازه مشخص (۴۸، ۱۹۲، ۵۱۲) برای گوگل و مرورگر */
     function settingFaviconUrl(int $size = 512): ?string
