@@ -23,13 +23,11 @@ class SeoService
 
     /** @var string[] */
     private const NOINDEX_ROUTE_NAMES = [
-        'main.login.form',
         'main.login',
         'main.login.temp.send.form',
         'main.login.temp.send',
         'main.login.temp.form',
         'main.login.temp',
-        'main.register.form',
         'main.register',
         'main.call-back',
         'main.add-to-home.ios',
@@ -77,6 +75,7 @@ class SeoService
 
     /**
      * عنوان کامل تگ &lt;title&gt; با فرمت «بخش اصلی | نام برند».
+     * اگر بخش اصلی از قبل نام برند را دارد، تکرار نمی‌شود (جلوگیری از vilafarda: در گوگل).
      */
     public static function documentTitle(string $segment): string
     {
@@ -87,7 +86,7 @@ class SeoService
             return $brand !== '' ? $brand : '';
         }
 
-        if ($brand === '') {
+        if ($brand === '' || self::segmentContainsBrand($segment, $brand)) {
             return self::limitTitleLength($segment);
         }
 
@@ -109,6 +108,32 @@ class SeoService
         }
 
         return $segment.$suffix;
+    }
+
+    public static function segmentContainsBrand(string $segment, ?string $brand = null): bool
+    {
+        $brand = trim((string) ($brand ?? siteName()));
+        if ($brand === '') {
+            return false;
+        }
+
+        $haystack = mb_strtolower($segment);
+        $aliases = array_unique(array_filter([
+            $brand,
+            trim((string) config('app.name')),
+            'ویلافردا',
+            'ویلا فردا',
+            'vilafarda',
+            'villa farda',
+        ]));
+
+        foreach ($aliases as $alias) {
+            if ($alias !== '' && str_contains($haystack, mb_strtolower($alias))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -352,6 +377,16 @@ class SeoService
                 'title_segment' => setting('seo:submit-home-title') ?: setting('submit-home:page-title'),
                 'description' => setting('seo:submit-home-meta-description') ?: setting('submit-home:first-description'),
                 'canonical' => route('main.submit.home'),
+            ],
+            'main.login.form' => [
+                'title_segment' => setting('seo:login-title') ?: __('title.login'),
+                'description' => setting('seo:login-meta-description') ?: 'ورود به حساب کاربری '.siteName(),
+                'canonical' => route('main.login.form'),
+            ],
+            'main.register.form' => [
+                'title_segment' => setting('seo:register-title') ?: __('title.register'),
+                'description' => setting('seo:register-meta-description') ?: 'ثبت نام در '.siteName(),
+                'canonical' => route('main.register.form'),
             ],
         ];
 

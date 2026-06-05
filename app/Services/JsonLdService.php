@@ -48,6 +48,21 @@ class JsonLdService
 
         return match ($routeName) {
             'main.index' => self::wrapGraph(self::forIndex($viewData)),
+            'main.login.form' => self::wrapGraph(self::forAuthPage(
+                route('main.login.form'),
+                setting('seo:login-title') ?: __('title.login'),
+                setting('seo:login-meta-description') ?: 'ورود به حساب کاربری '.siteName()
+            )),
+            'main.register.form' => self::wrapGraph(self::forAuthPage(
+                route('main.register.form'),
+                setting('seo:register-title') ?: __('title.register'),
+                setting('seo:register-meta-description') ?: 'ثبت نام در '.siteName()
+            )),
+            'main.submit.home' => self::wrapGraph(self::forAuthPage(
+                route('main.submit.home'),
+                setting('seo:submit-home-title') ?: setting('submit-home:page-title') ?: 'ثبت اقامتگاه',
+                SeoService::truncate((string) (setting('seo:submit-home-meta-description') ?: setting('submit-home:first-description')))
+            )),
             default => null,
         };
     }
@@ -68,7 +83,7 @@ class JsonLdService
                 '@type' => 'WebSite',
                 '@id' => $siteUrl.'#website',
                 'url' => $siteUrl,
-                'name' => config('app.name'),
+                'name' => siteName(),
                 'description' => $description,
                 'inLanguage' => 'fa-IR',
                 'publisher' => ['@id' => $siteUrl.'#organization'],
@@ -82,6 +97,7 @@ class JsonLdService
                 ],
             ],
             self::organization(),
+            self::siteNavigation(),
             [
                 '@type' => 'WebPage',
                 '@id' => $canonical.'#webpage',
@@ -278,7 +294,7 @@ class JsonLdService
         return [
             $lodging,
             self::breadcrumbList([
-                ['name' => config('app.name'), 'item' => route('main.index')],
+                ['name' => siteName(), 'item' => route('main.index')],
                 ['name' => 'اقامتگاه‌ها', 'item' => route('main.homes.index')],
                 ['name' => $home->name, 'item' => $canonical],
             ]),
@@ -305,7 +321,7 @@ class JsonLdService
                     'isPartOf' => ['@id' => url('/').'#website'],
                 ],
                 self::breadcrumbList([
-                    ['name' => config('app.name'), 'item' => route('main.index')],
+                    ['name' => siteName(), 'item' => route('main.index')],
                     ['name' => 'اقامتگاه‌ها', 'item' => route('main.homes.index')],
                     ['name' => $landingPage->title, 'item' => $canonical],
                 ]),
@@ -438,7 +454,7 @@ class JsonLdService
         return [
             $posting,
             self::breadcrumbList([
-                ['name' => config('app.name'), 'item' => route('main.index')],
+                ['name' => siteName(), 'item' => route('main.index')],
                 ['name' => 'مقالات', 'item' => route('main.articles.index')],
                 ['name' => $article->title, 'item' => $canonical],
             ]),
@@ -457,7 +473,7 @@ class JsonLdService
                 '@type' => 'WebSite',
                 '@id' => $siteUrl.'#website',
                 'url' => $siteUrl,
-                'name' => config('app.name'),
+                'name' => siteName(),
                 'description' => indexPageSeoDescription(),
                 'inLanguage' => 'fa-IR',
                 'publisher' => ['@id' => $siteUrl.'#organization'],
@@ -471,6 +487,56 @@ class JsonLdService
                 ],
             ],
             self::organization(),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public static function forAuthPage(string $canonical, string $title, string $description): array
+    {
+        $siteUrl = url('/');
+
+        return [
+            self::organization(),
+            [
+                '@type' => 'WebPage',
+                '@id' => $canonical.'#webpage',
+                'url' => $canonical,
+                'name' => $title,
+                'description' => $description,
+                'inLanguage' => 'fa-IR',
+                'isPartOf' => ['@id' => $siteUrl.'#website'],
+            ],
+            self::breadcrumbList([
+                ['name' => siteName(), 'item' => route('main.index')],
+                ['name' => $title, 'item' => $canonical],
+            ]),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function siteNavigation(): array
+    {
+        $siteUrl = url('/');
+        $items = [];
+
+        foreach (prioritySitelinks() as $index => $link) {
+            $items[] = [
+                '@type' => 'SiteNavigationElement',
+                'position' => $index + 1,
+                'name' => $link['name'],
+                'url' => $link['url'],
+            ];
+        }
+
+        return [
+            '@type' => 'ItemList',
+            '@id' => $siteUrl.'#priority-navigation',
+            'name' => 'دسترسی سریع',
+            'itemListElement' => $items,
         ];
     }
 
@@ -520,11 +586,11 @@ class JsonLdService
         $organization = [
             '@type' => 'Organization',
             '@id' => $siteUrl.'#organization',
-            'name' => config('app.name'),
+            'name' => siteName(),
             'url' => $siteUrl,
         ];
 
-        $logo = settingFilePath('app:logo');
+        $logo = settingFilePath('app:logo') ?: settingFaviconUrl(192);
         if ($logo) {
             $organization['logo'] = self::absoluteUrl($logo);
         }
@@ -650,13 +716,11 @@ class JsonLdService
         }
 
         $noindexRoutes = [
-            'main.login.form',
             'main.login',
             'main.login.temp.send.form',
             'main.login.temp.send',
             'main.login.temp.form',
             'main.login.temp',
-            'main.register.form',
             'main.register',
             'main.call-back',
             'main.add-to-home.ios',

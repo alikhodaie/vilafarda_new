@@ -22,7 +22,7 @@
     </div>
 
     <div class="alert alert-warning small">
-        صفحات ورود، ثبت‌نام، داشبورد کاربر و پنل مدیریت به‌صورت خودکار با <code>noindex</code> از ایندکس گوگل خارج شده‌اند.
+        صفحات ورود و ثبت‌نام برای sitelink گوگل ایندکس می‌شوند. داشبورد کاربر و پنل مدیریت همچنان <code>noindex</code> هستند.
     </div>
 
     <h4 class="text-center mt-4">تنظیمات عمومی سئو</h4>
@@ -145,6 +145,20 @@
                 'hint' => 'اختیاری.',
                 'fallback' => setting('submit-home:page-title'),
             ],
+            'login_title' => [
+                'key' => 'seo:login-title',
+                'label' => 'ورود',
+                'placeholder' => 'ورود',
+                'hint' => 'برای sitelink گوگل — لینک /login',
+                'fallback' => __('title.login'),
+            ],
+            'register_title' => [
+                'key' => 'seo:register-title',
+                'label' => 'ثبت نام',
+                'placeholder' => 'ثبت نام',
+                'hint' => 'برای sitelink گوگل — لینک /register',
+                'fallback' => __('title.register'),
+            ],
         ];
         $brandName = siteName();
         $titleMaxSegment = 45;
@@ -186,6 +200,8 @@
             'privacy_meta_description' => ['key' => 'seo:privacy-meta-description', 'label' => 'قوانین و حریم خصوصی', 'hint' => 'اختیاری.'],
             'faq_meta_description' => ['key' => 'seo:faq-meta-description', 'label' => 'سوالات متداول', 'hint' => 'اختیاری.'],
             'submit_home_meta_description' => ['key' => 'seo:submit-home-meta-description', 'label' => 'ثبت ملک', 'hint' => 'اختیاری.'],
+            'login_meta_description' => ['key' => 'seo:login-meta-description', 'label' => 'ورود', 'hint' => 'اختیاری — برای نمایش زیر لینک sitelink.'],
+            'register_meta_description' => ['key' => 'seo:register-meta-description', 'label' => 'ثبت نام', 'hint' => 'اختیاری — برای نمایش زیر لینک sitelink.'],
         ];
     @endphp
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Jobs\CompressImageJob;
+use App\Services\FaviconProcessor;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
@@ -118,8 +119,12 @@ class Setting extends Model
         return $newFilename;
     }
 
+    /** @var list<int> */
+    public const FAVICON_SIZES = FaviconProcessor::SIZES;
+
     /**
      * ذخیره آیکون تب مرورگر (favicon) — PNG شفاف یا ICO.
+     * برای PNG نسخه‌های ۴۸، ۱۹۲ و ۵۱۲ پیکسل با ماسک دایره‌ای ساخته می‌شود.
      */
     public static function saveFaviconFile(UploadedFile $file, string $settingKey, string $field = 'favicon'): string
     {
@@ -139,15 +144,51 @@ class Setting extends Model
             ]);
         }
 
-        $oldFilename = setting($settingKey);
-        if ($oldFilename) {
-            self::deleteFile($oldFilename);
+        self::deleteFaviconVariants(setting($settingKey));
+
+        if ($extension === 'ico') {
+            $newFilename = 'favicon-'.time().'.ico';
+            Storage::disk(self::FILE_DISK)->putFileAs(self::FILE_PATH, $file, $newFilename);
+
+            return $newFilename;
         }
 
-        $newFilename = 'favicon-'.time().'.'.($extension === 'ico' ? 'ico' : 'png');
-        Storage::disk(self::FILE_DISK)->putFileAs(self::FILE_PATH, $file, $newFilename);
+        $sourcePath = $file->getRealPath() ?: $file->getPathname();
 
-        return $newFilename;
+        return FaviconProcessor::processFromPath($sourcePath);
+    }
+
+    public static function faviconVariantFilename(?string $storedFilename, int $size): ?string
+    {
+        if ($storedFilename === null || $storedFilename === '') {
+            return null;
+        }
+
+        if (preg_match('/^favicon-\d+-\d+\.png$/', $storedFilename)) {
+            return preg_replace('/-\d+\.png$/', '-'.$size.'.png', $storedFilename);
+        }
+
+        if (preg_match('/^favicon-\d+\.png$/', $storedFilename) && $size === 512) {
+            return $storedFilename;
+        }
+
+        return $storedFilename;
+    }
+
+    public static function deleteFaviconVariants(?string $storedFilename): void
+    {
+        if ($storedFilename === null || $storedFilename === '') {
+            return;
+        }
+
+        self::deleteFile($storedFilename);
+
+        if (preg_match('/^favicon-\d+-\d+\.png$/', $storedFilename)) {
+            $base = preg_replace('/-\d+\.png$/', '', $storedFilename);
+            foreach (self::FAVICON_SIZES as $size) {
+                self::deleteFile($base.'-'.$size.'.png');
+            }
+        }
     }
 
     /**

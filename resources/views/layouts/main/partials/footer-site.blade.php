@@ -1,7 +1,7 @@
 @php
     $footer = footerSettings();
     $navLinks = footerNavbarLinks();
-    $appName = config('app.name');
+    $appName = siteName();
     $showLogo = $showLogo ?? false;
     $footerClass = $footerClass ?? 'mobile-site-footer';
 @endphp
@@ -32,6 +32,17 @@
                     <span class="mobile-site-footer__install-platform">اندروید</span>
                 </a>
             </div>
+        </section>
+
+        <section class="mobile-site-footer__section" aria-labelledby="footer-sitelinks-title">
+            <h2 id="footer-sitelinks-title" class="mobile-site-footer__heading">دسترسی سریع</h2>
+            <ul class="mobile-site-footer__access-links">
+                @foreach(prioritySitelinks() as $link)
+                    <li>
+                        <a href="{{ $link['url'] }}">{{ $link['name'] }}</a>
+                    </li>
+                @endforeach
+            </ul>
         </section>
 
         @if(!empty($navLinks))

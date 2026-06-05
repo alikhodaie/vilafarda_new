@@ -33,4 +33,14 @@ class SeoServiceTest extends TestCase
 
         $this->assertSame('رنت ناب', SeoService::documentTitle(''));
     }
+
+    public function test_document_title_skips_brand_when_already_in_segment(): void
+    {
+        config(['app.name' => 'vilafarda']);
+
+        $title = SeoService::documentTitle('اجاره ویلا استخردار | رزرو آنلاین ویلافردا');
+
+        $this->assertSame('اجاره ویلا استخردار | رزرو آنلاین ویلافردا', $title);
+        $this->assertStringNotContainsString('vilafarda', $title);
+    }
 }

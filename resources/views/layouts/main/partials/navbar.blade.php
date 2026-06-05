@@ -50,7 +50,7 @@
                                        @if(setting('app:auth-modal-active'))
                                        href="javascript:" data-toggle="modal" data-target="#login"
                                        @else
-                                       href="{{ route('main.login') }}"
+                                       href="{{ route('main.login.form') }}"
                                         @endif>
                                         <i class="fas fa-sign-in-alt ml-1"></i><span class="dn-lg">@lang('title.login')</span>
                                     </a>
@@ -73,7 +73,7 @@
                                @if(setting('app:auth-modal-active'))
                                href="javascript:" data-toggle="modal" data-target="#login"
                                @else
-                               href="{{ route('main.login') }}"
+                               href="{{ route('main.login.form') }}"
                                 @endif>
                                 <i class="fas fa-sign-in-alt ml-1"></i>
                                 <span class="dn-lg">@lang('title.login')</span>

@@ -87,17 +87,21 @@ Route::get('/sitemap/homes.xml', [SitemapController::class, 'homes'])->name('sit
 Route::get('/sitemap/articles.xml', [SitemapController::class, 'articles'])->name('sitemap.articles');
 
 Route::get('/favicon.ico', function () {
-    $filename = setting('app:favicon');
-    if (! $filename) {
+    $stored = setting('app:favicon');
+    if (! $stored) {
         abort(404);
     }
 
+    $filename = Setting::faviconVariantFilename($stored, 48) ?: $stored;
     $path = public_path(Setting::FILE_PATH.ltrim($filename, '/'));
     if (! is_file($path)) {
-        abort(404);
+        $path = public_path(Setting::FILE_PATH.ltrim($stored, '/'));
+        if (! is_file($path)) {
+            abort(404);
+        }
     }
 
-    $mime = str_ends_with(strtolower($filename), '.ico') ? 'image/x-icon' : 'image/png';
+    $mime = str_ends_with(strtolower(basename($path)), '.ico') ? 'image/x-icon' : 'image/png';
 
     return response()->file($path, [
         'Content-Type' => $mime,

@@ -15,13 +15,15 @@ class SitemapService
     /** @var array<string, array{changefreq: string, priority: string}> */
     private const STATIC_PAGES = [
         'main.index' => ['changefreq' => 'daily', 'priority' => '1.0'],
+        'main.login.form' => ['changefreq' => 'monthly', 'priority' => '0.9'],
+        'main.register.form' => ['changefreq' => 'monthly', 'priority' => '0.9'],
+        'main.submit.home' => ['changefreq' => 'monthly', 'priority' => '0.9'],
         'main.homes.index' => ['changefreq' => 'daily', 'priority' => '0.9'],
         'main.articles.index' => ['changefreq' => 'weekly', 'priority' => '0.8'],
         'main.about-us' => ['changefreq' => 'monthly', 'priority' => '0.6'],
         'main.contact-us' => ['changefreq' => 'monthly', 'priority' => '0.6'],
         'main.faq' => ['changefreq' => 'monthly', 'priority' => '0.6'],
         'main.privacy' => ['changefreq' => 'yearly', 'priority' => '0.4'],
-        'main.submit.home' => ['changefreq' => 'monthly', 'priority' => '0.7'],
     ];
 
     public function indexXml(): string

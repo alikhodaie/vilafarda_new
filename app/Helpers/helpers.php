@@ -106,6 +106,51 @@ if (! function_exists('siteName')) {
     }
 }
 
+if (! function_exists('settingFaviconUrl')) {
+    /** آدرس favicon در اندازه مشخص (۴۸، ۱۹۲، ۵۱۲) برای گوگل و مرورگر */
+    function settingFaviconUrl(int $size = 512): ?string
+    {
+        $stored = setting('app:favicon');
+        $filename = \App\Models\Setting::faviconVariantFilename($stored, $size);
+
+        if (! $filename) {
+            return null;
+        }
+
+        $absolute = public_path(\App\Models\Setting::FILE_PATH.ltrim($filename, '/'));
+        if (! is_file($absolute)) {
+            return settingFilePath('app:favicon');
+        }
+
+        return \App\Models\Setting::getFilePath($filename).'?v='.filemtime($absolute);
+    }
+}
+
+if (! function_exists('prioritySitelinks')) {
+    /**
+     * صفحات مهم برای sitelink گوگل — ورود، ثبت‌نام، ثبت اقامتگاه.
+     *
+     * @return list<array{name: string, url: string}>
+     */
+    function prioritySitelinks(): array
+    {
+        return [
+            [
+                'name' => setting('seo:login-title') ?: __('title.login'),
+                'url' => route('main.login.form'),
+            ],
+            [
+                'name' => setting('seo:register-title') ?: __('title.register'),
+                'url' => route('main.register.form'),
+            ],
+            [
+                'name' => setting('seo:submit-home-title') ?: setting('submit-home:page-title') ?: 'ثبت اقامتگاه',
+                'url' => route('main.submit.home'),
+            ],
+        ];
+    }
+}
+
 if (! function_exists('ini_size_to_bytes')) {
     /**
      * تبدیل مقدار ini مثل 256M یا 8M به بایت.
