@@ -89,7 +89,12 @@ class MainController extends Controller
             'expensive_homes',
             'articles',
             'comments',
-        ]));
+        ]) + [
+            'showOpenTomorrow' => HomeIndexSectionService::hasOpenTomorrowHomes(),
+            'showOffHomes' => HomeIndexSectionService::hasOffHomes(),
+            'offCities' => HomeIndexSectionService::offCities(),
+            'offHomesInitial' => HomeIndexSectionService::offHomes(null, 10),
+        ]);
     }
 
     public function privacy(Request $request)

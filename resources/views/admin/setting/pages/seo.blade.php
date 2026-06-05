@@ -4,19 +4,20 @@
 
     @include('admin.partials.seo-performance-guide')
     @include('admin.partials.seo-measurement-guide')
+    @include('admin.partials.seo-index-homepage-guide')
 
     <div class="alert alert-info">
         <h5 class="alert-heading mb-2">راهنمای مدیر سایت — سئو گوگل</h5>
-        <p class="mb-2 small">این بخش متا تگ‌های <strong>title</strong>، <strong>description</strong>، <strong>canonical</strong> و <strong>robots</strong> را برای صفحات عمومی سایت تنظیم می‌کند.</p>
+        <p class="mb-2 small">این بخش متا تگ‌های <strong>title</strong>، <strong>description</strong>، <strong>canonical</strong>، <strong>Open Graph</strong>، <strong>Twitter Card</strong> و <strong>robots</strong> را برای صفحات عمومی سایت تنظیم می‌کند.</p>
         <ol class="mb-0 small ps-3">
             <li class="mb-1"><strong>عنوان صفحه (Title):</strong> متنی که در تب مرورگر و نتیجه جستجوی گوگل دیده می‌شود. فرمت خودکار: <code>عنوان صفحه | {{ config('app.name') }}</code> — بخش اصلی را کوتاه و با کلمه کلیدی بنویسید (حداکثر حدود ۴۵ کاراکتر قبل از نام برند).</li>
             <li class="mb-1"><strong>توضیح متا (Description):</strong> زیر عنوان در گوگل نمایش داده می‌شود؛ حداکثر <strong>۱۵۰ کاراکتر</strong>.</li>
-            <li class="mb-1"><strong>صفحه اصلی:</strong> نام برند + خدمت اصلی، مثلاً «اجاره ویلا و اقامتگاه در شمال — رزرو آنلاین».</li>
+            <li class="mb-1"><strong>صفحه اصلی:</strong> اول «عنوان سئو» و «توضیح متا» اینجا را پر کنید؛ جزئیات بیشتر در راهنمای آبی بالا. تنظیمات بنر و اسلایدر در <em>تنظیمات → صفحه اصلی</em>.</li>
             <li class="mb-1"><strong>لیست اقامتگاه‌ها:</strong> عبارت جستجو مانند «جستجو و رزرو ویلا و سوئیت».</li>
             <li class="mb-1"><strong>اقامتگاه‌ها:</strong> عنوان هر صفحه به‌صورت خودکار از نام، نوع و شهر ساخته می‌شود (مثلاً «اجاره ویلا فلان در رامسر»). در ویرایش اقامتگاه نام دقیق و شهر را درست وارد کنید.</li>
             <li class="mb-1"><strong>مقالات:</strong> عنوان مقاله همان تگ title است؛ عنوان جذاب و مرتبط با موضوع بنویسید.</li>
             <li class="mb-1"><strong>تأیید گوگل:</strong> کد <code>google-site-verification</code> را از <a href="https://search.google.com/search-console" target="_blank" rel="noopener">Google Search Console</a> کپی کنید.</li>
-            <li class="mb-0"><strong>تصویر اشتراک:</strong> برای صفحاتی که عکس اختصاصی ندارند؛ در غیر این صورت از لوگو استفاده می‌شود.</li>
+            <li class="mb-0"><strong>تصویر اشتراک:</strong> برای صفحاتی که عکس اختصاصی ندارند؛ در صفحه اصلی با اسلایدر، تصویر اولین اسلاید اولویت دارد.</li>
         </ol>
     </div>
 
@@ -92,7 +93,7 @@
                 'key' => 'seo:index-title',
                 'label' => 'صفحه اصلی',
                 'placeholder' => 'اجاره ویلا و اقامتگاه — رزرو آنلاین',
-                'hint' => 'اگر خالی باشد از «عنوان صفحه» در تنظیمات صفحه اصلی استفاده می‌شود.',
+                'hint' => 'اگر خالی باشد از «عنوان صفحه» در تنظیمات صفحه اصلی استفاده می‌شود. برای سئو بهتر کلمه کلیدی + شهر/خدمت بنویسید.',
                 'fallback' => setting('index:page-title'),
             ],
             'homes_title' => [
@@ -177,7 +178,7 @@
 
     @php
         $pageFields = [
-            'index_meta_description' => ['key' => 'seo:index-meta-description', 'label' => 'صفحه اصلی', 'hint' => 'اگر خالی باشد از توضیح بنر صفحه اصلی استفاده می‌شود.'],
+            'index_meta_description' => ['key' => 'seo:index-meta-description', 'label' => 'صفحه اصلی', 'hint' => 'اگر خالی باشد از توضیح بنر صفحه اصلی استفاده می‌شود. جمله دعوت به رزرو + مزیت اصلی، حداکثر ۱۵۰ کاراکتر.'],
             'homes_meta_description' => ['key' => 'seo:homes-meta-description', 'label' => 'لیست اقامتگاه‌ها', 'hint' => ''],
             'articles_meta_description' => ['key' => 'seo:articles-meta-description', 'label' => 'لیست مقالات', 'hint' => ''],
             'contact_meta_description' => ['key' => 'seo:contact-meta-description', 'label' => 'تماس با ما', 'hint' => 'اختیاری — از متن صفحه تماس.'],

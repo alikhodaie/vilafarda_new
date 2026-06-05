@@ -107,7 +107,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function initSwiper() {
-        if (typeof Swiper === 'undefined' || !document.querySelector('.last-minute-off-swiper')) {
+        const wrap = section.querySelector('.index-swiper-wrap--with-nav') || section.querySelector('.index-swiper-wrap');
+        const swiperEl = section.querySelector('.last-minute-off-swiper');
+
+        if (typeof Swiper === 'undefined' || !swiperEl) {
             return;
         }
 
@@ -116,11 +119,16 @@ document.addEventListener('DOMContentLoaded', function () {
             swiperInstance = null;
         }
 
-        swiperInstance = new Swiper('.last-minute-off-swiper', {
-            slidesPerView: 'auto',
-            spaceBetween: 14,
-            freeMode: true,
-        });
+        if (wrap && window.IndexSwiperNav) {
+            swiperInstance = window.IndexSwiperNav.initInWrap(wrap, { spaceBetween: 14 });
+        } else {
+            swiperInstance = new Swiper(swiperEl, {
+                slidesPerView: 'auto',
+                spaceBetween: 14,
+                freeMode: true,
+                rtl: true,
+            });
+        }
     }
 
     function showEmpty(cityId) {

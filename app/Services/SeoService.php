@@ -308,6 +308,7 @@ class SeoService
                 'title_segment' => setting('seo:index-title') ?: setting('index:page-title'),
                 'description' => setting('seo:index-meta-description') ?: setting('index:banner-description'),
                 'canonical' => route('main.index'),
+                'og_image' => indexPageOgImage(),
             ],
             'main.homes.index' => [
                 'title_segment' => setting('seo:homes-title') ?: __('title.homes'),
@@ -352,6 +353,8 @@ class SeoService
             'title_segment' => $viewTitle,
         ];
 
+        $ogImage = $config['og_image'] ?? settingFilePath('seo:default-og-image') ?: settingFilePath('app:logo');
+
         $titleSegment = trim((string) ($config['title_segment'] ?? ''));
         if ($titleSegment === '' && $viewTitle !== '') {
             $titleSegment = $viewTitle;
@@ -361,8 +364,6 @@ class SeoService
         if ($description === '') {
             $description = self::defaultDescription();
         }
-
-        $ogImage = settingFilePath('seo:default-og-image') ?: settingFilePath('app:logo');
 
         return [
             'description' => $description,
@@ -375,6 +376,12 @@ class SeoService
                 'image' => $ogImage,
                 'url' => $config['canonical'] ?? self::canonicalUrl($request),
                 'type' => 'website',
+            ],
+            'twitter' => [
+                'card' => 'summary_large_image',
+                'title' => $titleSegment !== '' ? $titleSegment : null,
+                'description' => $description,
+                'image' => $ogImage,
             ],
         ];
     }

@@ -37,15 +37,15 @@ class OrderObserver
         SMS::sendPattern($order->owner->mobile, config('sms.patterns.order_created_owner'), [
             [
                 'name' => 'COUNT',
-                'value' => $order->count_guest,
+                'value' => (string) $order->count_guest,
             ],
             [
                 'name' => 'START-DATE',
-                'value' => $order->persianDate('start_at', '%A d F Y'),
+                'value' => $order->persianDate('start_at', 'Y/m/d'),
             ],
             [
                 'name' => 'END-DATE',
-                'value' => persianDate($order->end_at->copy()->addDay())->format('%A d F Y'),
+                'value' => persianDate($order->end_at->copy()->addDay())->format('Y/m/d'),
             ],
             [
                 'name' => 'AMOUNT',

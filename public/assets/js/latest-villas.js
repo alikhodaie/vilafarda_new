@@ -52,12 +52,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 container.appendChild(slide);
             });
-            if (document.querySelector('.discounted-villas-swiper')) {
-                new Swiper('.discounted-villas-swiper', {
-                    slidesPerView: 'auto',
-                    spaceBetween: 16,
-                    freeMode: true,
-                });
+            const wrap = container.closest('.index-swiper-wrap');
+
+            if (wrap && window.IndexSwiperNav) {
+                window.IndexSwiperNav.initInWrap(wrap);
+            } else if (wrap) {
+                const swiperEl = wrap.querySelector('.discounted-villas-swiper');
+
+                if (swiperEl) {
+                    new Swiper(swiperEl, {
+                        slidesPerView: 'auto',
+                        spaceBetween: 16,
+                        freeMode: true,
+                        rtl: true,
+                    });
+                }
             }
         })
         .catch(() => window.IndexSectionVisibility?.hide(container));

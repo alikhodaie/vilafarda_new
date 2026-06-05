@@ -376,6 +376,61 @@ if (! function_exists('indexBannerType')) {
     }
 }
 
+if (! function_exists('indexHomeCategoryDescription')) {
+    /**
+     * توضیح سکشن دسته‌بندی صفحه اصلی از تنظیمات ادمین.
+     */
+    function indexHomeCategoryDescription(string $slug): string
+    {
+        $key = match ($slug) {
+            'off' => 'index:home-off-description',
+            'open-tomorrow' => 'index:home-tomorrow-order-description',
+            'popular' => 'index:home-popular-description',
+            'cheap' => 'index:home-cheap-description',
+            'expensive' => 'index:home-expensive-description',
+            'last' => 'index:home-latest-description',
+            default => null,
+        };
+
+        if ($key === null) {
+            return '';
+        }
+
+        return trim(strip_tags((string) setting($key)));
+    }
+}
+
+if (! function_exists('indexPageOgImage')) {
+    /**
+     * تصویر Open Graph صفحه اصلی: اولین اسلاید، سپس تصویر OG پیش‌فرض، سپس لوگو.
+     */
+    function indexPageOgImage(): ?string
+    {
+        $slides = indexPageSlider();
+
+        if (! empty($slides[0]['image'])) {
+            return $slides[0]['image'];
+        }
+
+        $og = settingFilePath('seo:default-og-image');
+
+        if ($og) {
+            return $og;
+        }
+
+        return settingFilePath('app:logo') ?: null;
+    }
+}
+
+if (! function_exists('indexPageSeoDescription')) {
+    function indexPageSeoDescription(): string
+    {
+        return \App\Services\SeoService::truncate(
+            (string) (setting('seo:index-meta-description') ?: setting('index:banner-description') ?: setting('seo:default-description'))
+        );
+    }
+}
+
 if (!function_exists('imageBase64')){
     function imageBase64($path): string
     {

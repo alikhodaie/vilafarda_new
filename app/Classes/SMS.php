@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\SmsTemplates;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Throwable;
 
 class SMS
@@ -47,8 +48,8 @@ class SMS
 
         $data = [
             'mobile' => $mobile,
-            'templateId' => $pattern,
-            'parameters' => $parameters,
+            'templateId' => (int) $pattern,
+            'parameters' => self::normalizeParameters($parameters),
         ];
 
         $header = [
@@ -105,5 +106,35 @@ class SMS
         }
 
         return null;
+    }
+
+    protected static function normalizeParameters(array $parameters): array
+    {
+        $max = (int) config('sms.parameter_max_length', 25);
+
+        if ($max <= 0) {
+            $max = 25;
+        }
+
+        $normalized = [];
+
+        foreach ($parameters as $parameter) {
+            if (! is_array($parameter)) {
+                continue;
+            }
+
+            $name = trim((string) ($parameter['name'] ?? ''));
+
+            if ($name === '') {
+                continue;
+            }
+
+            $normalized[] = [
+                'name' => $name,
+                'value' => Str::limit(trim((string) ($parameter['value'] ?? '')), $max, ''),
+            ];
+        }
+
+        return $normalized;
     }
 }

@@ -12,6 +12,25 @@ use Illuminate\Support\Str;
 
 class OrderAdminSmsService
 {
+    private const DEFAULT_ADMIN_PARAM_NAMES = [
+        'id' => 'ID',
+        'count' => 'COUNT',
+        'start_date' => 'START_DATE',
+        'end_date' => 'END_DATE',
+        'amount' => 'AMOUNT',
+        'guest_name' => 'GUEST_NAME',
+        'guest_mobile' => 'GUEST_MOBILE',
+        'owner_name' => 'OWNER_NAME',
+        'owner_mobile' => 'OWNER_MOBILE',
+        'calendar_link' => 'CALENDAR_LINK',
+    ];
+
+    private const DEFAULT_GUEST_PARAM_NAMES = [
+        'home_name' => 'HOME_NAME',
+        'consultant_name' => 'consultant_name',
+        'consultant_mobile' => 'consultant_mobile',
+    ];
+
     public const MODE_ALWAYS = 'always';
 
     public const MODE_ROTATING = 'rotating';
@@ -114,36 +133,74 @@ class OrderAdminSmsService
 
     public function buildAdminSmsParameters(Order $order): array
     {
-        $names = config('sms.parameter_names.order_created_admin', []);
-        $values = [
-            'id' => Str::limit($order->home->code, $this->parameterMaxLength(), ''),
-            'count' => (string) $order->count_guest,
-            'start_date' => $this->parameterValue($order->persianDate('start_at', '%A d F Y')),
-            'end_date' => $this->parameterValue(persianDate($order->end_at->copy()->addDay())->format('%A d F Y')),
-            'amount' => $this->parameterValue(number_format($order->price)),
-            'guest_name' => $this->parameterValue($order->renter->full_name),
-            'guest_mobile' => $this->parameterValue($order->renter->mobile),
-            'owner_name' => $this->parameterValue($order->owner->full_name),
-            'owner_mobile' => $this->parameterValue($order->owner->mobile),
-            'calendar_link' => $this->parameterValue($this->calendarLink($order)),
-        ];
+        $limit = $this->parameterMaxLength();
 
-        return $this->buildParametersFromMap($names, $values);
+        return [
+            [
+                'name' => $this->adminSmsParamName('id'),
+                'value' => $this->adminParameterValue('id', Str::limit($order->home->code, $limit, '')),
+            ],
+            [
+                'name' => $this->adminSmsParamName('count'),
+                'value' => $this->adminParameterValue('count', (string) $order->count_guest),
+            ],
+            [
+                'name' => $this->adminSmsParamName('start_date'),
+                'value' => $this->adminParameterValue('start_date', $order->persianDate('start_at', 'Y/m/d')),
+            ],
+            [
+                'name' => $this->adminSmsParamName('end_date'),
+                'value' => $this->adminParameterValue('end_date', persianDate($order->end_at->copy()->addDay())->format('Y/m/d')),
+            ],
+            [
+                'name' => $this->adminSmsParamName('amount'),
+                'value' => $this->adminParameterValue('amount', number_format($order->price)),
+            ],
+            [
+                'name' => $this->adminSmsParamName('guest_name'),
+                'value' => $this->adminParameterValue('guest_name', Str::limit($order->renter->full_name, $limit, '')),
+            ],
+            [
+                'name' => $this->adminSmsParamName('guest_mobile'),
+                'value' => $this->adminParameterValue('guest_mobile', $order->renter->mobile),
+            ],
+            [
+                'name' => $this->adminSmsParamName('owner_name'),
+                'value' => $this->adminParameterValue('owner_name', Str::limit($order->owner->full_name, $limit, '')),
+            ],
+            [
+                'name' => $this->adminSmsParamName('owner_mobile'),
+                'value' => $this->adminParameterValue('owner_mobile', $order->owner->mobile),
+            ],
+            [
+                'name' => $this->adminSmsParamName('calendar_link'),
+                'value' => $this->adminParameterValue('calendar_link', $this->calendarLink($order)),
+            ],
+        ];
     }
 
     public function buildGuestSmsParameters(Order $order, ?User $consultantAdmin): array
     {
-        $names = config('sms.parameter_names.order_created_renter', []);
-        $values = [
-            'home_name' => $this->parameterValue($order->home->name),
+        $limit = $this->parameterMaxLength();
+        $parameters = [
+            [
+                'name' => $this->guestSmsParamName('home_name'),
+                'value' => Str::limit($order->home->name, $limit, ''),
+            ],
         ];
 
         if ($consultantAdmin) {
-            $values['consultant_name'] = $this->parameterValue($consultantAdmin->full_name);
-            $values['consultant_mobile'] = $this->parameterValue($consultantAdmin->mobile);
+            $parameters[] = [
+                'name' => $this->guestSmsParamName('consultant_name'),
+                'value' => Str::limit($consultantAdmin->full_name, $limit, ''),
+            ];
+            $parameters[] = [
+                'name' => $this->guestSmsParamName('consultant_mobile'),
+                'value' => $consultantAdmin->mobile,
+            ];
         }
 
-        return $this->buildParametersFromMap($names, $values);
+        return $parameters;
     }
 
     /**
@@ -156,27 +213,42 @@ class OrderAdminSmsService
         return ltrim(route('admin.homes.date.show', $order->home_id, false), '/');
     }
 
-    private function buildParametersFromMap(array $names, array $values): array
+    private function adminSmsParamName(string $key): string
     {
-        $parameters = [];
-
-        foreach ($names as $valueKey => $smsName) {
-            if (! array_key_exists($valueKey, $values) || $values[$valueKey] === null || $values[$valueKey] === '') {
-                continue;
-            }
-
-            $parameters[] = [
-                'name' => $smsName,
-                'value' => $values[$valueKey],
-            ];
-        }
-
-        return $parameters;
+        return $this->resolveSmsParamName('order_created_admin', self::DEFAULT_ADMIN_PARAM_NAMES, $key);
     }
 
-    private function parameterValue(?string $value): string
+    private function guestSmsParamName(string $key): string
     {
-        return Str::limit(trim((string) $value), $this->parameterMaxLength(), '');
+        return $this->resolveSmsParamName('order_created_renter', self::DEFAULT_GUEST_PARAM_NAMES, $key);
+    }
+
+    private function resolveSmsParamName(string $templateKey, array $defaults, string $key): string
+    {
+        $configured = config("sms.parameter_names.{$templateKey}");
+
+        if (is_array($configured) && $configured !== [] && isset($configured[$key])) {
+            return (string) $configured[$key];
+        }
+
+        return $defaults[$key] ?? $key;
+    }
+
+    private function adminParameterValue(string $key, string $value): string
+    {
+        $value = trim($value);
+        $max = $this->adminParameterMaxLength($key);
+
+        if ($max <= 0) {
+            return $value;
+        }
+
+        return Str::limit($value, $max, '');
+    }
+
+    private function adminParameterMaxLength(string $key): int
+    {
+        return $this->parameterMaxLength();
     }
 
     private function parameterMaxLength(): int

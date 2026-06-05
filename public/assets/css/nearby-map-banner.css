@@ -21,6 +21,10 @@
     margin-bottom: 0.75rem;
 }
 
+.nearby-map-banner__titles {
+    min-width: 0;
+}
+
 .nearby-map-banner__title {
     margin: 0 0 0.25rem;
     font-size: 1rem;
@@ -81,4 +85,14 @@
 .nearby-map-banner.is-loading {
     pointer-events: none;
     opacity: 0.7;
+}
+
+.nearby-map-section.index-section {
+    padding: 1.25rem 1rem 0;
+    border-top: none;
+    background: transparent;
+}
+
+.nearby-map-section .nearby-map-banner {
+    margin: 0;
 }

@@ -156,6 +156,25 @@ document.addEventListener('DOMContentLoaded', function () {
         initSwiper();
     }
 
+    function updateSectionDescription(badge) {
+        const descriptionEl = document.getElementById('suggestion-section-description');
+
+        if (!descriptionEl || !badge) {
+            return;
+        }
+
+        const description = (badge.getAttribute('data-description') || '').trim();
+
+        if (!description) {
+            descriptionEl.textContent = '';
+            descriptionEl.classList.add('d-none');
+            return;
+        }
+
+        descriptionEl.textContent = description;
+        descriptionEl.classList.remove('d-none');
+    }
+
     function getActiveMoreUrl() {
         const active = document.querySelector('.suggestion-badge.active') || badges[0];
 
@@ -197,6 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     remaining[0].classList.add('active');
+                    updateSectionDescription(remaining[0]);
                     fetchHomes(remaining[0].getAttribute('data-value'));
                     return;
                 }
@@ -221,6 +241,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             this.classList.add('active');
             this.setAttribute('aria-selected', 'true');
+            updateSectionDescription(this);
             fetchHomes(this.getAttribute('data-value'));
         });
     });
@@ -229,6 +250,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (firstBadge) {
         firstBadge.classList.add('active');
+        updateSectionDescription(firstBadge);
         fetchHomes(firstBadge.getAttribute('data-value'));
     }
 });

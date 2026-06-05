@@ -6,11 +6,21 @@
         <span class="index-section__title">پیشنهادات ما</span>
     </div>
 
+    @php
+        $firstCategory = $categories[0] ?? null;
+        $initialSuggestionDescription = $firstCategory
+            ? indexHomeCategoryDescription($firstCategory['slug'])
+            : '';
+    @endphp
+    <p class="index-section__description @if($initialSuggestionDescription === '') d-none @endif"
+       id="suggestion-section-description">{{ $initialSuggestionDescription }}</p>
+
     <div class="tab-bar-scroll suggestion-tabs mb-2" role="tablist">
         @foreach($categories as $cat)
             <span class="badge bg-white border text-dark suggestion-badge mx-1 py-2 px-3 @if($loop->first) active @endif"
                   data-value="{{ $cat['slug'] }}"
                   data-more-url="{{ $cat['more_url'] }}"
+                  data-description="{{ indexHomeCategoryDescription($cat['slug']) }}"
                   role="tab"
                   aria-selected="{{ $loop->first ? 'true' : 'false' }}">{{ $cat['title'] }}</span>
         @endforeach

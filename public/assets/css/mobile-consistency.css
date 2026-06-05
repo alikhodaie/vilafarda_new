@@ -562,6 +562,14 @@ body,
     text-align: right;
 }
 
+.index-section__description {
+    margin: -0.35rem 0 0.75rem;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--mobile-text-secondary, #666);
+    text-align: right;
+}
+
 /* ===== INDEX: POPULAR DESTINATIONS (CITIES) ===== */
 .index-destinations__grid {
     display: grid;

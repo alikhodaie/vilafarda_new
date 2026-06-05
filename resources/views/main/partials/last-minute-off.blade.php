@@ -1,6 +1,13 @@
+@php
+    $showDesktopNav = $showDesktopNav ?? false;
+@endphp
+
 <link rel="stylesheet" href="{{ asset('assets/css/last-minute-off.css') }}">
+<link rel="stylesheet" href="{{ asset('vendor/swiper/swiper-bundle.min.css') }}" />
+<script src="{{ asset('vendor/swiper/swiper-bundle.min.js') }}"></script>
 
 <section class="last-minute-off" id="last-minute-off-section">
+    <div class="last-minute-off__inner">
     <div class="last-minute-off__header">
         <div class="last-minute-off__countdown" id="last-minute-countdown" aria-label="زمان باقی‌مانده تا پایان امروز">
             <span class="last-minute-off__countdown-box" data-part="hours">۰۰</span>
@@ -34,8 +41,14 @@
         @endforeach
     </div>
 
-    <div class="swiper last-minute-off-swiper">
-        <div class="swiper-wrapper" id="last-minute-off-list"></div>
+    <div class="index-swiper-wrap index-swiper-wrap--overlay-nav @if($showDesktopNav) index-swiper-wrap--with-nav @endif" data-index-swiper="last-minute-off">
+        <div class="swiper last-minute-off-swiper">
+            <div class="swiper-wrapper" id="last-minute-off-list"></div>
+        </div>
+        @if($showDesktopNav)
+            @include('main.partials.index-swiper-nav', ['navId' => 'last-minute-off'])
+        @endif
+    </div>
     </div>
 </section>
 
@@ -44,5 +57,8 @@
 </script>
 <script src="{{ public_asset_version('assets/js/seo-image-utils.js') }}"></script>
 <script src="{{ public_asset_version('assets/js/index-section-visibility.js') }}"></script>
+@if($showDesktopNav)
+    <script src="{{ public_asset_version('assets/js/index-swiper-nav.js') }}"></script>
+@endif
 <script src="{{ public_asset_version('assets/js/guest-rating.js') }}"></script>
 <script src="{{ public_asset_version('assets/js/last-minute-off.js') }}"></script>

@@ -1,61 +1,98 @@
 @extends('layouts.main.main', ['title' => setting('index:page-title')])
 
+@section('top-assets')
+    <link href="{{ public_asset_version('assets/css/index-desktop.css') }}" rel="stylesheet">
+    <link href="{{ public_asset_version('assets/css/home-favorite.css') }}" rel="stylesheet">
+    <link href="{{ public_asset_version('assets/css/last-minute-off.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('vendor/swiper/swiper-bundle.min.css') }}" />
+@endsection
+
+@section('bottom-assets')
+    <script src="{{ asset('vendor/swiper/swiper-bundle.min.js') }}"></script>
+    <script src="{{ public_asset_version('assets/js/index-swiper-nav.js') }}"></script>
+    <script>
+        (function () {
+            function bootCategorySwipers() {
+                if (window.IndexSwiperNav && typeof window.IndexSwiperNav.initCategorySwipers === 'function') {
+                    return window.IndexSwiperNav.initCategorySwipers();
+                }
+
+                if (typeof window.initIndexCategorySwipers === 'function') {
+                    return window.initIndexCategorySwipers();
+                }
+
+                return false;
+            }
+
+            bootCategorySwipers();
+            window.setTimeout(bootCategorySwipers, 0);
+            window.setTimeout(bootCategorySwipers, 400);
+            window.setTimeout(bootCategorySwipers, 1000);
+        })();
+    </script>
+@endsection
+
 @section('content')
+<main id="main-content">
     <!-- ============================ Hero Banner  Start================================== -->
-    @if(($bannerType ?? indexBannerType()) === 'video')
-    <div class="hero-banner vedio-banner">
-        <div class="overlay"></div>
-        
-        <video playsinline="playsinline" autoplay="autoplay" muted="muted" loop="loop">
-            <source src="{{ settingFilePath('index:banner-video') }}" type="video/mp4">
-        </video>
+    <div class="index-hero">
+        @if(($bannerType ?? indexBannerType()) === 'video')
+            <div class="hero-banner vedio-banner index-hero__media">
+                <div class="overlay"></div>
 
-        <div class="container">
+                <video playsinline="playsinline" autoplay="autoplay" muted="muted" loop="loop">
+                    <source src="{{ settingFilePath('index:banner-video') }}" type="video/mp4">
+                </video>
 
-            <div class="row justify-content-center">
-                <div class="col-xl-12 col-lg-12 col-md-12">
-                    <h1 class="big-header-capt mb-0 text-light">{{ setting('index:banner-title') }}</h1>
-                    <p class="text-center mb-4 text-light">{{ setting('index:banner-description') }}</p>
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-xl-12 col-lg-12 col-md-12">
+                            <h1 class="big-header-capt mb-0 text-light">{{ setting('index:banner-title') }}</h1>
+                            <p class="text-center mb-0 text-light index-hero__caption">{{ setting('index:banner-description') }}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+        @endif
 
-            @include('main.partials.index-advanced-filter')
+        @if(($bannerType ?? indexBannerType()) === 'slider' && ! empty($slider))
+            <h1 class="sr-only">{{ setting('index:banner-title') ?: setting('index:page-title') }}</h1>
+            <div class="index-hero__media">
+                <div class="container d-block d-lg-none">
+                    <landing-slider
+                        per_view="1"
+                        :items="{{ json_encode($slider) }}"
+                    ></landing-slider>
+                </div>
+                <div class="container-fluid d-none d-lg-block p-0">
+                    <landing-slider
+                        per_view="1"
+                        :items="{{ json_encode($slider) }}"
+                    ></landing-slider>
+                </div>
+            </div>
+        @endif
+
+        <div class="index-hero__search">
+            @include('main.partials.search-box-desktop', ['onBanner' => true])
         </div>
     </div>
-    @endif
-    @if(($bannerType ?? indexBannerType()) === 'slider' && ! empty($slider))
-        <div class="container d-block d-lg-none">
-            <landing-slider
-                per_view="1"
-                :items="{{ json_encode($slider) }}"
-            ></landing-slider>
-        </div>
-        <div class="container-fluid d-none d-lg-block p-0">
-            <landing-slider
-                per_view="1"
-                :items="{{ json_encode($slider) }}"
-            ></landing-slider>
-        </div>
-        <div class="container">
-            @include('main.partials.index-advanced-filter')
-        </div>
-    @endif
     <!-- ============================ Hero Banner End ================================== -->
 
-{{--    @include('main.partials.category-icons')--}}
-    @if($off_homes->isNotEmpty())
-    <div style="background-color: rgb(211, 157, 26)">
-        @include('main.partials.index-homes', [
-            'link' => route('main.homes.index', ['filter' => 'off']),
-            'title' => setting('index:home-off-title'),
-            'description' => setting('index:home-off-description'),
-            'homes' => $off_homes,
-            'is_off' => true
-        ])
-    </div>
+    @if($showOpenTomorrow ?? false)
+        @include('main.partials.latest-villas', ['showDesktopNav' => true])
     @endif
 
-    
+    @if($showOffHomes ?? false)
+        @include('main.partials.last-minute-off', [
+            'offCities' => $offCities ?? [],
+            'offHomesInitial' => $offHomesInitial ?? collect(),
+            'showDesktopNav' => true,
+        ])
+    @endif
+
+    @include('main.partials.nearby-map-banner')
+
         <!-- ============================ Property Location ================================== -->
         <section class="min">
             <div class="container">
@@ -73,10 +110,10 @@
                     <div class="col-lg-12 col-md-12">
                         <div class="d-block d-lg-flex" style="overflow-x: auto; overflow-y: hidden; white-space: nowrap;">
                             @foreach($cities as $item)
-                                <a class="slide-item d-inline-block d-lg-block img-wrap style-2 mx-3" href="{{ route('main.homes.index', ['province' => $item['province']['id'], 'city' => $item['city']['id']]) }}">
+                                <a class="slide-item d-inline-block d-lg-block img-wrap style-2 mx-3" href="{{ route('main.homes.index', ['province' => $item['province']['id'], 'city' => $item['city']['id']]) }}" aria-label="اقامتگاه‌های {{ $item['city']['name'] }}، {{ $item['province']['name'] }}">
                                     <div class="location_wrap_content visible">
                                         <div class="location_wrap_content_first">
-                                            <h4>{{ $item['province']['name'] }}, {{ $item['city']['name'] }}</h4>
+                                            <h3 class="h5 mb-0">{{ $item['province']['name'] }}, {{ $item['city']['name'] }}</h3>
                                             <ul>
                                                 <li><span>{{ number_format($item['count_homes']) }} @lang('title.home')</span></li>
                                             </ul>
@@ -104,40 +141,40 @@
 {{--        ])--}}
 {{--    </div>--}}
 
-    @include('main.partials.index-homes', [
-        'link' => route('main.homes.index', ['filter' => 'open_tomorrow']),
-        'title' => setting('index:home-tomorrow-order-title'),
-        'description' => setting('index:home-tomorrow-order-description'),
-        'homes' => $open_tomorrow,
-        'is_tomorrow' => true
-    ])
-
-    @include('main.partials.index-homes', [
+    @include('main.partials.index-category-homes', [
+        'sectionId' => 'index-cheap-homes',
         'link' => route('main.homes.index', ['sort' => 'cheap']),
         'title' => setting('index:home-cheap-title'),
         'description' => setting('index:home-cheap-description'),
-        'homes' => $cheap_homes
+        'homes' => $cheap_homes,
+        'showDesktopNav' => true,
     ])
 
-    @include('main.partials.index-homes', [
+    @include('main.partials.index-category-homes', [
+        'sectionId' => 'index-popular-homes',
         'link' => route('main.homes.index', ['sort' => 'popular']),
         'title' => setting('index:home-popular-title'),
         'description' => setting('index:home-popular-description'),
-        'homes' => $popular_homes
+        'homes' => $popular_homes,
+        'showDesktopNav' => true,
     ])
 
-    @include('main.partials.index-homes', [
+    @include('main.partials.index-category-homes', [
+        'sectionId' => 'index-latest-homes',
         'link' => route('main.homes.index', ['sort' => 'latest']),
         'title' => setting('index:home-latest-title'),
         'description' => setting('index:home-latest-description'),
-        'homes' => $last_homes
+        'homes' => $last_homes,
+        'showDesktopNav' => true,
     ])
 
-    @include('main.partials.index-homes', [
+    @include('main.partials.index-category-homes', [
+        'sectionId' => 'index-expensive-homes',
         'link' => route('main.homes.index', ['sort' => 'expensive']),
         'title' => setting('index:home-expensive-title'),
         'description' => setting('index:home-expensive-description'),
-        'homes' => $expensive_homes
+        'homes' => $expensive_homes,
+        'showDesktopNav' => true,
     ])
 
     @if($consultants->isNotEmpty())
@@ -167,7 +204,7 @@
                                             <div class="fr-grid-thumb">
                                                 <h4>
                                                     <span class="verified"><img src="{{ asset('assets/img/verified.svg') }}" class="verify mx-auto" alt=""></span>
-                                                    <img src="{{ $consultant->image_path }}" class="img-fluid mx-auto" alt="" onerror="this.src='{{ asset('assets/images/avatar.jpg') }}'">
+                                                    <img src="{{ $consultant->image_path }}" class="img-fluid mx-auto" alt="{{ $consultant->name }}" onerror="this.src='{{ asset('assets/images/avatar.jpg') }}'">
                                                 </h4>
                                             </div>
 
@@ -202,7 +239,7 @@
 
     @if($comments->isNotEmpty())
         <!-- ============================ Smart Testimonials ================================== -->
-        <section class="image-cover" style="background:#122947 url({{ asset('assets/img/pattern.png') }}) no-repeat;">
+        <section class="image-cover index-testimonials-section" style="background:#122947 url({{ asset('assets/img/pattern.png') }}) no-repeat;">
             <div class="container">
 
                 <div class="row justify-content-center">
@@ -228,10 +265,12 @@
                                             <span class="tes_quote"><i class="fa fa-quote-left"></i></span>
                                         </div>
                                         <div class="facts-detail">
-                                            <p>{{ $comment->comment }}</p>
+                                            <blockquote class="mb-0">
+                                                <p>{{ $comment->comment }}</p>
+                                            </blockquote>
                                         </div>
                                         <div class="_smart_testimons_info">
-                                            <h5>{{ $comment->full_name }}</h5>
+                                            <cite class="index-testimonial__author">{{ $comment->full_name }}</cite>
                                         </div>
                                     </div>
                                 </div>
@@ -276,4 +315,5 @@
         <div class="clearfix"></div>
         <!-- ============================ article End ================================== -->
     @endif
+</main>
 @endsection

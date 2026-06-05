@@ -44,6 +44,7 @@
                             <th scope="col">@lang('title.mobile')</th>
                             <th scope="col">@lang('title.sms_pattern')</th>
                             <th scope="col">@lang('title.status')</th>
+                            <th scope="col">@lang('title.error')</th>
                             <th scope="col">@lang('title.send_date')</th>
                             <th class="text-end" scope="col"></th>
                         </tr>
@@ -69,6 +70,7 @@
                             <td class="text-nowrap">
                                 <span class="badge rounded-pill {{ $smsLog->statusBadgeClass() }}">{{ $smsLog->statusLabel() }}</span>
                             </td>
+                            <td class="text-danger small">{{ $smsLog->error_message ?: '—' }}</td>
                             <td class="text-nowrap">{{ $smsLog->persianCreatedAt('%d %B %Y — %H:%M') }}</td>
                             <td class="text-end">
                                 @can('show', $smsLog)

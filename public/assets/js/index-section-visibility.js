@@ -1,9 +1,17 @@
 window.IndexSectionVisibility = {
     hide(element) {
-        const section = element?.closest?.('.index-section');
+        const section = element?.closest?.('.index-section, .last-minute-off');
 
-        if (section) {
-            section.remove();
+        if (!section) {
+            return;
+        }
+
+        const parent = section.parentElement;
+
+        section.remove();
+
+        if (parent?.classList?.contains('container') && parent.childElementCount === 0) {
+            parent.remove();
         }
     },
 

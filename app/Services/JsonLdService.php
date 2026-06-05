@@ -43,9 +43,163 @@ class JsonLdService
         }
 
         return match ($routeName) {
-            'main.index' => self::wrapGraph(self::forWebsite()),
+            'main.index' => self::wrapGraph(self::forIndex($viewData)),
             default => null,
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $viewData
+     * @return array<int, array<string, mixed>>
+     */
+    public static function forIndex(array $viewData): array
+    {
+        $siteUrl = url('/');
+        $canonical = route('main.index');
+        $title = trim((string) (setting('seo:index-title') ?: setting('index:page-title') ?: config('app.name')));
+        $description = indexPageSeoDescription();
+
+        $graph = [
+            [
+                '@type' => 'WebSite',
+                '@id' => $siteUrl.'#website',
+                'url' => $siteUrl,
+                'name' => config('app.name'),
+                'description' => $description,
+                'inLanguage' => 'fa-IR',
+                'publisher' => ['@id' => $siteUrl.'#organization'],
+                'potentialAction' => [
+                    '@type' => 'SearchAction',
+                    'target' => [
+                        '@type' => 'EntryPoint',
+                        'urlTemplate' => route('main.homes.index').'?name={search_term_string}',
+                    ],
+                    'query-input' => 'required name=search_term_string',
+                ],
+            ],
+            self::organization(),
+            [
+                '@type' => 'WebPage',
+                '@id' => $canonical.'#webpage',
+                'url' => $canonical,
+                'name' => $title,
+                'description' => $description,
+                'inLanguage' => 'fa-IR',
+                'isPartOf' => ['@id' => $siteUrl.'#website'],
+            ],
+        ];
+
+        $featuredHomes = self::collectIndexFeaturedHomes($viewData);
+        if ($featuredHomes->isNotEmpty()) {
+            $graph = array_merge($graph, self::indexFeaturedHomeList($featuredHomes));
+        }
+
+        $comments = $viewData['comments'] ?? null;
+        if ($comments instanceof \Illuminate\Support\Collection && $comments->isNotEmpty()) {
+            foreach ($comments->take(6) as $comment) {
+                $review = self::forIndexReview($comment);
+                if ($review !== null) {
+                    $graph[] = $review;
+                }
+            }
+        }
+
+        return $graph;
+    }
+
+    /**
+     * @param  array<string, mixed>  $viewData
+     * @return \Illuminate\Support\Collection<int, Home>
+     */
+    private static function collectIndexFeaturedHomes(array $viewData): \Illuminate\Support\Collection
+    {
+        $byId = collect();
+
+        foreach (['popular_homes', 'cheap_homes', 'last_homes', 'expensive_homes'] as $key) {
+            foreach ($viewData[$key] ?? [] as $home) {
+                if ($home instanceof Home) {
+                    $byId->put($home->id, $home);
+                }
+            }
+        }
+
+        return $byId->take(10)->values();
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, Home>  $homes
+     * @return array<int, array<string, mixed>>
+     */
+    private static function indexFeaturedHomeList(\Illuminate\Support\Collection $homes): array
+    {
+        $listUrl = route('main.index').'#featured-homes';
+        $items = [];
+        $position = 0;
+
+        foreach ($homes as $home) {
+            $position++;
+            $url = route('main.homes.show', $home);
+
+            $items[] = [
+                '@type' => 'ListItem',
+                'position' => $position,
+                'url' => $url,
+                'item' => [
+                    '@type' => 'LodgingBusiness',
+                    '@id' => $url.'#lodging',
+                    'name' => $home->name,
+                    'url' => $url,
+                    'image' => self::absoluteUrl($home->cover_path),
+                ],
+            ];
+        }
+
+        return [
+            [
+                '@type' => 'ItemList',
+                '@id' => $listUrl,
+                'name' => 'اقامتگاه‌های پیشنهادی',
+                'url' => route('main.index'),
+                'numberOfItems' => $homes->count(),
+                'itemListElement' => $items,
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private static function forIndexReview(mixed $comment): ?array
+    {
+        if (! is_object($comment) || empty($comment->comment)) {
+            return null;
+        }
+
+        $authorName = trim((string) ($comment->full_name ?? optional($comment->user)->full_name ?? ''));
+        if ($authorName === '') {
+            return null;
+        }
+
+        $review = [
+            '@type' => 'Review',
+            'author' => [
+                '@type' => 'Person',
+                'name' => $authorName,
+            ],
+            'reviewBody' => SeoService::truncate(strip_tags((string) $comment->comment), 500),
+            'inLanguage' => 'fa-IR',
+        ];
+
+        if (! empty($comment->commentable) && $comment->commentable instanceof Home) {
+            $home = $comment->commentable;
+            $review['itemReviewed'] = [
+                '@type' => 'LodgingBusiness',
+                'name' => $home->name,
+                'url' => route('main.homes.show', $home),
+            ];
+        }
+
+        return $review;
     }
 
     /**
@@ -300,14 +454,14 @@ class JsonLdService
                 '@id' => $siteUrl.'#website',
                 'url' => $siteUrl,
                 'name' => config('app.name'),
-                'description' => SeoService::defaultDescription(),
+                'description' => indexPageSeoDescription(),
                 'inLanguage' => 'fa-IR',
                 'publisher' => ['@id' => $siteUrl.'#organization'],
                 'potentialAction' => [
                     '@type' => 'SearchAction',
                     'target' => [
                         '@type' => 'EntryPoint',
-                        'urlTemplate' => route('main.homes.index').'?q={search_term_string}',
+                        'urlTemplate' => route('main.homes.index').'?name={search_term_string}',
                     ],
                     'query-input' => 'required name=search_term_string',
                 ],
