@@ -18,6 +18,8 @@ class SettingTableSeeder extends Seeder
         $settings = [
             ['key' => 'app:logo', 'value' => 'logo.png'],
             ['key' => 'app:logo-light', 'value' => 'logo-light.png'],
+            ['key' => 'app:site-name', 'value' => ''],
+            ['key' => 'app:favicon', 'value' => ''],
             ['key' => 'app:auth-modal-active', 'value' => true],
             ['key' => 'app:auth-modal-img', 'value' => 'auth-banner.png'],
             ['key' => 'index:page-title', 'value' => 'اجاره باغ ویلا استخردار | لوکس ، اقامتی و مراسمی'],
@@ -165,6 +167,7 @@ class SettingTableSeeder extends Seeder
             ['key' => 'reject-policy:'.Home::BALANCED, 'value' => 'لغو رزرو تا ۴۸ ساعت مانده به روز شروع اقامت: خسارتی پرداخت نمی‌شود. لغو رزرو در کمتر از ۴۸ ساعت مانده به روز شروع اقامت: ۹۰ درصد مبلغ شب اول. لغو رزرو حین اقامت: ۹۰ درصد مبلغ شب‌های سپری شده+ ۹۰ درصد مبلغ شب بعدی'],
             ['key' => 'reject-policy:'.Home::STRICT, 'value' => 'لغو رزرو تا ۷۲ ساعت مانده به روز شروع اقامت: ۱۰ درصد مبلغ رزرو. لغو رزرو در کمتر از ۷۲ ساعت مانده به روز شروع اقامت: ۹۰ درصد مبلغ شب اول + ۱۰ درصد شب‌های بعدی. لغو رزرو حین اقامت: ۹۰ درصد مبلغ تمامی شب‌ها'],
             ['key' => 'seo:default-description', 'value' => 'رزرو آنلاین ویلا، سوئیت و اقامتگاه در سراسر ایران. مقایسه قیمت، تصاویر واقعی و رزرو امن.'],
+            ['key' => 'seo:index-title', 'value' => 'اجاره ویلا و اقامتگاه'],
             ['key' => 'seo:index-meta-description', 'value' => ''],
             ['key' => 'seo:homes-meta-description', 'value' => 'جستجو و رزرو ویلا، سوئیت و اقامتگاه با فیلتر شهر، تاریخ و قیمت.'],
             ['key' => 'seo:articles-meta-description', 'value' => 'مقالات و راهنمای سفر، اجاره اقامتگاه و نکات رزرو.'],

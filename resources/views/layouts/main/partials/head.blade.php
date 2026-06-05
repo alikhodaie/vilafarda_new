@@ -3,7 +3,8 @@
 @include('layouts.main.partials.seo-meta')
 @yield('meta')
 
-<title>{{ $documentTitle ?? config('app.name') }}</title>
+<title>{{ $documentTitle ?? siteName() }}</title>
+@include('layouts.main.partials.favicon')
 
 <!-- Bootstrap icons (local) -->
 <link rel="stylesheet" href="{{ asset('vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}">

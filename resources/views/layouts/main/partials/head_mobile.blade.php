@@ -11,7 +11,8 @@ window.__homeFavoriteConfig = {
 </script>
 <link href="{{ public_asset_version('assets/css/home-favorite.css') }}" rel="stylesheet">
 @include('layouts.main.partials.seo-meta')
-<title>{{ $documentTitle ?? config('app.name') }}</title>
+<title>{{ $documentTitle ?? siteName() }}</title>
+@include('layouts.main.partials.favicon')
 
 <!-- Bootstrap CSS (RTL - local) -->
 <link href="{{ asset('vendor/bootstrap/css/bootstrap.rtl.min.css') }}" rel="stylesheet">

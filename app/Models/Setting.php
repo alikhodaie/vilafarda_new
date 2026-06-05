@@ -119,6 +119,38 @@ class Setting extends Model
     }
 
     /**
+     * ذخیره آیکون تب مرورگر (favicon) — PNG شفاف یا ICO.
+     */
+    public static function saveFaviconFile(UploadedFile $file, string $settingKey, string $field = 'favicon'): string
+    {
+        $extension = strtolower($file->getClientOriginalExtension());
+        $realType = @exif_imagetype($file->getRealPath());
+
+        if ($extension === 'ico') {
+            $mime = $file->getMimeType();
+            if (! in_array($mime, ['image/x-icon', 'image/vnd.microsoft.icon', 'image/ico', 'image/icon', 'application/octet-stream'], true)) {
+                throw ValidationException::withMessages([
+                    $field => 'فایل ICO نامعتبر است.',
+                ]);
+            }
+        } elseif ($realType !== IMAGETYPE_PNG) {
+            throw ValidationException::withMessages([
+                $field => 'آیکون تب باید PNG با پس‌زمینه شفاف یا فایل ICO باشد.',
+            ]);
+        }
+
+        $oldFilename = setting($settingKey);
+        if ($oldFilename) {
+            self::deleteFile($oldFilename);
+        }
+
+        $newFilename = 'favicon-'.time().'.'.($extension === 'ico' ? 'ico' : 'png');
+        Storage::disk(self::FILE_DISK)->putFileAs(self::FILE_PATH, $file, $newFilename);
+
+        return $newFilename;
+    }
+
+    /**
      * @return list<string>
      */
     private static function legacyLogoFilenames(string $settingKey): array

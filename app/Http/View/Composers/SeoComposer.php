@@ -17,7 +17,7 @@ class SeoComposer
             $view->with('seo', $seo);
 
             if (! array_key_exists('documentTitle', $data)) {
-                $view->with('documentTitle', $seo['document_title'] ?? config('app.name'));
+                $view->with('documentTitle', $seo['document_title'] ?? siteName());
             }
         }
 

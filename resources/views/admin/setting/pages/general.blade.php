@@ -31,6 +31,43 @@
                 </div>
             </div>
         </div>
+
+        <hr>
+        <h4 class="text-center">@lang('title.site_identity')</h4>
+        <div class="alert alert-secondary small">
+            <strong>تیتر تب مرورگر:</strong> در همه صفحات به‌صورت <code>عنوان صفحه | نام سایت</code> نمایش داده می‌شود.
+            «نام سایت» را اینجا تنظیم کنید؛ «عنوان صفحه» هر بخش در <em>سئو</em> یا تنظیمات همان صفحه (مثلاً صفحه اصلی) است.
+        </div>
+        <div class="row mt-4">
+            <div class="col-12 col-md-6">
+                <label for="site_name">@lang('title.site_name')</label>
+            </div>
+            <div class="col-12 col-md-6">
+                <input class="form-control" type="text" name="site_name" id="site_name"
+                       value="{{ old('site_name', setting('app:site-name', config('app.name'))) }}"
+                       placeholder="مثال: vilafarda">
+                <small class="text-muted d-block mt-1">بخش ثابت سمت راست تیتر تب (بعد از |). خالی = مقدار APP_NAME در سرور.</small>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-12 col-md-6">
+                <label for="favicon">@lang('title.favicon')</label>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="input-group">
+                    <input class="form-control" type="file" name="favicon" id="favicon" accept="image/png,image/x-icon,.ico">
+                    @if(settingFilePath('app:favicon'))
+                        <span class="input-group-text p-2">
+                            <img width="32" height="32" src="{{ settingFilePath('app:favicon') }}" alt="" style="object-fit: contain;">
+                        </span>
+                    @endif
+                </div>
+                <small class="text-muted d-block mt-2">
+                    PNG مربع ۵۱۲×۵۱۲ (یا ۳۲×۳۲) با <strong>پس‌زمینه شفاف</strong>.
+                    اگر لوگو مربعی دیده می‌شود، احتمالاً فایل پس‌زمینه رنگی دارد — آیکون‌های گرد (مثل گوگل) در خود تصویر گرد و شفاف طراحی شده‌اند؛ مرورگر شکل را گرد نمی‌کند.
+                </small>
+            </div>
+        </div>
     @endcan
 
     @can('appModalAuth', \App\Models\Setting::class)

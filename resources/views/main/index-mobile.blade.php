@@ -1,4 +1,4 @@
-@extends('layouts.main.main_mobile', ['title' => setting('index:page-title')])
+@extends('layouts.main.main_mobile')
 
 @section('content')
     @include('layouts.main.partials.navbar-mobile')

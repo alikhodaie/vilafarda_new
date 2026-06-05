@@ -10,7 +10,7 @@
         <h5 class="alert-heading mb-2">راهنمای مدیر سایت — سئو گوگل</h5>
         <p class="mb-2 small">این بخش متا تگ‌های <strong>title</strong>، <strong>description</strong>، <strong>canonical</strong>، <strong>Open Graph</strong>، <strong>Twitter Card</strong> و <strong>robots</strong> را برای صفحات عمومی سایت تنظیم می‌کند.</p>
         <ol class="mb-0 small ps-3">
-            <li class="mb-1"><strong>عنوان صفحه (Title):</strong> متنی که در تب مرورگر و نتیجه جستجوی گوگل دیده می‌شود. فرمت خودکار: <code>عنوان صفحه | {{ config('app.name') }}</code> — بخش اصلی را کوتاه و با کلمه کلیدی بنویسید (حداکثر حدود ۴۵ کاراکتر قبل از نام برند).</li>
+            <li class="mb-1"><strong>عنوان صفحه (Title):</strong> متنی که در تب مرورگر و نتیجه جستجوی گوگل دیده می‌شود. فرمت خودکار: <code>عنوان صفحه | {{ siteName() }}</code> — بخش اصلی را کوتاه و با کلمه کلیدی بنویسید (حداکثر حدود ۴۵ کاراکتر قبل از نام برند).</li>
             <li class="mb-1"><strong>توضیح متا (Description):</strong> زیر عنوان در گوگل نمایش داده می‌شود؛ حداکثر <strong>۱۵۰ کاراکتر</strong>.</li>
             <li class="mb-1"><strong>صفحه اصلی:</strong> اول «عنوان سئو» و «توضیح متا» اینجا را پر کنید؛ جزئیات بیشتر در راهنمای آبی بالا. تنظیمات بنر و اسلایدر در <em>تنظیمات → صفحه اصلی</em>.</li>
             <li class="mb-1"><strong>لیست اقامتگاه‌ها:</strong> عبارت جستجو مانند «جستجو و رزرو ویلا و سوئیت».</li>
@@ -84,7 +84,7 @@
     <hr>
     <h4 class="text-center">عنوان صفحات (تگ Title)</h4>
     <p class="text-center text-muted small mb-0">
-        پیش‌نمایش در گوگل: <strong>بخش اصلی</strong> | <strong>{{ config('app.name') }}</strong> — حداکثر ۶۰ کاراکتر برای کل عنوان.
+        پیش‌نمایش در گوگل: <strong>بخش اصلی</strong> | <strong>{{ siteName() }}</strong> — حداکثر ۶۰ کاراکتر برای کل عنوان.
     </p>
 
     @php
@@ -92,9 +92,9 @@
             'index_title' => [
                 'key' => 'seo:index-title',
                 'label' => 'صفحه اصلی',
-                'placeholder' => 'اجاره ویلا و اقامتگاه — رزرو آنلاین',
-                'hint' => 'اگر خالی باشد از «عنوان صفحه» در تنظیمات صفحه اصلی استفاده می‌شود. برای سئو بهتر کلمه کلیدی + شهر/خدمت بنویسید.',
-                'fallback' => setting('index:page-title'),
+                'placeholder' => 'اجاره ویلا و اقامتگاه',
+                'hint' => 'اختیاری — اگر «عنوان صفحه» در تنظیمات صفحه اصلی پر باشد، همان در تب مرورگر نمایش داده می‌شود. این فیلد فقط وقتی اعمال می‌شود که آنجا خالی باشد.',
+                'fallback' => setting('index:page-title') ?: indexPageTitleSegment(),
             ],
             'homes_title' => [
                 'key' => 'seo:homes-title',
@@ -146,7 +146,7 @@
                 'fallback' => setting('submit-home:page-title'),
             ],
         ];
-        $brandName = config('app.name');
+        $brandName = siteName();
         $titleMaxSegment = 45;
     @endphp
 

@@ -57,15 +57,18 @@ class SeoService
             ]);
         }
 
-        if (! empty($viewData['home']) && $viewData['home'] instanceof Home) {
+        if (! empty($viewData['home']) && $viewData['home'] instanceof Home
+            && is_string($routeName) && str_starts_with($routeName, 'main.homes.show')) {
             return self::normalize(self::forHome($viewData['home']));
         }
 
-        if (! empty($viewData['article']) && $viewData['article'] instanceof Article) {
+        if (! empty($viewData['article']) && $viewData['article'] instanceof Article
+            && $routeName === 'main.articles.show') {
             return self::normalize(self::forArticle($viewData['article']));
         }
 
-        if (! empty($viewData['landingPage']) && $viewData['landingPage'] instanceof LandingPage) {
+        if (! empty($viewData['landingPage']) && $viewData['landingPage'] instanceof LandingPage
+            && $routeName === 'main.landing-pages.show') {
             return self::normalize(self::forLandingPage($viewData['landingPage']));
         }
 
@@ -78,13 +81,18 @@ class SeoService
     public static function documentTitle(string $segment): string
     {
         $segment = trim(preg_replace('/\s+/u', ' ', strip_tags($segment)));
-        $brand = trim((string) config('app.name'));
+        $brand = siteName();
 
         if ($segment === '') {
             return $brand !== '' ? $brand : '';
         }
 
         if ($brand === '') {
+            return self::limitTitleLength($segment);
+        }
+
+        $brandSuffix = ' | '.$brand;
+        if (str_ends_with($segment, $brandSuffix) || $segment === $brand) {
             return self::limitTitleLength($segment);
         }
 
@@ -127,7 +135,7 @@ class SeoService
         unset($seo['title_segment']);
 
         if (empty($seo['document_title'])) {
-            $seo['document_title'] = trim((string) config('app.name'));
+            $seo['document_title'] = siteName();
         }
 
         if (! empty($seo['og']) && empty($seo['og']['title']) && ! empty($seo['document_title'])) {
@@ -305,7 +313,7 @@ class SeoService
     {
         $map = [
             'main.index' => [
-                'title_segment' => setting('seo:index-title') ?: setting('index:page-title'),
+                'title_segment' => indexPageTitleSegment(),
                 'description' => setting('seo:index-meta-description') ?: setting('index:banner-description'),
                 'canonical' => route('main.index'),
                 'og_image' => indexPageOgImage(),

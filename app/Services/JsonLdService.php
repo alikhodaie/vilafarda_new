@@ -25,20 +25,24 @@ class JsonLdService
             return null;
         }
 
-        if (! empty($viewData['home']) && $viewData['home'] instanceof Home) {
+        if (! empty($viewData['home']) && $viewData['home'] instanceof Home
+            && is_string($routeName) && str_starts_with($routeName, 'main.homes.show')) {
             return self::wrapGraph(self::forHome($viewData['home']));
         }
 
-        if (! empty($viewData['article']) && $viewData['article'] instanceof Article) {
+        if (! empty($viewData['article']) && $viewData['article'] instanceof Article
+            && $routeName === 'main.articles.show') {
             return self::wrapGraph(self::forArticle($viewData['article']));
         }
 
         if (! empty($viewData['landingPage']) && $viewData['landingPage'] instanceof LandingPage
+            && $routeName === 'main.landing-pages.show'
             && ! empty($viewData['homes']) && $viewData['homes'] instanceof LengthAwarePaginator) {
             return self::wrapGraph(self::forLandingPage($viewData['landingPage'], $viewData['homes']));
         }
 
-        if (! empty($viewData['homes']) && $viewData['homes'] instanceof LengthAwarePaginator) {
+        if (! empty($viewData['homes']) && $viewData['homes'] instanceof LengthAwarePaginator
+            && $routeName === 'main.homes.index') {
             return self::wrapGraph(self::forHomesIndex($viewData['homes']));
         }
 
@@ -56,7 +60,7 @@ class JsonLdService
     {
         $siteUrl = url('/');
         $canonical = route('main.index');
-        $title = trim((string) (setting('seo:index-title') ?: setting('index:page-title') ?: config('app.name')));
+        $title = indexPageTitleSegment();
         $description = indexPageSeoDescription();
 
         $graph = [

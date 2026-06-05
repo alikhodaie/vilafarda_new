@@ -7,7 +7,7 @@
     $twitter = $seo['twitter'] ?? [];
     $keywords = $seo['keywords'] ?? [];
     $author = $seo['author'] ?? null;
-    $pageTitle = $documentTitle ?? $seo['document_title'] ?? config('app.name');
+    $pageTitle = $documentTitle ?? $seo['document_title'] ?? siteName();
     $ogTitle = $og['title'] ?? $pageTitle;
     $ogDescription = $og['description'] ?? $description;
     $ogImage = $og['image'] ?? null;
@@ -35,7 +35,7 @@
 @endforeach
 
 <meta property="og:locale" content="fa_IR">
-<meta property="og:site_name" content="{{ config('app.name') }}">
+<meta property="og:site_name" content="{{ siteName() }}">
 <meta property="og:title" content="{{ $ogTitle }}">
 @if($ogDescription !== '')
     <meta property="og:description" content="{{ \Illuminate\Support\Str::limit(strip_tags($ogDescription), 300) }}">

@@ -42,6 +42,12 @@ class SettingController extends Controller
             if ($request->hasFile('logo_light')){
                 $data['app:logo-light'] = Setting::saveLogoFile($request->file('logo_light'), 'app:logo-light', 'logo_light');
             }
+
+            $data['app:site-name'] = trim((string) $request->get('site_name'));
+
+            if ($request->hasFile('favicon')) {
+                $data['app:favicon'] = Setting::saveFaviconFile($request->file('favicon'), 'app:favicon', 'favicon');
+            }
         }
 
         # Auth Modal
@@ -69,7 +75,7 @@ class SettingController extends Controller
         }
 
         foreach ($data as $key => $value){
-            Setting::query()->where('key', $key)->first()->update(['value' => $value]);
+            Setting::query()->updateOrCreate(['key' => $key], ['value' => $value]);
         }
 
         if ($data !== []) {
@@ -208,6 +214,7 @@ class SettingController extends Controller
             'index:banner-video' => setting('index:banner-video'),
             'index:banner-type' => $request->get('banner_type'),
             'index:page-title' => $request->get('page_title'),
+            'seo:index-title' => $request->get('page_title'),
             'index:banner-title' => $request->get('banner_title'),
             'index:banner-description' => $request->get('banner_description'),
             'index:consultant-title' => $request->get('consultant_title'),

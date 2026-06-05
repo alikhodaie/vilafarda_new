@@ -5,11 +5,13 @@
 
     <h4 class="text-center">@lang('title.main_title')</h4>
     <div class="alert alert-secondary small">
-        توضیح متا (description) صفحه اصلی برای گوگل در بخش <strong>سئو (متا تگ‌ها)</strong> در همین صفحه تنظیمات قابل ویرایش است. عنوان زیر در تب مرورگر و عنوان سئو استفاده می‌شود.
+        فیلد <strong>عنوان صفحه</strong> زیر در <strong>تیتر تب مرورگر</strong> (کنار نام سایت) نمایش داده می‌شود.
+        عنوان بخش مجله و سایر بخش‌های صفحه پایین همین فرم جداگانه تنظیم می‌شوند.
+        توضیح متا (description) برای گوگل در <strong>سئو (متا تگ‌ها)</strong> قابل ویرایش است.
     </div>
     <div class="row mt-4">
         <div class="col-12 col-md-6">
-            <label for="page_title">@lang('title.page_title')</label>
+            <label for="page_title">@lang('title.page_title') (تیتر تب مرورگر)</label>
         </div>
         <div class="col-12 col-md-6">
             <input class="form-control" type="text" name="page_title" id="page_title"
@@ -253,7 +255,7 @@
     <h4 class="text-center">@lang('title.articles')</h4>
     <div class="row mt-4">
         <div class="col-12 col-md-6">
-            <label for="articles_title">@lang('title.title')</label>
+            <label for="articles_title">عنوان بخش مجله (فقط داخل صفحه)</label>
         </div>
         <div class="col-12 col-md-6">
             <input class="form-control" type="text" name="articles_title" id="articles_title"

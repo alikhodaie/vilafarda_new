@@ -1,4 +1,4 @@
-@extends('layouts.main.main', ['title' => setting('index:page-title')])
+@extends('layouts.main.main')
 
 @section('top-assets')
     <link href="{{ public_asset_version('assets/css/index-desktop.css') }}" rel="stylesheet">
@@ -56,7 +56,7 @@
         @endif
 
         @if(($bannerType ?? indexBannerType()) === 'slider' && ! empty($slider))
-            <h1 class="sr-only">{{ setting('index:banner-title') ?: setting('index:page-title') }}</h1>
+            <h1 class="sr-only">{{ setting('index:banner-title') ?: indexPageTitleSegment() }}</h1>
             <div class="index-hero__media">
                 <div class="container d-block d-lg-none">
                     <landing-slider
@@ -302,10 +302,10 @@
                 @endif
 
                 <div class="row">
-                @foreach($articles as $article)
+                @foreach($articles as $blogArticle)
                     <!-- Single blog Grid -->
                         <div class="col-lg-4 col-md-6">
-                            @include('main.articles.partials.article-card', compact('article'))
+                            @include('main.articles.partials.article-card', ['article' => $blogArticle])
                         </div>
                     @endforeach
                 </div>

@@ -96,6 +96,16 @@ if (! function_exists('forgetSettingsCache')) {
     }
 }
 
+if (! function_exists('siteName')) {
+    /** نام نمایشی سایت (تب مرورگر، سئو) — از تنظیمات ادمین یا APP_NAME */
+    function siteName(): string
+    {
+        $name = trim((string) setting('app:site-name', ''));
+
+        return $name !== '' ? $name : trim((string) config('app.name'));
+    }
+}
+
 if (! function_exists('ini_size_to_bytes')) {
     /**
      * تبدیل مقدار ini مثل 256M یا 8M به بایت.
@@ -397,6 +407,24 @@ if (! function_exists('indexHomeCategoryDescription')) {
         }
 
         return trim(strip_tags((string) setting($key)));
+    }
+}
+
+if (! function_exists('indexPageTitleSegment')) {
+    /**
+     * تیتر تب مرورگر صفحه اصلی — اول «عنوان صفحه» در تنظیمات صفحه اصلی، سپس سئو.
+     * از عنوان بخش‌های داخلی (مجله، نظرات و …) استفاده نمی‌شود.
+     */
+    function indexPageTitleSegment(): string
+    {
+        foreach (['index:page-title', 'seo:index-title'] as $key) {
+            $title = trim((string) setting($key, ''));
+            if ($title !== '') {
+                return $title;
+            }
+        }
+
+        return 'اجاره ویلا و اقامتگاه';
     }
 }
 

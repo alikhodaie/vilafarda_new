@@ -66,6 +66,7 @@ use App\Http\Controllers\Main\MainController;
 use App\Http\Controllers\Main\NewsletterController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\SmsController;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -84,6 +85,25 @@ Route::get('/sitemap/static.xml', [SitemapController::class, 'staticPages'])->na
 Route::get('/sitemap/landings.xml', [SitemapController::class, 'landings'])->name('sitemap.landings');
 Route::get('/sitemap/homes.xml', [SitemapController::class, 'homes'])->name('sitemap.homes');
 Route::get('/sitemap/articles.xml', [SitemapController::class, 'articles'])->name('sitemap.articles');
+
+Route::get('/favicon.ico', function () {
+    $filename = setting('app:favicon');
+    if (! $filename) {
+        abort(404);
+    }
+
+    $path = public_path(Setting::FILE_PATH.ltrim($filename, '/'));
+    if (! is_file($path)) {
+        abort(404);
+    }
+
+    $mime = str_ends_with(strtolower($filename), '.ico') ? 'image/x-icon' : 'image/png';
+
+    return response()->file($path, [
+        'Content-Type' => $mime,
+        'Cache-Control' => 'public, max-age=604800',
+    ]);
+});
 
 # region Main
 Route::name('main.')->group(function (){
