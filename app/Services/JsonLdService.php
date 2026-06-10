@@ -160,18 +160,7 @@ class JsonLdService
             $position++;
             $url = route('main.homes.show', $home);
 
-            $items[] = [
-                '@type' => 'ListItem',
-                'position' => $position,
-                'url' => $url,
-                'item' => [
-                    '@type' => 'LodgingBusiness',
-                    '@id' => $url.'#lodging',
-                    'name' => $home->name,
-                    'url' => $url,
-                    'image' => self::absoluteUrl($home->cover_path),
-                ],
-            ];
+            $items[] = self::homeListItem($home, $position);
         }
 
         return [
@@ -237,6 +226,8 @@ class JsonLdService
             'description' => $description,
             'url' => $canonical,
             'image' => self::homeImages($home),
+            'identifier' => self::homeIdentifier($home),
+            'containsPlace' => self::vacationRentalPlace($home),
             'address' => self::postalAddress($home),
             'offers' => self::lodgingOffer($home, $canonical),
             'inLanguage' => 'fa-IR',
@@ -357,19 +348,7 @@ class JsonLdService
             $position++;
             $url = route('main.homes.show', $home);
 
-            $items[] = [
-                '@type' => 'ListItem',
-                'position' => $position,
-                'url' => $url,
-                'item' => [
-                    '@type' => 'LodgingBusiness',
-                    '@id' => $url.'#lodging',
-                    'name' => $home->name,
-                    'url' => $url,
-                    'image' => self::absoluteUrl($home->cover_path),
-                    'offers' => self::lodgingOffer($home, $url),
-                ],
-            ];
+            $items[] = self::homeListItem($home, $position);
         }
 
         $list = self::buildHomeItemList(
@@ -425,19 +404,7 @@ class JsonLdService
                 $position++;
                 $url = route('main.homes.show', $home);
 
-                $items[] = [
-                    '@type' => 'ListItem',
-                    'position' => $position,
-                    'url' => $url,
-                    'item' => [
-                        '@type' => 'LodgingBusiness',
-                        '@id' => $url.'#lodging',
-                        'name' => $home->name,
-                        'url' => $url,
-                        'image' => self::absoluteUrl($home->cover_path),
-                        'offers' => self::lodgingOffer($home, $url),
-                    ],
-                ];
+                $items[] = self::homeListItem($home, $position);
             }
         }
 
@@ -705,6 +672,56 @@ class JsonLdService
         $cover = self::absoluteUrl($home->cover_path);
 
         return $cover ? [$cover] : [];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function homeListItem(Home $home, int $position): array
+    {
+        $url = route('main.homes.show', $home);
+
+        return [
+            '@type' => 'ListItem',
+            'position' => $position,
+            'url' => $url,
+            'name' => $home->name,
+        ];
+    }
+
+    private static function homeIdentifier(Home $home): string
+    {
+        return (string) ($home->code ?: $home->id);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function vacationRentalPlace(Home $home): array
+    {
+        $place = [
+            '@type' => 'Accommodation',
+            'name' => $home->name,
+            'address' => self::postalAddress($home),
+        ];
+
+        if ($home->latitude && $home->longitude) {
+            $place['geo'] = [
+                '@type' => 'GeoCoordinates',
+                'latitude' => (float) $home->latitude,
+                'longitude' => (float) $home->longitude,
+            ];
+        }
+
+        $bedroomCount = $home->relationLoaded('sleepPlaces')
+            ? $home->sleepPlaces->where('is_share', false)->count()
+            : $home->sleepPlaces()->where('is_share', false)->count();
+
+        if ($bedroomCount > 0) {
+            $place['numberOfRooms'] = $bedroomCount;
+        }
+
+        return $place;
     }
 
     private static function homeDescription(Home $home): string
