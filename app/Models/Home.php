@@ -622,9 +622,18 @@ class Home extends Model
         return $this->variables()->updateOrCreate(['variable_id' => $variable_id], $data);
     }
 
-    public function atmosphere($index = 'fa_text'): string
+    /**
+     * برچسب فارسی فضا (ستون دیتابیس `atmosphere` با متد هم‌نام تداخل دارد؛ از این متد استفاده کنید).
+     */
+    public function atmosphereLabel(string $index = 'fa_text'): string
     {
-        return self::ATMOSPHERES[$this->atmosphere][$index];
+        $value = $this->attributes['atmosphere'] ?? null;
+
+        if ($value === null || $value === '' || ! array_key_exists($value, self::ATMOSPHERES)) {
+            return '';
+        }
+
+        return self::ATMOSPHERES[$value][$index];
     }
 
     /**
@@ -641,9 +650,18 @@ class Home extends Model
         return self::TYPES[$value][$index];
     }
 
-    public function area($index = 'fa_text'): string
+    /**
+     * برچسب فارسی منطقه (ستون دیتابیس `area` با متد هم‌نام تداخل دارد؛ از این متد استفاده کنید).
+     */
+    public function areaLabel(string $index = 'fa_text'): string
     {
-        return self::AREAS[$this->area][$index];
+        $value = $this->attributes['area'] ?? null;
+
+        if ($value === null || $value === '' || ! array_key_exists($value, self::AREAS)) {
+            return '';
+        }
+
+        return self::AREAS[$value][$index];
     }
 
     public function status($index = 'fa_text'): string
