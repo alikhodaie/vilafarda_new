@@ -45,19 +45,3 @@
         </div>
     </div>
 </div>
-
-@once
-    @push('bottom-assets')
-        <script>
-            document.addEventListener('change', function (e) {
-                const select = e.target.closest('.footer-social-icon-type');
-                if (!select) return;
-                const row = select.closest('.footer-repeatable-row');
-                const isFont = select.value === 'font';
-                row.querySelector('.footer-social-font-panel')?.classList.toggle('d-none', !isFont);
-                row.querySelector('.footer-social-image-panel')?.classList.toggle('d-none', isFont);
-            });
-
-        </script>
-    @endpush
-@endonce
