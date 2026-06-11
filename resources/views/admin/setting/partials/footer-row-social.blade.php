@@ -5,7 +5,11 @@
 <div class="footer-repeatable-row border rounded p-3 mt-2">
     <div class="row align-items-center">
         <div class="col-1">
-            <button type="button" class="btn btn-falcon-danger btn-sm footer-repeatable-remove"><i class="fa fa-times"></i></button>
+            <button type="button"
+                    class="btn btn-falcon-danger btn-sm footer-repeatable-remove"
+                    onclick="window.footerRepeatableRemove && window.footerRepeatableRemove(this)">
+                <i class="fa fa-times"></i>
+            </button>
         </div>
         <div class="col-12 col-md-2">
             <input type="text" class="form-control" name="{{ $name }}[{{ $index }}][title]" value="{{ $row['title'] ?? '' }}" placeholder="@lang('title.title')">
@@ -19,7 +23,9 @@
         </div>
         <div class="col-12 col-md-3">
             <label class="form-label small mb-1">نوع آیکون</label>
-            <select class="form-select footer-social-icon-type" name="{{ $name }}[{{ $index }}][icon_type]">
+            <select class="form-select footer-social-icon-type"
+                    name="{{ $name }}[{{ $index }}][icon_type]"
+                    onchange="window.footerSocialIconTypeChange && window.footerSocialIconTypeChange(this)">
                 <option value="font" @selected($iconType === 'font')>آیکون Bootstrap</option>
                 <option value="image" @selected($iconType === 'image')>تصویر / لوگو</option>
             </select>

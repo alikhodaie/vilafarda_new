@@ -193,6 +193,9 @@
             display: none;
         }
     </style>
+    @if(auth()->user()->can('footer', Setting::class))
+        <script src="{{ public_asset_version('assets/admin/js/footer-settings.js') }}"></script>
+    @endif
 @endpush
 
 @push('after-vue')
