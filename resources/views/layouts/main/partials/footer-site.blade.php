@@ -73,13 +73,8 @@
                            class="mobile-site-footer__social-card mobile-site-footer__social-card--{{ $platform }}"
                            title="{{ $social['title'] ?? '' }}">
                             <span class="mobile-site-footer__social-card-icon" aria-hidden="true">
-                                @php
-                                    $socialIconUrl = (($social['icon_type'] ?? 'font') === 'image' && !empty($social['icon']))
-                                        ? footerSocialIconUrl($social)
-                                        : null;
-                                @endphp
-                                @if($socialIconUrl)
-                                    <img src="{{ $socialIconUrl }}" alt="" width="28" height="28" loading="lazy">
+                                @if(($social['icon_type'] ?? 'font') === 'image' && !empty($social['icon']))
+                                    <img src="{{ footerSocialIconUrl($social) }}" alt="" width="28" height="28" loading="lazy">
                                 @else
                                     <i class="bi {{ footerSocialIconClass($social) }}"></i>
                                 @endif
