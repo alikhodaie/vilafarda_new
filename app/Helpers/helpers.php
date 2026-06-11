@@ -309,6 +309,14 @@ if (! function_exists('footerSocialPlatform')) {
             return 'instagram';
         }
 
+        if (str_contains($haystack, 'bale') || str_contains($haystack, 'بله')) {
+            return 'bale';
+        }
+
+        if (str_contains($haystack, 'rubika') || str_contains($haystack, 'روبیکا')) {
+            return 'rubika';
+        }
+
         return 'default';
     }
 }
@@ -319,14 +327,11 @@ if (! function_exists('footerSocialIconClass')) {
         $raw = trim((string) ($social['icon_class'] ?? ''));
 
         if ($raw !== '') {
-            $raw = preg_replace('/\bbi\b/i', '', $raw);
-            $raw = trim($raw);
-
-            if ($raw !== '' && ! str_starts_with($raw, 'bi-')) {
-                $raw = 'bi-'.$raw;
+            if (preg_match('/^bi-/i', $raw)) {
+                return strtolower($raw);
             }
 
-            return $raw;
+            return 'bi-'.ltrim($raw, '-');
         }
 
         return match (footerSocialPlatform($social)) {

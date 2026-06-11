@@ -133,6 +133,14 @@
     background: linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
 }
 
+.mobile-site-footer__social-card--bale {
+    background: #2d8cff;
+}
+
+.mobile-site-footer__social-card--rubika {
+    background: #7b2cbf;
+}
+
 .mobile-site-footer__social-card--default {
     background: #4b5563;
 }
