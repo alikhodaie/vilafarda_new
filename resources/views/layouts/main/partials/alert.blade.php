@@ -6,9 +6,9 @@
     ></show-alert>
 @endif
 
-@if(session()->exists('danger'))
+@if(session()->exists('danger') || session()->exists('error'))
     <show-alert
-        message="{{ session()->get('danger') }}"
+        message="{{ session()->get('danger') ?? session()->get('error') }}"
         type="error"
         :is_toast="true"
     ></show-alert>

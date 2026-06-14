@@ -42,7 +42,7 @@
                         <div class="row">
                             @foreach($articles as $article)
                                 <!-- Single blog Grid -->
-                                <div class="col-12 col-lg-6">
+                                <div class="col-12 col-lg-6 d-flex">
                                     @include('main.articles.partials.article-card', compact('article'))
                                 </div>
                             @endforeach

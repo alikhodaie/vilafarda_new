@@ -1,4 +1,4 @@
-<div class="grid_blog_box">
+<div class="grid_blog_box h-100 d-flex flex-column">
 
     <div class="gtid_blog_thumb">
         <a href="{{ $article->link }}"><img src="{{ $article->image_path }}" class="img-fluid" alt="{{ $article->title }}" /></a>

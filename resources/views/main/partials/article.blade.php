@@ -4,12 +4,18 @@
         <span class="index-section__title">آخرین مقالات</span>
         <a href="/articles" class="text-decoration-none black-outline-border" style="color:#343434; font-size:0.95rem;">مشاهده همه</a>
     </div>
-    <div class="swiper articles-swiper">
-        <div class="swiper-wrapper" id="articles-list">
-            <!-- Articles will be injected here by JS -->
+    <div class="articles-swiper-wrap">
+        <div class="swiper articles-swiper">
+            <div class="swiper-wrapper" id="articles-list">
+                <!-- Articles will be injected here by JS -->
+            </div>
+            <button type="button" class="articles-swiper-nav articles-swiper-nav--prev swiper-button-prev" aria-label="مقاله قبلی">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="articles-swiper-nav articles-swiper-nav--next swiper-button-next" aria-label="مقاله بعدی">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
         </div>
-        <div class="swiper-button-prev" style="color: #000000;"></div>
-        <div class="swiper-button-next" style="color: #000000;"></div>
     </div>
 </section>
 
@@ -53,13 +59,14 @@ async function fetchArticles() {
             slidesPerView: 1,
             spaceBetween: 10,
             loop: true,
+            rtl: true,
             autoplay: {
                 delay: 3000,
                 disableOnInteraction: false,
             },
             navigation: {
-                nextEl: '.swiper-button-next',
-                prevEl: '.swiper-button-prev',
+                nextEl: '.articles-swiper .swiper-button-next',
+                prevEl: '.articles-swiper .swiper-button-prev',
             },
             breakpoints: {
                 576: { slidesPerView: 2 },

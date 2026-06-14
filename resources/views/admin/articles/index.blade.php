@@ -52,7 +52,7 @@
                             <td class="text-nowrap">{{ $article->id }}</td>
                             <td class="text-nowrap"><img width="75" src="{{ $article->image_path }}" alt="{{ $article->title }}"></td>
                             <td class="text-nowrap">{{ $article->title }}</td>
-                            <td class="text-nowrap">{{ $article->categories()->first()->title }}</td>
+                            <td class="text-nowrap">{{ optional($article->categories->first())->title ?? __('title.nothing found') }}</td>
                             <td class="text-nowrap">{{ $article->count_comments }}</td>
                             <td class="text-nowrap">{{ $article->persianCreatedAt() }}</td>
                             <td class="text-end">

@@ -100,7 +100,7 @@
             <div class="row">
                 @foreach($articles as $article)
                     <!-- Single blog Grid -->
-                    <div class="col-lg-4 col-md-6">
+                    <div class="col-lg-4 col-md-6 d-flex">
                         @include('main.articles.partials.article-card', compact('article'))
                     </div>
                 @endforeach

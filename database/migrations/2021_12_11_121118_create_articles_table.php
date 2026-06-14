@@ -19,7 +19,7 @@ class CreateArticlesTable extends Migration
             $table->string('slug');
             $table->string('image')->nullable();
             $table->foreignId('author_id')->constrained('users');
-            $table->tinyText('summary');
+            $table->text('summary');
             $table->text('content');
             $table->text('meta');
             $table->integer('count_comments')->default(0);

@@ -22,10 +22,10 @@
     </div>
 @endif
 
-@if(session()->exists('danger'))
+@if(session()->exists('danger') || session()->exists('error'))
     <div class="alert alert-danger border-2 d-flex align-items-center" role="alert">
         <div class="bg-danger me-2 icon-item"><span class="fas fa-times-circle text-white"></span></div>
-        <p class="mb-0 flex-1">{{ session()->get('danger') }}</p>
+        <p class="mb-0 flex-1">{{ session()->get('danger') ?? session()->get('error') }}</p>
         <button class="btn-close" type="button" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 @endif

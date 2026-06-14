@@ -16,7 +16,7 @@ class ArticleController extends Controller
     {
         $this->authorize('index', Article::class);
 
-        $articles = Article::query()->search()->latest()->paginate(10)->appends($request->all());
+        $articles = Article::query()->with('categories')->search()->latest()->paginate(10)->appends($request->all());
         return view('admin.articles.index', compact(['articles']));
     }
 
@@ -38,13 +38,13 @@ class ArticleController extends Controller
                 'slug'  => $request->get('slug'),
                 'summary' => $request->get('summary'),
                 'content' => $request->get('content'),
-                'meta'  => $request->get('metas')
+                'meta'  => $request->get('metas', [])
             ]);
 
             $article->updateImage($request->file('image'));
 
             $article->categories()->attach($request->get('category'));
-            $article->tags()->attach($request->get('tags'));
+            $article->tags()->attach($request->get('tags', []));
 
             DB::commit();
             return redirect()->route('admin.articles.index')->with('success', __('text.success.create article', ['title' => $article->title]));
@@ -52,7 +52,7 @@ class ArticleController extends Controller
         catch (\Exception $e){
             DB::rollBack();
             Error::catch($e, __CLASS__, __FUNCTION__);
-            return redirect()->back()->with('error', __('text.whoops'));
+            return redirect()->back()->withInput()->with('error', Error::userMessage($e));
         }
     }
 
@@ -73,7 +73,7 @@ class ArticleController extends Controller
                 'slug'  => $request->get('slug'),
                 'summary' => $request->get('summary'),
                 'content' => $request->get('content'),
-                'meta'  => $request->get('metas')
+                'meta'  => $request->get('metas', [])
             ];
 
             $article->update($data);
@@ -83,7 +83,7 @@ class ArticleController extends Controller
             }
 
             $article->categories()->sync($request->get('category'));
-            $article->tags()->sync($request->get('tags'));
+            $article->tags()->sync($request->get('tags', []));
 
             DB::commit();
             return redirect()->route('admin.articles.index')->with('success', __('text.success.update article', ['title' => $article->title]));
@@ -91,7 +91,7 @@ class ArticleController extends Controller
         catch (\Exception $e){
             DB::rollBack();
             Error::catch($e, __CLASS__, __FUNCTION__);
-            return redirect()->back()->with('error', __('text.whoops'));
+            return redirect()->back()->withInput()->with('error', Error::userMessage($e));
         }
     }
 
@@ -111,7 +111,7 @@ class ArticleController extends Controller
         catch (\Exception $e){
             DB::rollBack();
             Error::catch($e, __CLASS__, __FUNCTION__);
-            return redirect()->back()->with('error', __('text.whoops'));
+            return redirect()->back()->with('error', Error::userMessage($e));
         }
     }
 }

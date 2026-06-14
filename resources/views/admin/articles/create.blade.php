@@ -32,7 +32,7 @@
             </div>
 
             <div class="col-12 mb-5">
-                <label class="form-label" for="category">@lang('title.category')</label>
+                <label class="form-label" for="category">@lang('title.category') <span>*</span></label>
                 <select name="category" id="category" class="form-control">
                     @php($items = \App\Models\Category::query()->article()->get())
 
