@@ -137,7 +137,7 @@ class Setting extends Model
 
     /**
      * ذخیره آیکون تب مرورگر (favicon) — PNG شفاف یا ICO.
-     * برای PNG نسخه‌های ۴۸، ۱۹۲ و ۵۱۲ پیکسل با ماسک دایره‌ای ساخته می‌شود.
+     * برای PNG نسخه‌های ۴۸، ۱۹۲ و ۵۱۲ پیکسل با پس‌زمینه مربعی یکدست ساخته می‌شود.
      */
     public static function saveFaviconFile(UploadedFile $file, string $settingKey, string $field = 'favicon'): string
     {

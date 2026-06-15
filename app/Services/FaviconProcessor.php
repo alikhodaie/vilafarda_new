@@ -24,7 +24,7 @@ class FaviconProcessor
             $variantFilename = $baseName.'-'.$size.'.png';
             $absolute = self::absolutePath($variantFilename);
             $variant->toPng()->save($absolute);
-            self::applyCircularMask($absolute, $size);
+            self::applySolidCircularBackground($absolute, $size);
         }
 
         return $baseName.'-512.png';
@@ -58,7 +58,11 @@ class FaviconProcessor
         return null;
     }
 
-    private static function applyCircularMask(string $pngPath, int $size): void
+    /**
+     * گوشه‌های مربع را با رنگ برند پر می‌کند (نه شفاف).
+     * گوگل faviconهای شفاف را روی پس‌زمینه سفید رندر می‌کند و حلقه سفید ایجاد می‌شود.
+     */
+    private static function applySolidCircularBackground(string $pngPath, int $size): void
     {
         if (! function_exists('imagecreatefrompng')) {
             return;
@@ -74,14 +78,14 @@ class FaviconProcessor
 
         $center = $size / 2;
         $radiusSq = $center * $center;
-        $transparent = imagecolorallocatealpha($image, 0, 0, 0, 127);
+        $background = imagecolorallocatealpha($image, 26, 26, 26, 0);
 
         for ($x = 0; $x < $size; $x++) {
             for ($y = 0; $y < $size; $y++) {
                 $dx = $x - $center + 0.5;
                 $dy = $y - $center + 0.5;
                 if (($dx * $dx + $dy * $dy) > $radiusSq) {
-                    imagesetpixel($image, $x, $y, $transparent);
+                    imagesetpixel($image, $x, $y, $background);
                 }
             }
         }

@@ -10,7 +10,7 @@ class ReprocessFavicon extends Command
 {
     protected $signature = 'favicon:reprocess';
 
-    protected $description = 'پردازش مجدد favicon فعلی (نسخه‌های ۴۸/۱۹۲/۵۱۲ + ماسک دایره‌ای)';
+    protected $description = 'پردازش مجدد favicon فعلی (نسخه‌های ۴۸/۱۹۲/۵۱۲ با پس‌زمینه یکدست برای گوگل)';
 
     public function handle(): int
     {
