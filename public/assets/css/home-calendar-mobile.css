@@ -424,6 +424,11 @@ body.home-calendar-edit-sheet-open {
     color: #6b7280;
 }
 
+.calendar-edit-field__hint--retry {
+    margin-top: 4px;
+    color: #92400e;
+}
+
 .calendar-edit-input {
     border-radius: 10px !important;
     border-color: #e5e7eb !important;

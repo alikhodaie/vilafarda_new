@@ -66,12 +66,21 @@ Vue.mixin({
                 return null;
             }
 
+            if (moment.isMoment(dateValue)) {
+                return dateValue.isValid() ? dateValue.clone().startOf('day') : null;
+            }
+
             if (dateValue instanceof Date) {
                 const parsed = moment(dateValue);
-                return parsed.isValid() ? parsed : null;
+
+                return parsed.isValid() ? parsed.startOf('day') : null;
             }
 
             const raw = String(dateValue).trim();
+
+            if (!raw) {
+                return null;
+            }
 
             // Laravel @json date cast: "2026-05-24T20:30:00.000000Z" — strict YYYY-MM-DD ignores TZ and shifts a day
             if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
@@ -82,39 +91,91 @@ Vue.mixin({
                 }
             }
 
+            const slashMatch = raw.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
             const isoMatch = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+            const year = slashMatch
+                ? parseInt(slashMatch[1], 10)
+                : (isoMatch ? parseInt(isoMatch[1], 10) : null);
+            const month = slashMatch ? slashMatch[2] : (isoMatch ? isoMatch[2] : null);
+            const day = slashMatch ? slashMatch[3] : (isoMatch ? isoMatch[3] : null);
 
-            if (isoMatch) {
-                const year = parseInt(isoMatch[1], 10);
-                const month = isoMatch[2];
-                const day = isoMatch[3];
+            if (year !== null && month !== null && day !== null) {
+                // Gregorian first — e.g. 2026/06/23 must not be parsed as Jalali year 2026
+                if (year >= 1900 && year <= 2100) {
+                    const gregorianInput = slashMatch
+                        ? `${year}/${month}/${day}`
+                        : `${year}-${month}-${day}`;
+                    const asGregorian = moment(
+                        gregorianInput,
+                        slashMatch ? 'YYYY/MM/DD' : 'YYYY-MM-DD',
+                        true
+                    );
+
+                    if (asGregorian.isValid()) {
+                        return asGregorian.startOf('day');
+                    }
+                }
 
                 if (year >= 1300 && year < 1500) {
                     const asJalali = moment(`${year}/${month}/${day}`, 'jYYYY/jMM/jDD', true);
+
                     if (asJalali.isValid()) {
                         return asJalali;
                     }
                 }
-            }
 
-            let parsed = moment(raw, 'jYYYY/jMM/jDD', true);
+                if (year > 2100 && year < 3000) {
+                    const jalaliYear = year - 1242;
 
-            if (!parsed.isValid() && /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(raw)) {
-                const year = parseInt(raw.split('/')[0], 10);
-                if (year >= 1300 && year < 1500) {
-                    parsed = moment(raw, 'jYYYY/jMM/jDD', true);
+                    if (jalaliYear >= 1300 && jalaliYear < 1500) {
+                        const asJalali = moment(`${jalaliYear}/${month}/${day}`, 'jYYYY/jMM/jDD', true);
+
+                        if (asJalali.isValid()) {
+                            return asJalali;
+                        }
+                    }
                 }
             }
 
+            let parsed = moment(raw, ['YYYY-MM-DD', 'YYYY/MM/DD'], true);
+
             if (!parsed.isValid()) {
-                parsed = moment(raw, ['YYYY-MM-DD', 'YYYY/MM/DD'], true);
+                parsed = moment(raw, 'jYYYY/jMM/jDD', true);
             }
 
             if (!parsed.isValid()) {
                 parsed = moment(raw);
             }
 
-            return parsed.isValid() ? parsed : null;
+            return parsed.isValid() ? parsed.clone().startOf('day') : null;
+        },
+
+        formatGregorianDateKey(dateValue) {
+            if (!dateValue) {
+                return '';
+            }
+
+            let dateObject;
+
+            if (dateValue instanceof Date) {
+                dateObject = dateValue;
+            } else if (moment.isMoment(dateValue)) {
+                dateObject = dateValue.toDate();
+            } else {
+                const parsed = this.parseCalendarMoment(dateValue);
+
+                if (!parsed || !parsed.isValid()) {
+                    return '';
+                }
+
+                dateObject = parsed.toDate();
+            }
+
+            const year = dateObject.getFullYear();
+            const month = String(dateObject.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObject.getDate()).padStart(2, '0');
+
+            return `${year}/${month}/${day}`;
         },
 
         /**
@@ -129,11 +190,16 @@ Vue.mixin({
 
             const raw = String(dateValue).trim();
 
+            const gregorianKey = this.formatGregorianDateKey(parsed);
+            const gregorianIso = gregorianKey
+                ? gregorianKey.replace(/\//g, '-')
+                : moment(parsed.toDate()).format('YYYY-MM-DD');
+
             return [
                 raw,
                 parsed.format('jYYYY/jMM/jDD'),
-                parsed.format('YYYY-MM-DD'),
-                parsed.format('YYYY/MM/DD'),
+                gregorianIso,
+                gregorianKey,
             ].filter((key, index, keys) => key && keys.indexOf(key) === index);
         },
 
@@ -245,11 +311,28 @@ Vue.mixin({
                 return options.isNightUnavailable(dateValue);
             }
 
-            const formatted = moment(dateValue).format('YYYY/MM/DD');
-            const checkIn = moment(options.checkInDate || dateValue).startOf('day');
-            const night = moment(dateValue).startOf('day');
+            const target = this.parseCalendarMoment(dateValue);
+
+            if (!target) {
+                return true;
+            }
+
+            const targetMs = target.clone().startOf('day').valueOf();
+            const checkIn = this.parseCalendarMoment(options.checkInDate || dateValue);
+            const isCheckInNight = !!(checkIn && target.isSame(checkIn, 'day'));
+
+            if (options.disableDateSet || options.orderBlockedDateSet || options.reservedDateSet) {
+                if (isCheckInNight) {
+                    return (options.disableDateSet && options.disableDateSet.has(targetMs))
+                        || (options.reservedDateSet && options.reservedDateSet.has(targetMs));
+                }
+
+                return (options.disableDateSet && options.disableDateSet.has(targetMs))
+                    || (options.reservedDateSet && options.reservedDateSet.has(targetMs));
+            }
+
+            const formatted = target.format('YYYY/MM/DD');
             const orderBlockedDates = options.orderBlockedDates || options.disableDates || [];
-            const isCheckInNight = night.isSame(checkIn, 'day');
 
             if (isCheckInNight) {
                 return this.isDateInDisabledList(formatted, options.disableDates || [])

@@ -45,7 +45,7 @@
                         :all_custom_dates='@json($home->custom_dates)'
                         :order_blocked_dates_prop='@json($home->disable_order_dates)'
                         :host_closed_dates_prop='@json($home->disable_custom_dates)'
-                        :custom_prices_prop='@json($home->custom_prices->pluck("price", "date"))'
+                        :custom_prices_prop='@json($home->custom_prices_map)'
                         :custom_min_nights_prop='@json($home->custom_min_nights_map)'
                         :holidays_prop="{{ \App\Classes\Date::holidayList() }}"
                         text_submit="@lang('title.submit')"
@@ -62,6 +62,7 @@
                         text_is_active_description="@lang('text.is_active_description')"
                         text_off="@lang('title.off')"
                         text_price_set_based_on_selected_first_date="@lang('text.price_set_based_on_selected_first_date')"
+                        text_custom_date_price_retry_hint="@lang('text.custom_date_price_retry_hint')"
                         text_percentage="@lang('title.percentage')"
                         text_no_off="@lang('title.no_off')"
                         text_min_nights_warning_intro="@lang('text.min_nights_warning_intro')"

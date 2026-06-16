@@ -45,12 +45,15 @@ class HomeCustomController extends Controller
 
             $minNights = max(1, (int) $request->get('min_nights', 1));
 
+            $home->unsetRelation('custom_dates');
+
             foreach ($request->get('dates') as $date) {
                 $home->upsertCustomDate($date, (int) $price, $minNights);
             }
 
             DB::commit();
 
+            $home->unsetRelation('custom_dates');
             $home->refresh();
             $warnings = [];
 

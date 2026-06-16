@@ -1328,24 +1328,98 @@ class Home extends Model
         return $map;
     }
 
+    public function getCustomPricesMapAttribute(): array
+    {
+        $map = [];
+
+        $records = $this->relationLoaded('custom_dates')
+            ? $this->custom_dates->sortByDesc('id')->values()
+            : $this->custom_dates()->orderByDesc('id')->get();
+
+        foreach ($records as $customDate) {
+            $price = (int) $customDate->price;
+
+            if ($price === 0) {
+                continue;
+            }
+
+            try {
+                $date = $this->resolveCalendarDayCarbon($customDate->date);
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            $keys = [
+                $date->format('Y-m-d'),
+                $date->format('Y/m/d'),
+                Jalalian::fromCarbon($date)->format('Y/m/d'),
+            ];
+
+            foreach (array_unique($keys) as $key) {
+                $map[$key] = $price;
+            }
+        }
+
+        return $map;
+    }
+
     /**
      * تاریخ ورودی را به روز میلادی معتبر تبدیل می‌کند (رفع ذخیره اشتباه شمسی به‌عنوان میلادی).
      */
     public function resolveCalendarDayCarbon(Carbon|string $date): Carbon
     {
-        $date = Carbon::parse($date)->startOfDay();
+        $raw = trim((string) $date);
+        $raw = preg_replace('/\s.*$/', '', $raw);
+        $raw = str_replace('-', '/', $raw);
 
-        // تاریخ میلادی معتبر (خروجی normalizeDate یا Carbon استاندارد)
-        if ($date->year >= 1900 && $date->year <= 2100) {
-            return $date;
+        if (preg_match('#^(\d{4})/(\d{1,2})/(\d{1,2})$#', $raw, $parts)) {
+            $year = (int) $parts[1];
+            $month = (int) $parts[2];
+            $day = (int) $parts[3];
+
+            if ($year >= 1300 && $year < 1500) {
+                return Jalalian::fromFormat('Y/m/d', sprintf('%04d/%02d/%02d', $year, $month, $day))
+                    ->toCarbon()
+                    ->startOfDay();
+            }
+
+            if ($year > 2100 && $year < 3000) {
+                $jalaliYear = $year - 1242;
+
+                if ($jalaliYear >= 1300 && $jalaliYear < 1500) {
+                    return Jalalian::fromFormat('Y/m/d', sprintf('%04d/%02d/%02d', $jalaliYear, $month, $day))
+                        ->toCarbon()
+                        ->startOfDay();
+                }
+            }
+
+            if ($year >= 1900 && $year <= 2100) {
+                return Carbon::createFromDate($year, $month, $day)->startOfDay();
+            }
         }
 
-        // سال شمسی که به‌اشتباه به‌صورت میلادی parse شده (مثلاً 1405-03-03)
-        if ($date->year >= 1300 && $date->year < 1500) {
-            return Jalalian::fromFormat('Y/m/d', $date->format('Y/m/d'))->toCarbon()->startOfDay();
+        $parsed = Carbon::parse($date)->startOfDay();
+
+        if ($parsed->year >= 1900 && $parsed->year <= 2100) {
+            return $parsed;
         }
 
-        return $date;
+        if ($parsed->year > 2100 && $parsed->year < 3000) {
+            $jalaliYear = $parsed->year - 1242;
+
+            if ($jalaliYear >= 1300 && $jalaliYear < 1500) {
+                return Jalalian::fromFormat(
+                    'Y/m/d',
+                    sprintf('%04d/%02d/%02d', $jalaliYear, (int) $parsed->format('m'), (int) $parsed->format('d'))
+                )->toCarbon()->startOfDay();
+            }
+        }
+
+        if ($parsed->year >= 1300 && $parsed->year < 1500) {
+            return Jalalian::fromFormat('Y/m/d', $parsed->format('Y/m/d'))->toCarbon()->startOfDay();
+        }
+
+        return $parsed;
     }
 
     private function jalaliLabelForStoredDate(Carbon $stored): ?string
@@ -1366,12 +1440,14 @@ class Home extends Model
         $target = $this->resolveCalendarDayCarbon($date);
         $targetJalali = Jalalian::fromCarbon($target)->format('Y/m/d');
 
-        $records = $this->relationLoaded('custom_dates')
-            ? $this->custom_dates
-            : $this->custom_dates()->get();
+        $records = $this->custom_dates()->orderByDesc('id')->get();
 
         foreach ($records as $customDate) {
-            $stored = Carbon::parse($customDate->date)->startOfDay();
+            try {
+                $stored = $this->resolveCalendarDayCarbon($customDate->date);
+            } catch (\Throwable $e) {
+                continue;
+            }
 
             if ($stored->isSameDay($target)) {
                 return $customDate;
@@ -1389,16 +1465,19 @@ class Home extends Model
     {
         $targetJalali = Jalalian::fromCarbon($canonical)->format('Y/m/d');
 
-        $records = $this->relationLoaded('custom_dates')
-            ? $this->custom_dates
-            : $this->custom_dates()->get();
+        $records = $this->custom_dates()->orderByDesc('id')->get();
 
         foreach ($records as $customDate) {
             if ((int) $customDate->id === $exceptId) {
                 continue;
             }
 
-            $stored = Carbon::parse($customDate->date)->startOfDay();
+            try {
+                $stored = $this->resolveCalendarDayCarbon($customDate->date);
+            } catch (\Throwable $e) {
+                continue;
+            }
+
             $isDuplicate = $stored->isSameDay($canonical)
                 || $this->jalaliLabelForStoredDate($stored) === $targetJalali;
 
@@ -1410,30 +1489,35 @@ class Home extends Model
 
     public function upsertCustomDate(Carbon|string $date, int $price, int $minNights = 1): HomeCustomDate
     {
-        $normalizedDate = $this->resolveCalendarDayCarbon($date);
+        $this->unsetRelation('custom_dates');
+
+        $normalizedDate = $this->resolveCalendarDayCarbon($date)->startOfDay();
         $minNights = max(1, (int) $minNights);
+        $storedDate = $normalizedDate->toDateString();
 
         $customDate = $this->findCustomDateByCalendarDay($normalizedDate);
 
         if ($customDate) {
             $customDate->update([
-                'date' => $normalizedDate,
+                'date' => $storedDate,
                 'price' => $price,
                 'min_nights' => $minNights,
             ]);
 
             $this->purgeDuplicateCustomDatesForDay($normalizedDate, (int) $customDate->id);
+            $this->unsetRelation('custom_dates');
 
             return $customDate->fresh();
         }
 
         $created = $this->custom_dates()->create([
-            'date' => $normalizedDate,
+            'date' => $storedDate,
             'price' => $price,
             'min_nights' => $minNights,
         ]);
 
         $this->purgeDuplicateCustomDatesForDay($normalizedDate, (int) $created->id);
+        $this->unsetRelation('custom_dates');
 
         return $created;
     }

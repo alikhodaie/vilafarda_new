@@ -17,7 +17,7 @@
                 </div>
             </div>
 
-            <div class="calendar-scroll-months">
+            <div class="calendar-scroll-months" ref="stackedScroll">
                 <section
                     v-for="month in stackedMonthList"
                     :key="month.key"
@@ -40,8 +40,8 @@
                                     v-if="day.minNights > 1"
                                     class="day-min-nights-badge"
                                     aria-hidden="true">{{ day.minNightsLabel }}</span>
-                                <div v-if="day.available && !day.disabled && day.price" class="day-price">
-                                    {{ formatPrice(day.price) }}
+                                <div v-if="resolvedDayPrice(day)" class="day-price">
+                                    {{ formatPrice(resolvedDayPrice(day)) }}
                                 </div>
                             </div>
                         </div>
@@ -102,8 +102,8 @@
                         class="day-min-nights-badge"
                         aria-hidden="true">{{ day.minNightsLabel }}</span>
                     <div v-if="day.available && !day.disabled" class="available-indicator"></div>
-                    <div v-if="day.available && !day.disabled && day.price" class="day-price">
-                        {{ formatPrice(day.price) }}
+                    <div v-if="resolvedDayPrice(day)" class="day-price">
+                        {{ formatPrice(resolvedDayPrice(day)) }}
                     </div>
                 </div>
             </div>
@@ -225,9 +225,20 @@ export default {
             _orderBlockedDaySet: null,
             _reservedDaySet: null,
             _blockedListCache: null,
+            _holidayDaySet: null,
+            _blockedSetsVersion: 0,
+            _stackedMonthsCached: null,
+            _stackedMonthsCacheKey: '',
+            _stackedScrollTop: 0,
         }
     },
     watch: {
+        selectedDates: {
+            handler() {
+                this.restoreStackedScroll();
+            },
+            deep: true,
+        },
         disableDates: {
             handler() {
                 this.refreshBlockedDaySets();
@@ -252,12 +263,35 @@ export default {
             },
             deep: true,
         },
+        holidays: {
+            handler() {
+                this.refreshHolidaySet();
+            },
+            deep: true,
+        },
+        customPrices: {
+            handler() {
+                this.refreshStackedMonthsCache();
+            },
+            deep: true,
+        },
+        customMinNights: {
+            handler() {
+                this.refreshStackedMonthsCache();
+            },
+            deep: true,
+        },
         calendarAudience() {
             this.refreshBlockedDaySets();
+        },
+        daysStructureKey() {
+            this.refreshStackedMonthsCache();
         },
     },
     created() {
         this.refreshBlockedDaySets();
+        this.refreshHolidaySet();
+        this.refreshStackedMonthsCache();
     },
     computed: {
         currentYear() {
@@ -283,6 +317,60 @@ export default {
 
             return `${this.startDate}|${this.endDate}|${this.minEndDate}`;
         },
+        selectedDateSet() {
+            if (this.selectionMode !== 'multiple' || !Array.isArray(this.selectedDates) || !this.selectedDates.length) {
+                return null;
+            }
+
+            const set = new Set();
+
+            this.selectedDates.forEach((dateValue) => {
+                const parsed = this.parseCalendarMoment(dateValue);
+
+                if (parsed) {
+                    set.add(parsed.clone().startOf('day').valueOf());
+                }
+            });
+
+            return set;
+        },
+        daysStructureKey() {
+            return [
+                this.minDate,
+                this.maxDate,
+                this.calendarAudience,
+                this.selectionMode,
+                this.minNightsDisplay,
+                this.weekPrice,
+                this.wedPrice,
+                this.thuPrice,
+                this.friPrice,
+                this.off,
+                this.customPricesSignature,
+                this.customMinNightsSignature,
+                this._blockedSetsVersion,
+            ].join('|');
+        },
+        customPricesSignature() {
+            if (!this.customPrices || typeof this.customPrices !== 'object') {
+                return '';
+            }
+
+            return Object.keys(this.customPrices)
+                .sort()
+                .map((key) => `${key}:${this.customPrices[key]}`)
+                .join(',');
+        },
+        customMinNightsSignature() {
+            if (!this.customMinNights || typeof this.customMinNights !== 'object') {
+                return '';
+            }
+
+            return Object.keys(this.customMinNights)
+                .sort()
+                .map((key) => `${key}:${this.customMinNights[key]}`)
+                .join(',');
+        },
         stackedMonthList() {
             if (!this.stackedMonths || !this.minDate || !this.maxDate) {
                 return [];
@@ -290,24 +378,11 @@ export default {
 
             if (this.selectionMode === 'range') {
                 void this.selectionStateKey;
+
+                return this.buildStackedMonths();
             }
 
-            const months = [];
-            let cursor = moment(this.minDate).startOf('jMonth');
-            const endMonth = moment(this.maxDate).startOf('jMonth');
-
-            while (!cursor.isAfter(endMonth, 'month')) {
-                const jYear = parseInt(cursor.format('jYYYY'), 10);
-                const jMonth = parseInt(cursor.format('jM'), 10);
-                months.push({
-                    key: cursor.format('jYYYY-jMM'),
-                    title: `${this.monthNames[jMonth - 1]} ${this.toPersianNum(cursor.format('jYYYY'))}`,
-                    days: this.buildDaysForMonth(jYear, jMonth)
-                });
-                cursor = cursor.add(1, 'jMonth');
-            }
-
-            return months;
+            return this._stackedMonthsCached || [];
         },
         startDateLabel() {
             return this.startDate ? this.formatJalaliLabel(this.startDate) : '—';
@@ -345,6 +420,66 @@ export default {
             this.rememberBlockedListCache(this.hostClosedDates, this._hostClosedDaySet);
             this.rememberBlockedListCache(orderSources, this._orderBlockedDaySet);
             this.rememberBlockedListCache(this.reservedDates, this._orderBlockedDaySet);
+            this._blockedSetsVersion += 1;
+        },
+        refreshHolidaySet() {
+            this._holidayDaySet = this.buildBlockedDaySet([this.holidays]);
+        },
+        captureStackedScroll() {
+            const el = this.$refs.stackedScroll;
+
+            if (el) {
+                this._stackedScrollTop = el.scrollTop;
+            }
+        },
+        restoreStackedScroll() {
+            const savedTop = this._stackedScrollTop;
+
+            this.$nextTick(() => {
+                requestAnimationFrame(() => {
+                    const el = this.$refs.stackedScroll;
+
+                    if (el) {
+                        el.scrollTop = savedTop;
+                    }
+                });
+            });
+        },
+        refreshStackedMonthsCache() {
+            if (!this.stackedMonths || this.selectionMode !== 'multiple' || !this.minDate || !this.maxDate) {
+                this._stackedMonthsCached = null;
+                this._stackedMonthsCacheKey = '';
+                return;
+            }
+
+            const cacheKey = this.daysStructureKey;
+
+            if (this._stackedMonthsCacheKey === cacheKey && this._stackedMonthsCached) {
+                return;
+            }
+
+            this.captureStackedScroll();
+            this._stackedMonthsCacheKey = cacheKey;
+            this._stackedMonthsCached = this.buildStackedMonths();
+            this.restoreStackedScroll();
+        },
+        buildStackedMonths() {
+            const months = [];
+            let cursor = moment(this.minDate).startOf('jMonth');
+            const endMonth = moment(this.maxDate).startOf('jMonth');
+
+            while (!cursor.isAfter(endMonth, 'month')) {
+                const jYear = parseInt(cursor.format('jYYYY'), 10);
+                const jMonth = parseInt(cursor.format('jM'), 10);
+                months.push({
+                    key: cursor.format('jYYYY-jMM'),
+                    title: `${this.monthNames[jMonth - 1]} ${this.toPersianNum(cursor.format('jYYYY'))}`,
+                    days: this.buildDaysForMonth(jYear, jMonth)
+                });
+                cursor = cursor.add(1, 'jMonth');
+            }
+
+            return months;
         },
         isManageCalendar() {
             return this.calendarAudience === 'admin' || this.calendarAudience === 'host';
@@ -420,7 +555,7 @@ export default {
                 return null;
             }
 
-            return moment(dateStr, ['YYYY/MM/DD', 'YYYY-MM-DD', 'jYYYY/jM/jD', 'jYYYY-jMM-jDD'], true);
+            return this.parseCalendarMoment(dateStr);
         },
         isSameCalendarDay(dateA, dateB) {
             const first = this.parseCalendarDate(dateA);
@@ -442,7 +577,11 @@ export default {
             const isGuest = this.calendarAudience === 'guest';
             const isBooked = !!(day.isOrderBlocked || day.isReserved);
             const isHostClosedOnly = day.isHostClosed && !isBooked;
-            const guestUnavailable = isGuest && (day.disabled || isBooked || isHostClosedOnly);
+            const guestUnavailable = isGuest && (
+                day.disabled
+                || isBooked
+                || (isHostClosedOnly && !day.checkoutAvailable)
+            );
             const showAsAvailable = this.isManageCalendar()
                 ? day.available && !isBooked
                 : !guestUnavailable && day.available;
@@ -482,7 +621,7 @@ export default {
                 const jalaliDate = moment(`${jYear}/${jMonth}/${day}`, 'jYYYY/jM/jD').startOf('day');
 
                 const gregorianDate = jalaliDate.toDate();
-                const dateStr = jalaliDate.format('YYYY/MM/DD');
+                const dateStr = this.formatGregorianDateKey(jalaliDate);
                 const datePrice = this.getDatePrice(gregorianDate);
                 const minNightsOptions = {
                     maxDate: this.maxDate,
@@ -495,6 +634,7 @@ export default {
                     : this.getEffectiveMinNightsForDate(this.customMinNights, dateStr, minNightsOptions);
 
                 const dayState = this.resolveDayState(dateStr, gregorianDate);
+                const tracksSelection = this.selectionMode !== 'multiple';
 
                 const dayCell = {
                     day: this.toPersianNum(day),
@@ -508,10 +648,9 @@ export default {
                     price: datePrice,
                     minNights,
                     minNightsLabel: minNights > 1 ? `${this.toPersianNum(minNights)} شب` : '',
-                    selected: this.isSelected(dateStr),
-                    inRange: this.isInRange(dateStr),
-                    isCheckIn: this.isSameCalendarDay(dateStr, this.startDate),
-                    isCheckOut: this.isSameCalendarDay(dateStr, this.endDate),
+                    inRange: tracksSelection ? this.isInRange(dateStr) : false,
+                    isCheckIn: tracksSelection ? this.isSameCalendarDay(dateStr, this.startDate) : false,
+                    isCheckOut: tracksSelection ? this.isSameCalendarDay(dateStr, this.endDate) : false,
                     isFriday: gregorianDate.getDay() === 5,
                     isOrderBlocked: this.isOrderBlockedDay(dateStr),
                     isReserved: this.isOrderBlockedDay(dateStr),
@@ -542,12 +681,37 @@ export default {
             return this.isOrderBlockedDay(dateStr);
         },
         hasCustomPrice(dateStr) {
-            if (!this.customPrices) {
-                return false;
+            return this.lookupCustomPrice(dateStr) !== undefined;
+        },
+        lookupCustomPrice(dateStr) {
+            if (!this.customPrices || typeof this.customPrices !== 'object') {
+                return undefined;
             }
-            const keyAlt = moment(dateStr).format('YYYY/MM/DD');
-            return this.customPrices[dateStr] !== undefined
-                || this.customPrices[keyAlt] !== undefined;
+
+            const keys = this.resolveDateKeys(dateStr);
+
+            for (const key of keys) {
+                const value = this.customPrices[key];
+
+                if (value !== undefined && value !== null && value !== '') {
+                    return parseInt(value, 10);
+                }
+            }
+
+            return undefined;
+        },
+        resolvedDayPrice(day) {
+            if (!day || day.empty) {
+                return 0;
+            }
+
+            const customPrice = this.lookupCustomPrice(day.date);
+
+            if (customPrice !== undefined) {
+                return customPrice;
+            }
+
+            return day.price || 0;
         },
         previousMonth() {
             if (this.canGoPrevious) {
@@ -695,8 +859,17 @@ export default {
         },
         isSelected(dateStr) {
             if (this.selectionMode === 'multiple') {
-                return Array.isArray(this.selectedDates) && this.selectedDates.includes(dateStr);
+                const selectedSet = this.selectedDateSet;
+
+                if (!selectedSet || !selectedSet.size) {
+                    return false;
+                }
+
+                const target = this.parseCalendarMoment(dateStr);
+
+                return !!(target && selectedSet.has(target.clone().startOf('day').valueOf()));
             }
+
             return this.isSameCalendarDay(dateStr, this.startDate)
                 || this.isSameCalendarDay(dateStr, this.endDate);
         },
@@ -721,30 +894,17 @@ export default {
             return !(this.disableDates && this.disableDates.includes(key));
         },
         getDatePrice(gregorianDate) {
-            const dateKey = moment(gregorianDate).format('YYYY-MM-DD');
-            const dateKeyAlt = moment(gregorianDate).format('YYYY/MM/DD');
-            let price;
-
-            if (this.customPrices) {
-                const customPrice = this.customPrices[dateKey] !== undefined
-                    ? this.customPrices[dateKey]
-                    : this.customPrices[dateKeyAlt];
-                if (customPrice !== undefined && customPrice !== null && customPrice !== '') {
-                    price = parseInt(customPrice, 10);
-                }
-            }
+            let price = this.lookupCustomPrice(this.formatGregorianDateKey(gregorianDate));
 
             if (price === undefined) {
                 const dayOfWeek = gregorianDate.getDay();
-                const dateFormatted = moment(gregorianDate).format('YYYY/MM/DD');
-                const isHoliday = this.holidays && Array.isArray(this.holidays) &&
-                    this.holidays.some(h => moment(h).format('YYYY/MM/DD') === dateFormatted);
+                const dayStart = moment(gregorianDate).startOf('day').valueOf();
+                const isHoliday = !!(this._holidayDaySet && this._holidayDaySet.has(dayStart));
 
                 const tomorrow = new Date(gregorianDate);
                 tomorrow.setDate(tomorrow.getDate() + 1);
-                const tomorrowFormatted = moment(tomorrow).format('YYYY/MM/DD');
-                const isTomorrowHoliday = this.holidays && Array.isArray(this.holidays) &&
-                    this.holidays.some(h => moment(h).format('YYYY/MM/DD') === tomorrowFormatted);
+                const tomorrowStart = moment(tomorrow).startOf('day').valueOf();
+                const isTomorrowHoliday = !!(this._holidayDaySet && this._holidayDaySet.has(tomorrowStart));
 
                 price = parseInt(this.weekPrice, 10);
 
@@ -805,6 +965,7 @@ export default {
                 if (!this.canSelectDayInCalendar(day)) {
                     return;
                 }
+                this.captureStackedScroll();
                 const next = Array.isArray(this.selectedDates) ? [...this.selectedDates] : [];
                 const index = next.indexOf(day.date);
                 if (index >= 0) {
@@ -814,6 +975,7 @@ export default {
                 }
                 next.sort();
                 this.$emit('dates-changed', next);
+                this.restoreStackedScroll();
                 return;
             }
 
@@ -1794,6 +1956,7 @@ export default {
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 0 2px 8px;
+    overflow-anchor: none;
 }
 
 .persian-calendar--stacked .calendar-month-block {

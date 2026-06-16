@@ -8,6 +8,16 @@
 
             <input type="hidden" name="_token" :value="csrf">
             <input type="hidden" name="min_nights" :value="min_nights">
+            <input
+                type="hidden"
+                :name="is_active_name"
+                :value="is_active ? 'true' : 'false'"
+                :disabled="!hasSelection">
+            <input
+                type="hidden"
+                :name="price_name"
+                :value="submitPrice"
+                :disabled="!hasSelection">
 
             <div class="d-flex justify-content-center home-custom-date-picker">
                 <persian-calendar
@@ -23,7 +33,7 @@
                     :host-closed-dates="host_closed_dates"
                     :disable-dates="host_closed_dates"
                     :reserved-dates="order_blocked_dates"
-                    :custom-prices="custom_prices_map"
+                    :custom-prices="custom_prices"
                     :custom-min-nights="custom_min_nights"
                     :holidays="holidays"
                     :week-price="week_price"
@@ -56,8 +66,15 @@
 
             <input v-for="item in selectedDates" :key="item" type="hidden" :name="`${date_name}[]`" :value="formatDateForSubmit(item)">
 
-            <div v-if="hasSelection" class="d-flex justify-content-center my-3">
-                <button type="button" @click="openEditSheet" class="btn btn-primary mx-2 rounded">{{ text_edit }}</button>
+            <div class="d-flex justify-content-center my-3 home-calendar-edit-actions">
+                <button
+                    type="button"
+                    @click="openEditSheet"
+                    class="btn btn-primary mx-2 rounded"
+                    :class="{ 'invisible': !hasSelection }"
+                    :disabled="!hasSelection"
+                    :tabindex="hasSelection ? 0 : -1"
+                    :aria-hidden="!hasSelection">{{ text_edit }}</button>
             </div>
 
             <!-- Bottom sheet — موبایل -->
@@ -111,21 +128,23 @@
                                                 <div class="calendar-edit-field__label">{{ text_active_or_deactivate_days }}</div>
                                                 <p class="calendar-edit-field__hint">{{ text_is_active_description }}</p>
                                             </div>
-                                            <input type="hidden" :name="is_active_name" :value="is_active ? 'true' : 'false'">
                                             <switches theme="bootstrap" color="warning" v-model="is_active" />
                                         </div>
                                     </template>
 
                                     <template v-else-if="section.id === 'pricing'">
-                                        <input type="hidden" :name="price_name" v-model="price">
                                         <label class="calendar-edit-field__label">{{ text_price }}</label>
                                         <money
+                                            :key="priceEditorKey"
+                                            ref="priceInput"
                                             v-model="price"
                                             inputmode="numeric"
                                             class="form-control calendar-edit-input"
                                             min="1000"
+                                            @blur.native="capturePriceFromEditor"
                                         ></money>
                                         <p class="calendar-edit-field__hint">{{ text_price_set_based_on_selected_first_date }}</p>
+                                        <p class="calendar-edit-field__hint calendar-edit-field__hint--retry">{{ text_custom_date_price_retry_hint }}</p>
                                     </template>
 
                                     <template v-else-if="section.id === 'min_stay'">
@@ -223,14 +242,21 @@
                                     <label class="form-label text-black" @click="is_active = !is_active">{{ text_active_or_deactivate_days }}</label>
                                     <p class="text-muted">{{ text_is_active_description }}</p>
                                 </div>
-                                <input type="hidden" :name="is_active_name" :value="is_active ? 'true' : 'false'">
                                 <switches theme="bootstrap" color="warning" v-model="is_active" />
                             </div>
                             <div class="form-group">
-                                <input type="hidden" :name="price_name" v-model="price">
                                 <label style="color: black">{{ text_price }}</label>
-                                <money v-model="price" inputmode="numeric" class="form-control" min="1000"></money>
+                                <money
+                                    :key="priceEditorKey"
+                                    ref="priceInput"
+                                    v-model="price"
+                                    inputmode="numeric"
+                                    class="form-control"
+                                    min="1000"
+                                    @blur.native="capturePriceFromEditor"
+                                ></money>
                                 <p class="text-muted">{{ text_price_set_based_on_selected_first_date }}</p>
+                                <p class="text-muted mb-0">{{ text_custom_date_price_retry_hint }}</p>
                             </div>
                             <div class="form-group mt-4">
                                 <label style="color: black">حداقل مدت رزرو (شب)</label>
@@ -281,7 +307,7 @@ export default {
             'text_set_custom_price', 'text_set_custom_reserve', 'button_cancel_text', 'custom_prices_prop', 'select_range_days',
             'text_delete_changes', 'placeholder', 'text_edit', 'text_remove_selected', 'text_day_selected', 'text_price',
             'text_active_or_deactivate_days', 'is_active_name', 'text_is_active_description', 'text_off',
-            'text_price_set_based_on_selected_first_date', 'text_percentage', 'text_no_off', 'stacked_calendar', 'home_edit_url', 'custom_min_nights_prop',
+            'text_price_set_based_on_selected_first_date', 'text_custom_date_price_retry_hint', 'text_percentage', 'text_no_off', 'stacked_calendar', 'home_edit_url', 'custom_min_nights_prop',
             'text_min_nights_warning_intro', 'text_min_nights_confirm_save', 'text_min_nights_blocked_order_night',
             'text_min_nights_blocked_host_closed_checkin', 'text_min_nights_blocked_order_checkin',
             'text_min_nights_blocked_max_date', 'text_min_nights_saved_with_limits', 'text_host_cannot_select_booked_date'],
@@ -290,6 +316,8 @@ export default {
             max_min_nights: 30,
             min_nights: 1,
             skipMinNightsSync: false,
+            skipOffWatch: false,
+            priceEditorKey: '',
             custom_min_nights: {},
             off_percentages: [null, 10, 20, 25, 50],
             holidays: [],
@@ -341,9 +369,23 @@ export default {
             if (!this.is_active) {
                 return true;
             }
-            return parseInt(this.price, 10) >= 1000;
+            return parseInt(this.submitPrice, 10) >= 1000;
+        },
+        submitPrice() {
+            const raw = this.price;
+            const digits = String(raw == null ? '' : raw).replace(/[^\d]/g, '');
+
+            if (!digits) {
+                return 0;
+            }
+
+            return parseInt(digits, 10) || 0;
         },
         maxMinNightsCap() {
+            if (!this.editSheetMounted && !this.showModal) {
+                return this.max_min_nights;
+            }
+
             if (!this.selectedDates.length) {
                 return this.max_min_nights;
             }
@@ -368,11 +410,18 @@ export default {
             return `برای رزرو از روزهای انتخاب‌شده، حداقل ${nights} ${nightLabel} باید انتخاب شود.${capHint}`;
         },
         minNightsCheckOptions() {
+            const orderBlocked = this.order_blocked_dates;
+            const hostClosed = this.host_closed_dates;
+            const disableAll = [...orderBlocked, ...hostClosed];
+
             return {
                 maxDate: this.max_date,
-                disableDates: [...this.order_blocked_dates, ...this.host_closed_dates],
-                reservedDates: this.host_closed_dates,
-                orderBlockedDates: this.order_blocked_dates,
+                disableDates: disableAll,
+                reservedDates: hostClosed,
+                orderBlockedDates: orderBlocked,
+                disableDateSet: this.buildBlockedDaySet([disableAll]),
+                orderBlockedDateSet: this.buildBlockedDaySet([orderBlocked]),
+                reservedDateSet: this.buildBlockedDaySet([hostClosed]),
                 messages: {
                     order_night: this.text_min_nights_blocked_order_night || '',
                     host_closed_checkin: this.text_min_nights_blocked_host_closed_checkin || '',
@@ -383,6 +432,10 @@ export default {
             };
         },
         minNightsIssueList() {
+            if (!this.editSheetMounted && !this.showModal) {
+                return [];
+            }
+
             return this.getMinNightsIssuesForSelection();
         },
         accordionSections() {
@@ -419,26 +472,7 @@ export default {
         const hostClosedSource = this.host_closed_dates_prop ?? this.custom_dates;
 
         this.syncCalendarDateProps();
-
-        const prices = {};
-        const priceSource = this.custom_prices_prop && typeof this.custom_prices_prop === 'object'
-            ? this.custom_prices_prop
-            : {};
-
-        Object.keys(priceSource).forEach((index) => {
-            if (/^\d{1,2}$/.test(String(index))) {
-                return;
-            }
-
-            const parsed = this.parseCalendarMoment(index);
-
-            if (parsed) {
-                prices[parsed.format('YYYY-MM-DD')] = priceSource[index];
-                prices[parsed.format('YYYY/MM/DD')] = priceSource[index];
-            }
-        });
-        this.custom_prices = prices;
-        this.custom_prices_map = { ...priceSource };
+        this.syncCustomPricesFromProp();
 
         this.custom_min_nights = this.buildCustomMinNightsMap(
             this.custom_min_nights_prop,
@@ -463,8 +497,23 @@ export default {
         document.body.classList.remove('home-calendar-edit-sheet-open');
     },
     watch: {
+        custom_prices_prop: {
+            handler() {
+                this.syncCustomPricesFromProp();
+            },
+            deep: true,
+        },
+        all_custom_dates: {
+            handler() {
+                this.syncCustomPricesFromProp();
+            },
+            deep: true,
+        },
         selectedDates() {
-            this.applyMinNightsCap();
+            if (this.editSheetMounted || this.showModal) {
+                this.initEditValues();
+                this.applyMinNightsCap();
+            }
         },
         min_nights() {
             if (this.skipMinNightsSync) {
@@ -483,7 +532,11 @@ export default {
                 this.initEditValues();
             }
         },
-        off: function (){
+        off: function () {
+            if (this.skipOffWatch) {
+                return;
+            }
+
             if (this.default_price) {
                 const offVal = parseInt(this.off, 10) || 0;
                 this.price = this.default_price - ((offVal * this.default_price) / 100);
@@ -500,6 +553,103 @@ export default {
             this.disable_dates = [...this.order_blocked_dates, ...this.host_closed_dates];
             this.reserved_dates = this.order_blocked_dates;
         },
+        syncCustomPricesFromProp() {
+            const prices = {};
+            let priceSource = this.custom_prices_prop;
+
+            if (typeof priceSource === 'string' && priceSource.trim()) {
+                try {
+                    priceSource = JSON.parse(priceSource);
+                } catch (error) {
+                    priceSource = {};
+                }
+            }
+
+            const assignPrice = (dateValue, amount) => {
+                const value = parseInt(amount, 10);
+
+                if (!Number.isFinite(value) || value <= 0) {
+                    return;
+                }
+
+                this.resolveDateKeys(dateValue).forEach((key) => {
+                    prices[key] = value;
+                });
+            };
+
+            if (priceSource && typeof priceSource === 'object') {
+                Object.keys(priceSource).forEach((index) => {
+                    if (/^\d{1,2}$/.test(String(index))) {
+                        return;
+                    }
+
+                    assignPrice(index, priceSource[index]);
+                });
+            }
+
+            const records = Array.isArray(this.all_custom_dates)
+                ? this.all_custom_dates
+                : (this.all_custom_dates && typeof this.all_custom_dates === 'object'
+                    ? Object.values(this.all_custom_dates)
+                    : []);
+
+            records.forEach((record) => {
+                if (!record || record.date == null) {
+                    return;
+                }
+
+                const value = parseInt(record.price, 10);
+
+                if (!Number.isFinite(value) || value <= 0) {
+                    return;
+                }
+
+                this.resolveDateKeys(record.date).forEach((key) => {
+                    if (prices[key] === undefined) {
+                        prices[key] = value;
+                    }
+                });
+            });
+
+            this.custom_prices = prices;
+            this.custom_prices_map = priceSource && typeof priceSource === 'object' ? { ...priceSource } : {};
+        },
+        lookupCustomPrice(dateValue) {
+            if (!this.custom_prices || typeof this.custom_prices !== 'object') {
+                return undefined;
+            }
+
+            const keys = this.resolveDateKeys(dateValue);
+
+            for (const key of keys) {
+                const value = this.custom_prices[key];
+
+                if (value !== undefined && value !== null && value !== '') {
+                    return parseInt(value, 10);
+                }
+            }
+
+            return undefined;
+        },
+        syncCustomPricesForSelection() {
+            const next = { ...this.custom_prices };
+            const price = this.submitPrice;
+
+            this.selectedDates.forEach((dateValue) => {
+                const keys = this.resolveDateKeys(dateValue);
+
+                keys.forEach((key) => {
+                    if (!this.is_active || !Number.isFinite(price) || price < 1000) {
+                        delete next[key];
+                        return;
+                    }
+
+                    next[key] = price;
+                });
+            });
+
+            this.custom_prices = next;
+        },
         toPersianNum(num) {
             const digits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
             return String(num).replace(/\d/g, (d) => digits[parseInt(d, 10)]);
@@ -509,14 +659,13 @@ export default {
                 return '';
             }
 
-            const parsed = this.parseCalendarMoment(item);
+            const gregorianKey = this.formatGregorianDateKey(item);
 
-            if (!parsed) {
-                return String(item).trim().replace(/-/g, '/');
+            if (gregorianKey) {
+                return gregorianKey;
             }
 
-            // ارسال شمسی تا سرور یک‌بار تبدیل کند (YYYY/MM/DD میلادی از moment-jalaali اشتباه است)
-            return parsed.format('jYYYY/jMM/jDD');
+            return String(item).trim().replace(/-/g, '/');
         },
         buildCustomMinNightsMap(source, records) {
             const minNightsMap = {};
@@ -563,17 +712,87 @@ export default {
 
             return minNightsMap;
         },
+        lookupPriceForSelection() {
+            if (!this.selectedDates.length) {
+                return 0;
+            }
+
+            const dateValue = this.selectedDates[0];
+            const customPrice = this.lookupCustomPrice(dateValue);
+
+            if (customPrice !== undefined) {
+                return customPrice;
+            }
+
+            return this.getPrice(dateValue, false);
+        },
+        capturePriceFromEditor() {
+            if (!this.is_active) {
+                this.price = 0;
+                return;
+            }
+
+            let rawValue = '';
+
+            if (this.$refs.priceInput) {
+                const moneyRef = Array.isArray(this.$refs.priceInput)
+                    ? this.$refs.priceInput[0]
+                    : this.$refs.priceInput;
+                const moneyEl = moneyRef && (moneyRef.$el || moneyRef);
+
+                if (moneyEl && typeof moneyEl.querySelector === 'function') {
+                    const input = moneyEl.tagName === 'INPUT'
+                        ? moneyEl
+                        : moneyEl.querySelector('input');
+
+                    if (input) {
+                        rawValue = input.value;
+                    }
+                }
+            }
+
+            if (!rawValue) {
+                const fallbackInput = this.$el
+                    ? this.$el.querySelector('.calendar-edit-input input, .calendar-edit-input')
+                    : null;
+
+                if (fallbackInput) {
+                    rawValue = fallbackInput.value;
+                }
+            }
+
+            const digits = String(rawValue || this.price || '').replace(/[^\d]/g, '');
+
+            if (digits) {
+                this.price = parseInt(digits, 10) || 0;
+            }
+        },
+        submitCustomDateForm() {
+            this.$nextTick(() => {
+                const form = this.$refs.customDateForm;
+
+                if (!form) {
+                    return;
+                }
+
+                // form.submit() bypasses @submit — avoids requestSubmit re-entering onFormSubmit
+                form.submit();
+            });
+        },
         initEditValues() {
             if (!this.selectedDates.length) {
                 return;
             }
-            this.price = this.getPrice(new Date(this.selectedDates[0]), false);
+
+            this.skipOffWatch = true;
+            this.skipMinNightsSync = true;
+            this.price = this.lookupPriceForSelection();
             this.default_price = this.price;
             this.off = null;
-            this.skipMinNightsSync = true;
             this.min_nights = this.getInitialMinNightsForSelection();
             this.applyMinNightsCap();
             this.$nextTick(() => {
+                this.skipOffWatch = false;
                 this.skipMinNightsSync = false;
             });
         },
@@ -629,17 +848,23 @@ export default {
         },
         openEditSheet() {
             if (!this.useStackedCalendar) {
+                this.priceEditorKey = (this.selectedDates[0] || '') + '|' + Date.now();
                 this.showModal = true;
+                this.$nextTick(() => {
+                    this.initEditValues();
+                });
                 return;
             }
 
-            this.initEditValues();
             this.openAccordion = 'availability';
+            this.priceEditorKey = (this.selectedDates[0] || '') + '|' + Date.now();
             this.editSheetMounted = true;
             this.editSheetClosing = false;
             document.body.classList.add('home-calendar-edit-sheet-open');
 
             this.$nextTick(() => {
+                this.initEditValues();
+
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         this.editSheetOpen = true;
@@ -707,28 +932,37 @@ export default {
             return attributes;
         },
         getPrice(date, formatted = true) {
-            date.setHours(0,0,0,0)
-            let day = parseInt(date.getDay());
-            let tomorrow = new Date();
-            tomorrow.setMonth(date.getMonth());
-            tomorrow.setDate(date.getDate() + 1);
-            tomorrow.setHours(0,0,0,0)
+            const parsed = date instanceof Date
+                ? moment(date).startOf('day')
+                : this.parseCalendarMoment(date);
 
-            let price = this.week_price;
-            if (date in this.custom_prices){
-                price = this.custom_prices[date]
-            }
-            else if (this.$root.isHoliday(this.holidays, tomorrow) || day === 4) {
-                price = this.thu_price
-            }
-            else if (this.$root.isHoliday(this.holidays, date) || day === 5){
-                price = this.fri_price
-            }
-            else if (day === 3){
-                price = this.wed_price
+            if (!parsed || !parsed.isValid()) {
+                return formatted ? '' : 0;
             }
 
-            if (parseInt(this.off, 10) !== 0 && this.appliesLastMinuteOff(date)){
+            const gregorianDate = parsed.toDate();
+            gregorianDate.setHours(0, 0, 0, 0);
+
+            let day = parseInt(gregorianDate.getDay(), 10);
+            const tomorrow = new Date(gregorianDate);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+
+            let price = this.lookupCustomPrice(date);
+
+            if (price === undefined) {
+                price = parseInt(this.week_price, 10);
+
+                if (this.$root.isHoliday(this.holidays, tomorrow) || day === 4) {
+                    price = parseInt(this.thu_price, 10);
+                } else if (this.$root.isHoliday(this.holidays, gregorianDate) || day === 5) {
+                    price = parseInt(this.fri_price, 10);
+                } else if (day === 3) {
+                    price = parseInt(this.wed_price, 10);
+                }
+            }
+
+            if (parseInt(this.off, 10) !== 0 && this.appliesLastMinuteOff(gregorianDate)) {
                 price = price - (this.off * price / 100);
             }
 
@@ -770,8 +1004,12 @@ export default {
             return issues;
         },
         onFormSubmit(event) {
+            event.preventDefault();
+
+            this.capturePriceFromEditor();
             this.min_nights = Math.max(1, parseInt(this.min_nights, 10) || 1);
             this.syncCustomMinNightsForSelection();
+            this.syncCustomPricesForSelection();
 
             if (this.calendarAudience === 'host') {
                 const bookedSelections = this.selectedDates.filter((dateValue) => (
@@ -779,7 +1017,6 @@ export default {
                 ));
 
                 if (bookedSelections.length) {
-                    event.preventDefault();
                     const labels = bookedSelections.map((dateValue) => this.formatJalaliDateLabel(dateValue)).join('، ');
                     const message = (this.text_host_cannot_select_booked_date || '')
                         .replace(':dates', labels);
@@ -790,7 +1027,8 @@ export default {
             }
 
             if (!this.is_active || this.min_nights <= 1) {
-                return true;
+                this.submitCustomDateForm();
+                return false;
             }
 
             const issues = this.getMinNightsIssuesForSelection();
@@ -800,13 +1038,11 @@ export default {
             const blocking = issues.filter((issue) => blockingCodes.includes(issue.code));
 
             if (blocking.length) {
-                event.preventDefault();
                 this.$root.showAlert(blocking.map((issue) => issue.message).join('\n'), 'error');
                 return false;
             }
 
             if (issues.length) {
-                event.preventDefault();
                 const html = issues.map((issue) => issue.message).join('<br><br>');
 
                 Vue.swal({
@@ -818,14 +1054,16 @@ export default {
                     cancelButtonText: this.button_cancel_text,
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        this.$refs.customDateForm.submit();
+                        this.capturePriceFromEditor();
+                        this.submitCustomDateForm();
                     }
                 });
 
                 return false;
             }
 
-            return true;
+            this.submitCustomDateForm();
+            return false;
         },
     }
 }

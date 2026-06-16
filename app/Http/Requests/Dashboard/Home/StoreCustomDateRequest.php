@@ -65,6 +65,16 @@ class StoreCustomDateRequest extends FormRequest
                 ->format('Y/m/d');
         }
 
+        if ($year > 2100 && $year < 3000) {
+            $jalaliYear = $year - 1242;
+
+            if ($jalaliYear >= 1300 && $jalaliYear < 1500) {
+                return Jalalian::fromFormat('Y/m/d', sprintf('%04d/%02d/%02d', $jalaliYear, $month, $day))
+                    ->toCarbon()
+                    ->format('Y/m/d');
+            }
+        }
+
         return sprintf('%04d/%02d/%02d', $year, $month, $day);
     }
 
