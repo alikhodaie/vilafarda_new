@@ -93,6 +93,15 @@ body,
     font-weight: 500 !important;
 }
 
+.btn-mobile-primary:active,
+.btn-mobile-success:active,
+.btn-mobile-outline-secondary:active,
+.btn-mobile-outline-primary:active {
+    opacity: 0.92 !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
 .btn-mobile-outline-secondary {
     background: transparent !important;
     border: 1px solid var(--mobile-border-light) !important;

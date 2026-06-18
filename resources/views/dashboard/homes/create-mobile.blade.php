@@ -330,7 +330,7 @@
                             <div class="text-center mt-2">
                                 <i class="bi bi-cloud-upload fs-1 text-muted"></i>
                                 <p class="text-muted mb-0" style="font-size: 12px;">برای انتخاب چندین تصویر کلیک کنید</p>
-                                <small class="text-muted" style="font-size: 11px;">حداکثر 10 تصویر؛ حجم قبل از ارسال کم می‌شود</small>
+                                <small class="text-muted" style="font-size: 11px;">حداکثر ۲۵ تصویر؛ قبل از ارسال به WebP فشرده می‌شوند</small>
                             </div>
                         </div>
                         @error('images')
@@ -338,10 +338,33 @@
                         @enderror
                     </div>
 
-                    <div id="imageCompressStatus" class="small text-muted mb-2" style="display: none;"></div>
+                    <div id="galleryCountBadge" class="gallery-count-badge mb-2" style="display: none;">
+                        <span id="galleryCountText">۰ از ۲۵ تصویر</span>
+                    </div>
 
                     <!-- Image Preview -->
                     <div id="imagePreview" class="row g-2"></div>
+                </div>
+            </div>
+
+            <!-- لودینگ فشرده‌سازی تصاویر -->
+            <div id="imageCompressOverlay" class="image-compress-overlay" hidden aria-live="polite" aria-busy="true">
+                <div class="image-compress-overlay__backdrop"></div>
+                <div class="image-compress-overlay__card" role="status">
+                    <div class="image-compress-overlay__icon-wrap" aria-hidden="true">
+                        <div class="image-compress-overlay__ring"></div>
+                        <div class="image-compress-overlay__ring image-compress-overlay__ring--delay"></div>
+                        <i class="bi bi-images image-compress-overlay__icon"></i>
+                    </div>
+                    <p class="image-compress-overlay__title" id="imageCompressOverlayTitle">در حال بهینه‌سازی تصاویر</p>
+                    <p class="image-compress-overlay__file" id="imageCompressOverlayFile"></p>
+                    <div class="image-compress-overlay__progress-track">
+                        <div class="image-compress-overlay__progress-bar" id="imageCompressOverlayBar"></div>
+                    </div>
+                    <p class="image-compress-overlay__progress-text" id="imageCompressOverlayProgress"></p>
+                    <p class="image-compress-overlay__thanks">
+                        از صبر و شکیبایی شما در فرایند فشرده‌سازی تصاویر سپاسگزاریم
+                    </p>
                 </div>
             </div>
 
@@ -462,20 +485,20 @@
             <div class="bg-white rounded-3 p-3" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <div class="row g-2">
                     <div class="col-6">
-                        <button type="button" id="prevBtn" class="btn btn-outline-secondary w-100" style="font-size: 14px; border-radius: 8px; border: 1px solid #ddd; color: #666; display: none;">
+                        <button type="button" id="prevBtn" class="btn btn-mobile-outline-secondary w-100 create-home-nav-btn" style="display: none;">
                             <i class="bi bi-arrow-right me-2"></i>
                             قبلی
                         </button>
                     </div>
                     <div class="col-6">
-                        <button type="button" id="nextBtn" class="btn btn-outline-primary w-100" style="font-size: 14px; border-radius: 8px; border: 1px solid #007bff; color: #007bff;">
+                        <button type="button" id="nextBtn" class="btn btn-mobile-primary w-100 create-home-nav-btn">
                             بعدی
                             <i class="bi bi-arrow-left me-2"></i>
                         </button>
                     </div>
                 </div>
                 <div class="mt-3">
-                    <button type="submit" id="submitBtn" class="btn btn-outline-success w-100" style="font-size: 14px; border-radius: 8px; border: 1px solid #28a745; color: #28a745; display: none;">
+                    <button type="submit" id="submitBtn" class="btn btn-mobile-success w-100 create-home-nav-btn" style="display: none;">
                         <i class="bi bi-check-circle me-2"></i>
                         ثبت اقامتگاه
                     </button>
@@ -630,6 +653,158 @@
     background-color: #f8f9fa !important;
 }
 
+.gallery-count-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #fff9eb;
+    border: 1px solid #f0e0b8;
+    color: #7a5a12;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.image-compress-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.image-compress-overlay[hidden] {
+    display: none !important;
+}
+
+.image-compress-overlay__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.image-compress-overlay__card {
+    position: relative;
+    width: min(100%, 340px);
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 20px;
+    padding: 28px 22px 24px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+    text-align: center;
+    animation: imageCompressCardIn 0.35s ease;
+}
+
+@keyframes imageCompressCardIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.image-compress-overlay__icon-wrap {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 18px;
+}
+
+.image-compress-overlay__ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid rgba(211, 157, 26, 0.18);
+    border-top-color: #D39D1A;
+    animation: imageCompressSpin 0.9s linear infinite;
+}
+
+.image-compress-overlay__ring--delay {
+    inset: 8px;
+    border-top-color: #f0c96a;
+    animation-duration: 1.2s;
+    animation-direction: reverse;
+}
+
+@keyframes imageCompressSpin {
+    to { transform: rotate(360deg); }
+}
+
+.image-compress-overlay__icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.65rem;
+    color: #D39D1A;
+}
+
+.image-compress-overlay__title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #222;
+}
+
+.image-compress-overlay__file {
+    margin: 0 0 14px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.6;
+    min-height: 1.6em;
+    word-break: break-word;
+}
+
+.image-compress-overlay__progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: #f0f0f0;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.image-compress-overlay__progress-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #D39D1A, #f0c96a);
+    transition: width 0.35s ease;
+}
+
+.image-compress-overlay__progress-bar.is-indeterminate {
+    width: 40%;
+    position: relative;
+    animation: imageCompressIndeterminate 1.1s ease-in-out infinite;
+}
+
+@keyframes imageCompressIndeterminate {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(320%); }
+}
+
+.image-compress-overlay__progress-text {
+    margin: 0 0 14px;
+    font-size: 12px;
+    color: #888;
+    min-height: 1.4em;
+}
+
+.image-compress-overlay__thanks {
+    margin: 0;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    font-size: 12px;
+    line-height: 1.75;
+    color: #9a7b2e;
+}
+
 .price-words {
     line-height: 1.6;
     color: #6c757d;
@@ -652,6 +827,22 @@
     color: #000000 !important;
     border-color: #D39D1A !important;
     box-shadow: 0 0 0 0.2rem rgba(211, 157, 26, 0.25) !important;
+}
+
+#createHomeForm .create-home-nav-btn {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+}
+
+#createHomeForm .create-home-nav-btn:focus,
+#createHomeForm .create-home-nav-btn:active {
+    outline: none;
+    box-shadow: none;
+}
+
+#createHomeForm .create-home-nav-btn:disabled {
+    opacity: 0.72;
 }
 
 .mobile-edit-tabs {
@@ -761,6 +952,31 @@ const savedCityId = @json($home->city_id);
 const citiesByProvince = {};
 let citiesFetchController = null;
 let draftSaveInFlight = false;
+let stepNavBusy = false;
+let formSubmitBusy = false;
+
+function isTouchLikeDevice() {
+    return window.matchMedia('(hover: none), (pointer: coarse)').matches;
+}
+
+function focusFieldForValidation(field) {
+    if (!field) {
+        return;
+    }
+    field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!isTouchLikeDevice()) {
+        field.focus({ preventScroll: true });
+    }
+}
+
+function blurCreateHomeNavButtons() {
+    ['nextBtn', 'prevBtn', 'submitBtn'].forEach(function (id) {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.blur();
+        }
+    });
+}
 
 const STEP_LABELS = {
     1: 'اطلاعات',
@@ -915,29 +1131,40 @@ async function persistDraftStep(step) {
 }
 
 // Step navigation
-document.getElementById('nextBtn').addEventListener('click', async function () {
+document.getElementById('nextBtn').addEventListener('click', async function (e) {
+    if (stepNavBusy) {
+        return;
+    }
     if (!validateStep(currentStep)) {
+        blurCreateHomeNavButtons();
         return;
     }
     if (currentStep >= totalSteps) {
         return;
     }
 
+    stepNavBusy = true;
     const stepToSave = currentStep;
     const nextStep = currentStep + 1;
+    const nextButton = this;
     clearStepValidationMessage();
     showStep(nextStep);
+    blurCreateHomeNavButtons();
 
     setNextButtonLoading(true);
     draftSaveInFlight = true;
     try {
         const ok = await persistDraftStep(stepToSave);
         if (!ok) {
-            showStep(stepToSave);
+            showStepValidationMessage('ذخیرهٔ خودکار این مرحله انجام نشد. اینترنت را بررسی کنید؛ می‌توانید ادامه دهید یا دوباره «بعدی» بزنید.');
         }
     } finally {
         draftSaveInFlight = false;
         setNextButtonLoading(false);
+        stepNavBusy = false;
+        if (nextButton) {
+            nextButton.blur();
+        }
     }
 });
 
@@ -1039,7 +1266,7 @@ function validateStep(step) {
         if (coverInput && isFieldValueMissing(coverInput)) {
             coverInput.classList.add('is-invalid');
             showStepValidationMessage('لطفاً تصویر اصلی اقامتگاه را در مرحله «تصاویر» انتخاب کنید.');
-            coverInput.focus();
+            focusFieldForValidation(coverInput);
             return false;
         }
     }
@@ -1057,7 +1284,7 @@ function validateStep(step) {
         if (documentInput && isFieldValueMissing(documentInput)) {
             documentInput.classList.add('is-invalid');
             showStepValidationMessage('لطفاً فایل مدرک مالکیت را بارگذاری کنید.');
-            documentInput.focus();
+            focusFieldForValidation(documentInput);
             return false;
         }
     }
@@ -1066,7 +1293,7 @@ function validateStep(step) {
     for (let field of requiredFields) {
         if (isFieldValueMissing(field)) {
             field.classList.add('is-invalid');
-            field.focus();
+            focusFieldForValidation(field);
             const stepLabel = STEP_LABELS[step] || ('مرحله ' + step);
             showStepValidationMessage('فیلد «' + getFieldLabel(field) + '» در مرحله «' + stepLabel + '» الزامی است.');
             return false;
@@ -1079,7 +1306,7 @@ function validateStep(step) {
         if (!priceValue || priceValue < 1000) {
             if (weekPrice) {
                 weekPrice.classList.add('is-invalid');
-                weekPrice.focus();
+                focusFieldForValidation(weekPrice);
             }
             showStepValidationMessage('قیمت اول هفته باید حداقل ۱٬۰۰۰ تومان باشد.');
             return false;
@@ -1205,6 +1432,12 @@ document.getElementById('province_id').addEventListener('change', function() {
 // Image preview + client-side compression before upload
 let selectedGalleryItems = [];
 let imageCompressBusy = 0;
+const MAX_GALLERY_IMAGES = 25;
+let imageCompressOverlayState = {
+    total: 0,
+    current: 0,
+    indeterminate: true,
+};
 
 const IMAGE_COMPRESS = {
     maxEdge: 1280,
@@ -1318,29 +1551,102 @@ function formatFileSize(bytes) {
     return Math.max(1, Math.round(bytes / 1024)) + ' KB';
 }
 
-function setImageCompressStatus(message) {
-    const el = document.getElementById('imageCompressStatus');
-    if (!el) {
+function updateGalleryCountBadge() {
+    const badge = document.getElementById('galleryCountBadge');
+    const text = document.getElementById('galleryCountText');
+    if (!badge || !text) {
         return;
     }
-    if (message) {
-        el.textContent = message;
-        el.style.display = 'block';
+    const count = selectedGalleryItems.length;
+    if (count <= 0) {
+        badge.style.display = 'none';
+        return;
+    }
+    text.textContent = count + ' از ' + MAX_GALLERY_IMAGES + ' تصویر انتخاب‌شده';
+    badge.style.display = 'inline-flex';
+}
+
+function renderImageCompressOverlay() {
+    const overlay = document.getElementById('imageCompressOverlay');
+    const titleEl = document.getElementById('imageCompressOverlayTitle');
+    const fileEl = document.getElementById('imageCompressOverlayFile');
+    const barEl = document.getElementById('imageCompressOverlayBar');
+    const progressEl = document.getElementById('imageCompressOverlayProgress');
+    if (!overlay || !titleEl || !fileEl || !barEl || !progressEl) {
+        return;
+    }
+
+    const state = imageCompressOverlayState;
+    if (state.indeterminate || !state.total) {
+        barEl.style.width = '38%';
+        barEl.classList.add('is-indeterminate');
+        progressEl.textContent = 'لطفاً چند لحظه صبر کنید…';
     } else {
-        el.textContent = '';
-        el.style.display = 'none';
+        barEl.classList.remove('is-indeterminate');
+        const percent = Math.min(100, Math.round((state.current / state.total) * 100));
+        barEl.style.width = percent + '%';
+        progressEl.textContent = 'تصویر ' + state.current + ' از ' + state.total + ' (' + percent + '٪)';
+    }
+
+    if (state.fileName) {
+        fileEl.textContent = state.fileName;
+    } else {
+        fileEl.textContent = '';
+    }
+
+    if (state.title) {
+        titleEl.textContent = state.title;
     }
 }
 
-function beginImageCompress(message) {
+function showImageCompressOverlay(options) {
+    const overlay = document.getElementById('imageCompressOverlay');
+    if (!overlay) {
+        return;
+    }
+    imageCompressOverlayState = Object.assign({
+        total: 0,
+        current: 0,
+        indeterminate: true,
+        fileName: '',
+        title: 'در حال بهینه‌سازی تصاویر',
+    }, options || {});
+    renderImageCompressOverlay();
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+}
+
+function updateImageCompressOverlay(patch) {
+    imageCompressOverlayState = Object.assign({}, imageCompressOverlayState, patch || {});
+    renderImageCompressOverlay();
+}
+
+function hideImageCompressOverlay() {
+    const overlay = document.getElementById('imageCompressOverlay');
+    if (!overlay) {
+        return;
+    }
+    overlay.hidden = true;
+    document.body.style.overflow = '';
+    imageCompressOverlayState = { total: 0, current: 0, indeterminate: true };
+}
+
+function beginImageCompress(message, options) {
     imageCompressBusy += 1;
-    setImageCompressStatus(message || 'در حال بهینه‌سازی تصاویر…');
+    if (imageCompressBusy === 1) {
+        showImageCompressOverlay(Object.assign({
+            title: message || 'در حال بهینه‌سازی تصاویر',
+            indeterminate: !(options && options.total),
+        }, options || {}));
+    } else if (message || (options && options.fileName)) {
+        updateImageCompressOverlay(Object.assign({ title: message || imageCompressOverlayState.title }, options || {}));
+    }
 }
 
 function endImageCompress() {
     imageCompressBusy = Math.max(0, imageCompressBusy - 1);
     if (imageCompressBusy === 0) {
-        setImageCompressStatus('');
+        hideImageCompressOverlay();
     }
 }
 
@@ -1434,25 +1740,40 @@ function compressImageFile(file) {
     });
 }
 
-async function prepareImageFile(file) {
+async function prepareImageFile(file, options) {
+    const silent = options && options.silent;
     const originalFile = file;
     let working = file;
 
     if (isHeicFile(file)) {
-        beginImageCompress('در حال تبدیل HEIC…');
+        if (!silent) {
+            beginImageCompress('در حال تبدیل HEIC…', {
+                fileName: file.name,
+                indeterminate: true,
+            });
+        }
         try {
             working = await convertHeicToJpeg(file);
         } finally {
-            endImageCompress();
+            if (!silent) {
+                endImageCompress();
+            }
         }
     }
 
-    beginImageCompress('در حال بهینه‌سازی و تبدیل به WebP…');
+    if (!silent) {
+        beginImageCompress('در حال بهینه‌سازی و تبدیل به WebP…', {
+            fileName: working.name || file.name,
+            indeterminate: true,
+        });
+    }
     let processed;
     try {
         processed = await compressImageFile(working);
     } finally {
-        endImageCompress();
+        if (!silent) {
+            endImageCompress();
+        }
     }
 
     return {
@@ -1546,26 +1867,52 @@ async function addGalleryFiles(files) {
 
     clearStepValidationMessage();
 
-    for (let i = 0; i < incoming.length; i++) {
-        if (selectedGalleryItems.length >= 10) {
-            showStepValidationMessage('حداکثر ۱۰ تصویر در گالری مجاز است.');
-            break;
-        }
+    const availableSlots = Math.max(0, MAX_GALLERY_IMAGES - selectedGalleryItems.length);
+    const toProcess = incoming.slice(0, availableSlots);
+
+    if (toProcess.length < incoming.length) {
+        showStepValidationMessage('حداکثر ' + MAX_GALLERY_IMAGES + ' تصویر در گالری مجاز است.');
+    }
+
+    if (toProcess.length === 0) {
+        return;
+    }
+
+    showImageCompressOverlay({
+        title: 'در حال پردازش گالری تصاویر',
+        total: toProcess.length,
+        current: 0,
+        indeterminate: false,
+        fileName: toProcess[0].name,
+    });
+
+    for (let i = 0; i < toProcess.length; i++) {
+        updateImageCompressOverlay({
+            current: i + 1,
+            total: toProcess.length,
+            fileName: toProcess[i].name,
+            title: isHeicFile(toProcess[i])
+                ? 'در حال تبدیل و فشرده‌سازی…'
+                : 'در حال بهینه‌سازی تصاویر',
+            indeterminate: false,
+        });
 
         try {
-            const item = await prepareImageFile(incoming[i]);
+            const item = await prepareImageFile(toProcess[i], { silent: true });
             selectedGalleryItems.push(item);
         } catch (err) {
             console.warn('gallery prepare failed', err);
             selectedGalleryItems.push({
-                file: incoming[i],
-                meta: buildImageMeta(incoming[i], incoming[i]),
+                file: toProcess[i],
+                meta: buildImageMeta(toProcess[i], toProcess[i]),
             });
         }
     }
 
+    hideImageCompressOverlay();
     updateInputFiles();
     updateImagePreview();
+    updateGalleryCountBadge();
 }
 
 document.getElementById('images').addEventListener('change', async function (e) {
@@ -1639,6 +1986,7 @@ function removeImage(index) {
     selectedGalleryItems.splice(index, 1);
     updateInputFiles();
     updateImagePreview();
+    updateGalleryCountBadge();
 }
 
 // Drag and drop functionality
@@ -1673,15 +2021,23 @@ dropZone.addEventListener('drop', async function (e) {
 
 // Form submission
 document.getElementById('createHomeForm').addEventListener('submit', async function(e) {
-    if (!validateAllSteps()) {
+    if (formSubmitBusy) {
         e.preventDefault();
         return;
     }
 
+    if (!validateAllSteps()) {
+        e.preventDefault();
+        blurCreateHomeNavButtons();
+        return;
+    }
+
+    formSubmitBusy = true;
     const submitBtn = document.getElementById('submitBtn');
     if (submitBtn) {
         submitBtn.disabled = true;
     }
+    blurCreateHomeNavButtons();
 
     const docInput = document.getElementById('document');
     if (docInput && docInput.files && docInput.files.length && typeof window.prepareCompressedDocumentInput === 'function') {
@@ -1690,6 +2046,7 @@ document.getElementById('createHomeForm').addEventListener('submit', async funct
             await window.prepareCompressedDocumentInput('document');
             e.target.submit();
         } catch (err) {
+            formSubmitBusy = false;
             if (submitBtn) {
                 submitBtn.disabled = false;
             }
