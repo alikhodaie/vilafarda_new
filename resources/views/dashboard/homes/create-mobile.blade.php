@@ -65,7 +65,7 @@
 
     <!-- Form Container -->
     <div class="container px-3 pb-4">
-        <form action="{{ route('dashboard.homes.store', $home) }}" method="POST" enctype="multipart/form-data" id="createHomeForm">
+        <form action="{{ route('dashboard.homes.store', $home) }}" method="POST" enctype="multipart/form-data" id="createHomeForm" novalidate>
             @csrf
             
             <!-- Step 1: Basic Information -->
@@ -306,8 +306,8 @@
                     <div class="mb-3">
                         <label for="cover" class="form-label" style="font-size: 14px;">تصویر اصلی @if(!$home->cover)<span class="text-danger">*</span>@endif</label>
                         <input type="file" name="cover" id="cover" class="form-control" 
-                               accept="image/*" style="font-size: 14px;" @if(!$home->cover) required @endif>
-                        <small class="text-muted" style="font-size: 12px;">تصویر اصلی اقامتگاه؛ قبل از ارسال به‌صورت خودکار بهینه می‌شود</small>
+                               accept="image/*,.heic,.heif" style="font-size: 14px;" @if(!$home->cover) required @endif>
+                        <small class="text-muted" style="font-size: 12px;">تصویر اصلی اقامتگاه؛ HEIC و تصاویر بزرگ قبل از ارسال به WebP بهینه می‌شوند</small>
                         @error('cover')
                             <div class="text-danger mt-1" style="font-size: 12px;">{{ $message }}</div>
                         @enderror
@@ -318,6 +318,7 @@
                         <div class="rounded overflow-hidden border mt-1">
                             <img src="" alt="" id="coverNewPreview" class="w-100" style="max-height: 180px; object-fit: cover;">
                         </div>
+                        <small id="coverNewPreviewMeta" class="text-muted d-block mt-2" style="font-size: 12px; line-height: 1.6;"></small>
                     </div>
 
                     <!-- Gallery Images -->
@@ -325,7 +326,7 @@
                         <label for="images" class="form-label" style="font-size: 14px;">گالری تصاویر</label>
                         <div id="galleryDropZone" class="border rounded p-3" style="border: 2px dashed #ddd; background: #f8f9fa;">
                             <input type="file" name="images[]" id="images" class="form-control" 
-                                   accept="image/*" multiple style="font-size: 14px; border: none; background: transparent;">
+                                   accept="image/*,.heic,.heif" multiple style="font-size: 14px; border: none; background: transparent;">
                             <div class="text-center mt-2">
                                 <i class="bi bi-cloud-upload fs-1 text-muted"></i>
                                 <p class="text-muted mb-0" style="font-size: 12px;">برای انتخاب چندین تصویر کلیک کنید</p>
@@ -510,6 +511,7 @@
 <!-- Leaflet.js -->
 <link rel="stylesheet" href="{{ asset('vendor/leaflet/dist/leaflet.css') }}" />
 <script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
 <style>
 .step-item {
@@ -753,6 +755,84 @@ const initialDraftStep = Math.min(Math.max({{ (int) ($home->draft_step ?? 1) }},
 
 let currentStep = 1;
 const totalSteps = 11;
+const hasExistingCover = @json((bool) $home->cover);
+const hasExistingDocuments = @json($home->documents()->exists() || (bool) $home->document);
+const savedCityId = @json($home->city_id);
+const citiesByProvince = {};
+let citiesFetchController = null;
+let draftSaveInFlight = false;
+
+const STEP_LABELS = {
+    1: 'اطلاعات',
+    2: 'تصاویر',
+    3: 'اتاق',
+    4: 'مکان',
+    5: 'قیمت',
+    6: 'تخفیف',
+    7: 'امکانات',
+    8: 'ایمنی',
+    9: 'بهداشت',
+    10: 'قوانین',
+    11: 'مدارک',
+};
+
+function showStepValidationMessage(message) {
+    let box = document.getElementById('stepValidationAlert');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'stepValidationAlert';
+        box.className = 'alert alert-warning mt-3';
+        box.style.fontSize = '14px';
+        const form = document.getElementById('createHomeForm');
+        form.parentNode.insertBefore(box, form);
+    }
+    box.textContent = message;
+    box.style.display = 'block';
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function clearStepValidationMessage() {
+    const box = document.getElementById('stepValidationAlert');
+    if (box) {
+        box.style.display = 'none';
+        box.textContent = '';
+    }
+}
+
+function initStepRequiredMarkers() {
+    document.querySelectorAll('.step-content [required]').forEach(function (el) {
+        el.dataset.stepRequired = '1';
+        el.removeAttribute('required');
+    });
+}
+
+function syncStepRequiredAttributes() {
+    document.querySelectorAll('.step-content').forEach(function (pane) {
+        const isActive = pane.classList.contains('active');
+        pane.querySelectorAll('[data-step-required="1"]').forEach(function (el) {
+            if (isActive) {
+                el.setAttribute('required', '');
+            } else {
+                el.removeAttribute('required');
+            }
+        });
+    });
+}
+
+function setNextButtonLoading(loading) {
+    const btn = document.getElementById('nextBtn');
+    if (!btn) {
+        return;
+    }
+    btn.disabled = loading;
+    if (loading) {
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>در حال ذخیره…';
+    } else if (btn.dataset.originalHtml) {
+        btn.innerHTML = btn.dataset.originalHtml;
+        delete btn.dataset.originalHtml;
+    }
+}
 
 async function persistDraftStep(step) {
     const tokenMeta = document.querySelector('meta[name="csrf-token"]');
@@ -836,21 +916,34 @@ async function persistDraftStep(step) {
 
 // Step navigation
 document.getElementById('nextBtn').addEventListener('click', async function () {
-    if (!validateCurrentStep()) {
+    if (!validateStep(currentStep)) {
         return;
     }
     if (currentStep >= totalSteps) {
         return;
     }
-    const ok = await persistDraftStep(currentStep);
-    if (!ok) {
-        return;
+
+    const stepToSave = currentStep;
+    const nextStep = currentStep + 1;
+    clearStepValidationMessage();
+    showStep(nextStep);
+
+    setNextButtonLoading(true);
+    draftSaveInFlight = true;
+    try {
+        const ok = await persistDraftStep(stepToSave);
+        if (!ok) {
+            showStep(stepToSave);
+        }
+    } finally {
+        draftSaveInFlight = false;
+        setNextButtonLoading(false);
     }
-    showStep(currentStep + 1);
 });
 
 document.getElementById('prevBtn').addEventListener('click', function() {
     if (currentStep > 1) {
+        clearStepValidationMessage();
         showStep(currentStep - 1);
     }
 });
@@ -876,8 +969,20 @@ function showStep(step) {
     document.getElementById('submitBtn').style.display = step === totalSteps ? 'block' : 'none';
     
     currentStep = step;
+    syncStepRequiredAttributes();
+
+    const activePill = document.querySelector('.step-pill.active');
+    if (activePill) {
+        activePill.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
 
     if (step === 4) {
+        const provinceId = document.getElementById('province_id').value;
+        const citySelect = document.getElementById('city_id');
+        if (provinceId && citySelect && (citySelect.options.length <= 1 || citySelect.disabled)) {
+            loadCitiesForProvince(provinceId, citySelect.value || savedCityId);
+        }
+
         const lat = parseFloat(document.getElementById('latitude').value);
         const lng = parseFloat(document.getElementById('longitude').value);
         if (!isNaN(lat) && !isNaN(lng)) {
@@ -896,103 +1001,286 @@ function showStep(step) {
     }
 }
 
-function validateCurrentStep() {
-    const currentStepElement = document.getElementById(`step${currentStep}`);
-    const requiredFields = currentStepElement.querySelectorAll('[required]');
-    
-    for (let field of requiredFields) {
-        if (!field.value.trim()) {
-            field.classList.add('is-invalid');
-            field.focus();
+function getFieldLabel(field) {
+    const label = field.id
+        ? document.querySelector('label[for="' + field.id + '"]')
+        : null;
+    if (!label) {
+        return 'این فیلد';
+    }
+    return label.textContent.replace(/\*/g, '').trim();
+}
+
+function isFieldValueMissing(field) {
+    if (!field || field.disabled) {
+        return true;
+    }
+    if (field.type === 'file') {
+        return !field.files || !field.files.length;
+    }
+    if (field.type === 'checkbox' || field.type === 'radio') {
+        return !field.checked;
+    }
+    return !String(field.value || '').trim();
+}
+
+function validateStep(step) {
+    const root = document.getElementById('step' + step);
+    if (!root) {
+        return true;
+    }
+
+    root.querySelectorAll('.is-invalid').forEach(function (el) {
+        el.classList.remove('is-invalid');
+    });
+
+    if (step === 2 && !hasExistingCover) {
+        const coverInput = document.getElementById('cover');
+        if (coverInput && isFieldValueMissing(coverInput)) {
+            coverInput.classList.add('is-invalid');
+            showStepValidationMessage('لطفاً تصویر اصلی اقامتگاه را در مرحله «تصاویر» انتخاب کنید.');
+            coverInput.focus();
             return false;
-        } else {
-            field.classList.remove('is-invalid');
         }
     }
-    
+
+    if (step === 4) {
+        const citySelect = document.getElementById('city_id');
+        if (citySelect && citySelect.disabled) {
+            showStepValidationMessage('لیست شهرها در حال بارگذاری است. چند لحظه صبر کنید یا استان را دوباره انتخاب کنید.');
+            return false;
+        }
+    }
+
+    if (step === 11 && !hasExistingDocuments) {
+        const documentInput = document.getElementById('document');
+        if (documentInput && isFieldValueMissing(documentInput)) {
+            documentInput.classList.add('is-invalid');
+            showStepValidationMessage('لطفاً فایل مدرک مالکیت را بارگذاری کنید.');
+            documentInput.focus();
+            return false;
+        }
+    }
+
+    const requiredFields = root.querySelectorAll('[data-step-required="1"]');
+    for (let field of requiredFields) {
+        if (isFieldValueMissing(field)) {
+            field.classList.add('is-invalid');
+            field.focus();
+            const stepLabel = STEP_LABELS[step] || ('مرحله ' + step);
+            showStepValidationMessage('فیلد «' + getFieldLabel(field) + '» در مرحله «' + stepLabel + '» الزامی است.');
+            return false;
+        }
+    }
+
+    if (step === 5) {
+        const weekPrice = document.getElementById('week_price');
+        const priceValue = parsePriceFieldValue(weekPrice);
+        if (!priceValue || priceValue < 1000) {
+            if (weekPrice) {
+                weekPrice.classList.add('is-invalid');
+                weekPrice.focus();
+            }
+            showStepValidationMessage('قیمت اول هفته باید حداقل ۱٬۰۰۰ تومان باشد.');
+            return false;
+        }
+    }
+
+    clearStepValidationMessage();
     return true;
 }
 
+function validateCurrentStep() {
+    return validateStep(currentStep);
+}
+
 function validateAllSteps() {
-    // Check required fields from all steps
-    const requiredFields = [
-        'name', 'description', 'type', 'main_guest',
-        'province_id', 'city_id', 'address',
-        'week_price'
-    ];
-    
-    let isValid = true;
-    
-    for (let fieldId of requiredFields) {
-        const field = document.getElementById(fieldId);
-        if (field && !field.value.trim()) {
-            field.classList.add('is-invalid');
-            isValid = false;
-        } else if (field) {
-            field.classList.remove('is-invalid');
+    for (let step = 1; step <= totalSteps; step++) {
+        if (!validateStep(step)) {
+            showStep(step);
+            return false;
         }
     }
-    
-    const documentField = document.getElementById('document');
-    if (documentField && documentField.required && (!documentField.files || !documentField.files.length)) {
-        documentField.classList.add('is-invalid');
-        isValid = false;
-    } else if (documentField) {
-        documentField.classList.remove('is-invalid');
+    return true;
+}
+
+function canNavigateToStep(targetStep) {
+    if (targetStep <= currentStep) {
+        return true;
+    }
+    for (let step = currentStep; step < targetStep; step++) {
+        if (!validateStep(step)) {
+            showStep(step);
+            return false;
+        }
+    }
+    return true;
+}
+
+function loadCitiesForProvince(provinceId, selectedCityId) {
+    const citySelect = document.getElementById('city_id');
+    if (!citySelect) {
+        return Promise.resolve();
     }
 
-    if (!isValid) {
-        alert('لطفاً تمام فیلدهای اجباری را پر کنید');
+    if (!provinceId) {
+        citySelect.innerHTML = '<option value="">ابتدا استان را انتخاب کنید</option>';
+        citySelect.disabled = false;
+        return Promise.resolve();
     }
-    
-    return isValid;
+
+    if (citiesByProvince[provinceId]) {
+        renderCityOptions(citySelect, citiesByProvince[provinceId], selectedCityId);
+        return Promise.resolve();
+    }
+
+    if (citiesFetchController) {
+        citiesFetchController.abort();
+    }
+    citiesFetchController = new AbortController();
+    const timeoutId = setTimeout(function () {
+        citiesFetchController.abort();
+    }, 15000);
+
+    citySelect.disabled = true;
+    citySelect.innerHTML = '<option value="">در حال بارگذاری...</option>';
+
+    return fetch('/api/cities/' + encodeURIComponent(provinceId), {
+        signal: citiesFetchController.signal,
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        credentials: 'same-origin',
+    })
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+        })
+        .then(function (cities) {
+            if (!Array.isArray(cities)) {
+                throw new Error('invalid response');
+            }
+            citiesByProvince[provinceId] = cities;
+            renderCityOptions(citySelect, cities, selectedCityId);
+        })
+        .catch(function (error) {
+            if (error && error.name === 'AbortError') {
+                citySelect.innerHTML = '<option value="">بارگذاری طولانی شد — دوباره استان را انتخاب کنید</option>';
+            } else {
+                citySelect.innerHTML = '<option value="">خطا در بارگذاری شهرها</option>';
+            }
+        })
+        .finally(function () {
+            clearTimeout(timeoutId);
+            citySelect.disabled = false;
+            citiesFetchController = null;
+        });
+}
+
+function renderCityOptions(citySelect, cities, selectedCityId) {
+    citySelect.innerHTML = '<option value="">انتخاب شهر</option>';
+    cities.forEach(function (city) {
+        const option = document.createElement('option');
+        option.value = city.id;
+        option.textContent = city.name;
+        if (selectedCityId && String(city.id) === String(selectedCityId)) {
+            option.selected = true;
+        }
+        citySelect.appendChild(option);
+    });
+    citySelect.disabled = false;
 }
 
 // Province change handler
 document.getElementById('province_id').addEventListener('change', function() {
     const provinceId = this.value;
     const citySelect = document.getElementById('city_id');
-    
-    citySelect.innerHTML = '<option value="">در حال بارگذاری...</option>';
-    
-    if (provinceId) {
-        fetch(`/api/cities/${provinceId}`)
-            .then(response => response.json())
-            .then(cities => {
-                citySelect.innerHTML = '<option value="">انتخاب شهر</option>';
-                cities.forEach(city => {
-                    const option = document.createElement('option');
-                    option.value = city.id;
-                    option.textContent = city.name;
-                    citySelect.appendChild(option);
-                });
-            })
-            .catch(() => {
-                citySelect.innerHTML = '<option value="">خطا در بارگذاری</option>';
-            });
-    } else {
-        citySelect.innerHTML = '<option value="">ابتدا استان را انتخاب کنید</option>';
-    }
+    citySelect.value = '';
+    loadCitiesForProvince(provinceId, null);
 });
 
 // Image preview + client-side compression before upload
-let selectedFiles = [];
+let selectedGalleryItems = [];
 let imageCompressBusy = 0;
 
 const IMAGE_COMPRESS = {
-    maxEdge: 1920,
+    maxEdge: 1280,
     quality: 0.82,
     skipBelowBytes: 350 * 1024,
+    heicQuality: 0.88,
 };
+
+function canvasSupportsWebp() {
+    try {
+        const canvas = document.createElement('canvas');
+        return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    } catch (e) {
+        return false;
+    }
+}
+
+function getOutputImageFormat() {
+    if (canvasSupportsWebp()) {
+        return { mime: 'image/webp', ext: 'webp' };
+    }
+    return { mime: 'image/jpeg', ext: 'jpg' };
+}
 
 function isRasterImageFile(file) {
     if (!file) {
         return false;
     }
-    if ((file.type || '').startsWith('image/')) {
+    const type = (file.type || '').toLowerCase();
+    const name = (file.name || '').toLowerCase();
+    if (type.startsWith('image/')) {
         return true;
     }
-    return /\.(jpe?g|png|gif|webp|bmp)$/i.test(file.name || '');
+    return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(name);
+}
+
+function isHeicFile(file) {
+    if (!file) {
+        return false;
+    }
+    const type = (file.type || '').toLowerCase();
+    const name = (file.name || '').toLowerCase();
+    return /heic|heif/.test(type) || /\.heic$|\.heif$/.test(name);
+}
+
+function getFileExtensionLabel(file) {
+    const name = (file && file.name) ? file.name : '';
+    const ext = name.split('.').pop();
+    return ext ? ext.toUpperCase() : 'تصویر';
+}
+
+function buildImageMeta(originalFile, processedFile) {
+    const originalExt = getFileExtensionLabel(originalFile);
+    const processedExt = getFileExtensionLabel(processedFile);
+    const formatChanged = originalExt !== processedExt;
+
+    return {
+        originalName: originalFile.name || 'image',
+        processedName: processedFile.name || originalFile.name || 'image.jpg',
+        originalSize: originalFile.size || 0,
+        processedSize: processedFile.size || 0,
+        formatLabel: formatChanged ? (originalExt + ' → ' + processedExt) : processedExt,
+        optimized: (processedFile.size || 0) < (originalFile.size || 0),
+    };
+}
+
+function formatImageMetaLine(meta) {
+    const lines = [];
+    lines.push(meta.processedName);
+    if (meta.optimized && meta.originalSize > meta.processedSize) {
+        lines.push(formatFileSize(meta.originalSize) + ' → ' + formatFileSize(meta.processedSize) + ' (بهینه‌شده)');
+    } else {
+        lines.push(formatFileSize(meta.processedSize));
+    }
+    lines.push('فرمت: ' + meta.formatLabel);
+    return lines.join(' · ');
 }
 
 function shouldSkipClientCompress(file) {
@@ -1004,9 +1292,6 @@ function shouldSkipClientCompress(file) {
     }
     const type = (file.type || '').toLowerCase();
     const name = (file.name || '').toLowerCase();
-    if (/heic|heif/.test(type) || /\.heic$|\.heif$/.test(name)) {
-        return true;
-    }
     if (type === 'image/gif' || /\.gif$/i.test(name)) {
         return true;
     }
@@ -1028,9 +1313,9 @@ function setFileInputFromFile(input, file) {
 
 function formatFileSize(bytes) {
     if (bytes >= 1024 * 1024) {
-        return (bytes / 1024 / 1024).toFixed(1) + 'MB';
+        return (bytes / 1024 / 1024).toFixed(1) + ' MB';
     }
-    return Math.max(1, Math.round(bytes / 1024)) + 'KB';
+    return Math.max(1, Math.round(bytes / 1024)) + ' KB';
 }
 
 function setImageCompressStatus(message) {
@@ -1047,9 +1332,9 @@ function setImageCompressStatus(message) {
     }
 }
 
-function beginImageCompress() {
+function beginImageCompress(message) {
     imageCompressBusy += 1;
-    setImageCompressStatus('در حال بهینه‌سازی تصاویر…');
+    setImageCompressStatus(message || 'در حال بهینه‌سازی تصاویر…');
 }
 
 function endImageCompress() {
@@ -1057,6 +1342,33 @@ function endImageCompress() {
     if (imageCompressBusy === 0) {
         setImageCompressStatus('');
     }
+}
+
+async function convertHeicToJpeg(file) {
+    if (!isHeicFile(file)) {
+        return file;
+    }
+
+    if (typeof heic2any !== 'function') {
+        throw new Error('heic2any unavailable');
+    }
+
+    const result = await heic2any({
+        blob: file,
+        toType: 'image/jpeg',
+        quality: IMAGE_COMPRESS.heicQuality,
+    });
+
+    const blob = Array.isArray(result) ? result[0] : result;
+    if (!blob) {
+        throw new Error('heic conversion empty');
+    }
+
+    const baseName = (file.name || 'image').replace(/\.[^.]+$/i, '');
+    return new File([blob], baseName + '.jpg', {
+        type: 'image/jpeg',
+        lastModified: Date.now(),
+    });
 }
 
 function compressImageFile(file) {
@@ -1099,17 +1411,18 @@ function compressImageFile(file) {
             }
             ctx.drawImage(img, 0, 0, w, h);
 
+            const output = getOutputImageFormat();
             canvas.toBlob(function (blob) {
                 if (!blob || blob.size >= file.size * 0.95) {
                     resolve(file);
                     return;
                 }
-                const baseName = (file.name || 'image').replace(/\.[^.]+$/, '');
-                resolve(new File([blob], baseName + '.jpg', {
-                    type: 'image/jpeg',
+                const baseName = (file.name || 'image').replace(/\.[^.]+$/i, '');
+                resolve(new File([blob], baseName + '.' + output.ext, {
+                    type: output.mime,
                     lastModified: Date.now(),
                 }));
-            }, 'image/jpeg', IMAGE_COMPRESS.quality);
+            }, output.mime, IMAGE_COMPRESS.quality);
         };
 
         img.onerror = function () {
@@ -1121,48 +1434,104 @@ function compressImageFile(file) {
     });
 }
 
-async function compressImageFileWithUi(file) {
-    beginImageCompress();
+async function prepareImageFile(file) {
+    const originalFile = file;
+    let working = file;
+
+    if (isHeicFile(file)) {
+        beginImageCompress('در حال تبدیل HEIC…');
+        try {
+            working = await convertHeicToJpeg(file);
+        } finally {
+            endImageCompress();
+        }
+    }
+
+    beginImageCompress('در حال بهینه‌سازی و تبدیل به WebP…');
+    let processed;
     try {
-        return await compressImageFile(file);
+        processed = await compressImageFile(working);
     } finally {
         endImageCompress();
     }
+
+    return {
+        file: processed,
+        meta: buildImageMeta(originalFile, processed),
+    };
 }
 
-function showCoverPreview(file) {
+function showCoverPreview(item) {
     const wrap = document.getElementById('coverNewPreviewWrap');
     const img = document.getElementById('coverNewPreview');
-    if (!file || !wrap || !img) {
+    const metaEl = document.getElementById('coverNewPreviewMeta');
+    if (!item || !item.file || !wrap || !img) {
         return;
     }
+
     const reader = new FileReader();
     reader.onload = function (ev) {
         img.src = ev.target.result;
         wrap.style.display = 'block';
+        if (metaEl) {
+            metaEl.textContent = formatImageMetaLine(item.meta);
+        }
     };
-    reader.readAsDataURL(file);
+    reader.onerror = function () {
+        wrap.style.display = 'block';
+        img.removeAttribute('src');
+        if (metaEl) {
+            metaEl.textContent = formatImageMetaLine(item.meta) + ' · پیش‌نمایش تصویری در این مرورگر ممکن نبود';
+        }
+    };
+    reader.readAsDataURL(item.file);
 }
 
 document.getElementById('cover').addEventListener('change', async function (e) {
     const input = e.target;
     const wrap = document.getElementById('coverNewPreviewWrap');
     const img = document.getElementById('coverNewPreview');
+    const metaEl = document.getElementById('coverNewPreviewMeta');
     const file = input.files && input.files[0];
 
-    if (!file || !isRasterImageFile(file)) {
+    if (!file) {
         wrap.style.display = 'none';
         if (img) {
             img.removeAttribute('src');
         }
+        if (metaEl) {
+            metaEl.textContent = '';
+        }
         return;
     }
 
-    const processed = await compressImageFileWithUi(file);
-    if (processed !== file) {
-        setFileInputFromFile(input, processed);
+    if (!isRasterImageFile(file)) {
+        wrap.style.display = 'none';
+        if (img) {
+            img.removeAttribute('src');
+        }
+        showStepValidationMessage('فقط فایل تصویری مجاز است (JPG، PNG، WebP یا HEIC).');
+        return;
     }
-    showCoverPreview(processed);
+
+    clearStepValidationMessage();
+
+    try {
+        const item = await prepareImageFile(file);
+        if (item.file !== file) {
+            setFileInputFromFile(input, item.file);
+        }
+        showCoverPreview(item);
+    } catch (err) {
+        console.warn('cover prepare failed', err);
+        wrap.style.display = 'block';
+        if (metaEl) {
+            metaEl.textContent = file.name + ' · ' + formatFileSize(file.size) + ' · تبدیل HEIC انجام نشد؛ فایل خام انتخاب شد';
+        }
+        if (img) {
+            img.removeAttribute('src');
+        }
+    }
 });
 
 async function addGalleryFiles(files) {
@@ -1170,12 +1539,29 @@ async function addGalleryFiles(files) {
         return isRasterImageFile(file);
     });
 
+    if (incoming.length === 0 && files.length > 0) {
+        showStepValidationMessage('فقط فایل تصویری مجاز است (JPG، PNG، WebP یا HEIC).');
+        return;
+    }
+
+    clearStepValidationMessage();
+
     for (let i = 0; i < incoming.length; i++) {
-        if (selectedFiles.length >= 10) {
+        if (selectedGalleryItems.length >= 10) {
+            showStepValidationMessage('حداکثر ۱۰ تصویر در گالری مجاز است.');
             break;
         }
-        const processed = await compressImageFileWithUi(incoming[i]);
-        selectedFiles.push(processed);
+
+        try {
+            const item = await prepareImageFile(incoming[i]);
+            selectedGalleryItems.push(item);
+        } catch (err) {
+            console.warn('gallery prepare failed', err);
+            selectedGalleryItems.push({
+                file: incoming[i],
+                meta: buildImageMeta(incoming[i], incoming[i]),
+            });
+        }
     }
 
     updateInputFiles();
@@ -1187,14 +1573,15 @@ document.getElementById('images').addEventListener('change', async function (e) 
         return;
     }
     await addGalleryFiles(e.target.files);
+    e.target.value = '';
 });
 
 function updateInputFiles() {
     const input = document.getElementById('images');
     const dt = new DataTransfer();
 
-    selectedFiles.forEach(file => {
-        dt.items.add(file);
+    selectedGalleryItems.forEach(function (item) {
+        dt.items.add(item.file);
     });
 
     try {
@@ -1204,34 +1591,52 @@ function updateInputFiles() {
     }
 }
 
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+}
+
 function updateImagePreview() {
     const preview = document.getElementById('imagePreview');
     preview.innerHTML = '';
-    
-    selectedFiles.forEach((file, index) => {
+
+    selectedGalleryItems.forEach(function (item, index) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const div = document.createElement('div');
             div.className = 'col-6 col-md-4';
-            div.innerHTML = `
-                <div class="image-preview">
-                    <img src="${e.target.result}" alt="Preview ${index + 1}">
-                    <button type="button" class="remove-image" onclick="removeImage(${index})">
-                        <i class="bi bi-x"></i>
-                    </button>
-                    <div class="image-info">
-                        <small class="text-muted">${formatFileSize(file.size)}</small>
-                    </div>
-                </div>
-            `;
+            div.innerHTML =
+                '<div class="image-preview">' +
+                    '<img src="' + e.target.result + '" alt="Preview ' + (index + 1) + '">' +
+                    '<button type="button" class="remove-image" onclick="removeImage(' + index + ')">' +
+                        '<i class="bi bi-x"></i>' +
+                    '</button>' +
+                    '<div class="image-info">' +
+                        '<small style="font-size: 10px; line-height: 1.4;">' + escapeHtml(formatImageMetaLine(item.meta)) + '</small>' +
+                    '</div>' +
+                '</div>';
             preview.appendChild(div);
         };
-        reader.readAsDataURL(file);
+        reader.onerror = function () {
+            const div = document.createElement('div');
+            div.className = 'col-6 col-md-4';
+            div.innerHTML =
+                '<div class="image-preview" style="min-height: 100px; display:flex; align-items:center; justify-content:center; padding: 8px;">' +
+                    '<small class="text-muted text-center" style="font-size: 10px; line-height: 1.4;">' + escapeHtml(formatImageMetaLine(item.meta)) + '</small>' +
+                    '<button type="button" class="remove-image" onclick="removeImage(' + index + ')">' +
+                        '<i class="bi bi-x"></i>' +
+                    '</button>' +
+                '</div>';
+            preview.appendChild(div);
+        };
+        reader.readAsDataURL(item.file);
     });
 }
 
 function removeImage(index) {
-    selectedFiles.splice(index, 1);
+    selectedGalleryItems.splice(index, 1);
     updateInputFiles();
     updateImagePreview();
 }
@@ -1268,31 +1673,32 @@ dropZone.addEventListener('drop', async function (e) {
 
 // Form submission
 document.getElementById('createHomeForm').addEventListener('submit', async function(e) {
-    const requiredFields = ['name', 'description', 'type', 'main_guest', 'province_id', 'city_id', 'address', 'week_price'];
-    let isValid = true;
-
-    for (let fieldId of requiredFields) {
-        const field = document.getElementById(fieldId);
-        if (field && !field.value.trim()) {
-            field.classList.add('is-invalid');
-            isValid = false;
-        } else if (field) {
-            field.classList.remove('is-invalid');
-        }
+    if (!validateAllSteps()) {
+        e.preventDefault();
+        return;
     }
 
-    if (!isValid) {
-        e.preventDefault();
-        alert('لطفاً تمام فیلدهای اجباری را پر کنید');
-        return;
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
     }
 
     const docInput = document.getElementById('document');
     if (docInput && docInput.files && docInput.files.length && typeof window.prepareCompressedDocumentInput === 'function') {
         e.preventDefault();
-        await window.prepareCompressedDocumentInput('document');
-        e.target.submit();
+        try {
+            await window.prepareCompressedDocumentInput('document');
+            e.target.submit();
+        } catch (err) {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+            }
+            showStepValidationMessage('خطا در آماده‌سازی فایل مدرک. دوباره تلاش کنید.');
+        }
+        return;
     }
+
+    clearStepValidationMessage();
 });
 
 // Initialize (ادامه از همان مرحلهٔ ذخیره‌شده)
@@ -1307,15 +1713,41 @@ document.querySelectorAll('.safety-toggle').forEach(function (toggle) {
 });
 
 document.querySelectorAll('.step-pill').forEach(function (pill) {
-    pill.addEventListener('click', function () {
+    pill.addEventListener('click', async function () {
         const step = parseInt(this.dataset.step, 10);
-        if (!isNaN(step)) {
+        if (isNaN(step) || step === currentStep) {
+            return;
+        }
+
+        if (step < currentStep) {
+            clearStepValidationMessage();
             showStep(step);
+            return;
+        }
+
+        if (!canNavigateToStep(step)) {
+            return;
+        }
+
+        clearStepValidationMessage();
+        const fromStep = currentStep;
+        showStep(step);
+
+        if (!draftSaveInFlight) {
+            for (let s = fromStep; s < step; s++) {
+                await persistDraftStep(s);
+            }
         }
     });
 });
 
+initStepRequiredMarkers();
 showStep(initialDraftStep);
+
+const initialProvinceId = document.getElementById('province_id').value;
+if (initialProvinceId) {
+    loadCitiesForProvince(initialProvinceId, savedCityId);
+}
 
 // مبلغ به حروف فارسی زیر فیلدهای قیمت
 const PRICE_WORD_ONES = ['', 'یک', 'دو', 'سه', 'چهار', 'پنج', 'شش', 'هفت', 'هشت', 'نه'];
@@ -1572,7 +2004,7 @@ function updateLocationDisplay(lat, lng) {
         wrap.style.display = 'block';
     }
 
-    if (currentStep === 2) {
+    if (currentStep === 4) {
         renderLocationPreviewMap(lat, lng);
     }
 

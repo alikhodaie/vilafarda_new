@@ -126,7 +126,7 @@ class StoreRequest extends FormRequest
             'off' => ['nullable', 'numeric', 'min:0', 'max:50'],
             'daily_off' => ['nullable', 'numeric', 'min:0', 'max:90'],
             'daily_off_amount' => ['nullable', Rule::in(array_keys(Home::DAILY_OFF_AMOUNTS))],
-            'reject_policy' => ['nullable', Rule::in(array_keys(Home::REJECT_POLICIES))],
+            'reject_policy' => ['required', Rule::in(array_keys(Home::REJECT_POLICIES))],
             'rules' => ['nullable', 'string', 'max:500'],
             'more_health' => ['nullable', 'string', 'max:250'],
             'more_safety' => ['nullable', 'string', 'max:250'],

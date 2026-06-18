@@ -22,8 +22,8 @@
     </h5>
 
     <div class="mb-3">
-        <label for="reject_policy" class="form-label-mobile">سیاست لغو رزرو</label>
-        <select name="reject_policy" id="reject_policy" class="form-select form-control-mobile">
+        <label for="reject_policy" class="form-label-mobile">سیاست لغو رزرو <span class="text-danger">*</span></label>
+        <select name="reject_policy" id="reject_policy" class="form-select form-control-mobile" required>
             <option value="">انتخاب کنید</option>
             @foreach(Home::REJECT_POLICIES as $policy)
                 <option value="{{ $policy['value'] }}"

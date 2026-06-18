@@ -132,7 +132,7 @@ class SaveMobileDraftRequest extends FormRequest
             case 10:
                 return [
                     'step' => ['required', 'integer', 'in:10'],
-                    'reject_policy' => ['nullable', Rule::in(array_keys(Home::REJECT_POLICIES))],
+                    'reject_policy' => ['required', Rule::in(array_keys(Home::REJECT_POLICIES))],
                     'rules' => ['nullable', 'string', 'max:500'],
                 ];
             case 11:
