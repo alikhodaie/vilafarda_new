@@ -23,8 +23,26 @@ class ReprocessFavicon extends Command
             return self::FAILURE;
         }
 
-        Setting::deleteFaviconVariants($stored);
-        $newFilename = FaviconProcessor::processFromPath($sourcePath);
+        $tempPath = sys_get_temp_dir().'/favicon-reprocess-'.basename($sourcePath);
+        if (! copy($sourcePath, $tempPath)) {
+            $this->error('کپی موقت فایل منبع ممکن نشد: '.$sourcePath);
+
+            return self::FAILURE;
+        }
+
+        try {
+            $newFilename = FaviconProcessor::processFromPath($tempPath);
+        } catch (\Throwable $e) {
+            $this->error('پردازش favicon شکست خورد: '.$e->getMessage());
+
+            return self::FAILURE;
+        } finally {
+            @unlink($tempPath);
+        }
+
+        if ($newFilename !== $stored) {
+            Setting::deleteFaviconVariants($stored);
+        }
 
         Setting::query()->updateOrCreate(
             ['key' => 'app:favicon'],
