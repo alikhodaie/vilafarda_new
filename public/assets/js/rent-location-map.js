@@ -3,8 +3,12 @@
 
     var HOME_MARKER_HTML = '<div style="background: #1a1a1a; width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><i class="bi bi-house-fill" style="color: white; font-size: 14px;"></i></div>';
 
+    function mapL() {
+        return window.MapUtils ? window.MapUtils.neshanLeaflet() : window.L;
+    }
+
     function createHomeMarkerIcon() {
-        return L.divIcon({
+        return mapL().divIcon({
             className: 'custom-home-marker',
             html: HOME_MARKER_HTML,
             iconSize: [28, 28],
@@ -14,7 +18,7 @@
 
     function initRentLocationMap() {
         var mapEl = document.getElementById('rentLocationMap');
-        if (!mapEl || typeof L === 'undefined') {
+        if (!mapEl || typeof window.L === 'undefined' || typeof MapUtils === 'undefined') {
             return;
         }
 
@@ -32,28 +36,23 @@
         var isPrecise = card.dataset.locationMode === 'precise';
         var radius = 750;
 
-        var map = L.map(mapEl, {
-            zoomControl: true,
-            attributionControl: true,
+        var map = MapUtils.createMap(mapEl, {
+            center: [lat, lng],
+            zoom: isPrecise ? 16 : 14,
             scrollWheelZoom: false,
         });
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        }).addTo(map);
 
         var fitView;
 
         if (isPrecise) {
-            L.marker([lat, lng], { icon: createHomeMarkerIcon() }).addTo(map);
+            mapL().marker([lat, lng], { icon: createHomeMarkerIcon() }).addTo(map);
 
             fitView = function () {
                 map.invalidateSize({ pan: false });
                 map.setView([lat, lng], 16);
             };
         } else {
-            L.circle([lat, lng], {
+            mapL().circle([lat, lng], {
                 radius: radius,
                 color: '#D39D1A',
                 fillColor: '#D39D1A',
@@ -63,7 +62,7 @@
 
             fitView = function () {
                 map.invalidateSize({ pan: false });
-                var bounds = L.circle([lat, lng], { radius: radius }).getBounds();
+                var bounds = mapL().circle([lat, lng], { radius: radius }).getBounds();
                 map.fitBounds(bounds, { padding: [24, 24], maxZoom: 14 });
             };
         }

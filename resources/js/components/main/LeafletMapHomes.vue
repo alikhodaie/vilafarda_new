@@ -1,6 +1,15 @@
 <template>
-    <l-map ref="map" style="height: 100%" :zoom.sync="zoom" :center.sync="coordinates" @update:zoom="zoomUpdated" @update:center="centerUpdated">
-        <l-tile-layer :url="'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'" :attribution="attribution"></l-tile-layer>
+    <div v-if="useNeshanSdk" :id="mapElementId" ref="neshanMapContainer" style="height: 100%"></div>
+    <l-map
+        v-else
+        ref="map"
+        style="height: 100%"
+        :zoom.sync="zoom"
+        :center.sync="coordinates"
+        @update:zoom="zoomUpdated"
+        @update:center="centerUpdated"
+    >
+        <l-tile-layer :url="tileUrl" :attribution="attribution"></l-tile-layer>
         <template v-for="home in homes">
             <l-marker :lat-lng="[home.latitude, home.longitude]">
                 <l-popup>
@@ -53,24 +62,85 @@ export default {
             type: Number
         }
     },
+    computed: {
+        useNeshanSdk() {
+            return window.MapUtils && window.MapUtils.usesNeshanSdk();
+        },
+        tileUrl() {
+            return (window.mapConfig && window.mapConfig.tileUrl)
+                || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        },
+    },
     data() {
         return {
-            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
+            mapElementId: 'neshan-homes-map-' + Math.random().toString(36).slice(2),
+            neshanMap: null,
+            attribution: (window.mapConfig && window.mapConfig.attribution)
+                || '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
             zoom: 6,
             coordinates: [35.7050808, 51.4057646]
         }
     },
     created() {
-        if (this.latitude && this.longitude){
+        if (this.latitude && this.longitude) {
             this.coordinates = [this.latitude, this.longitude]
         }
     },
     mounted() {
-        setInterval(() => {
-            this.$refs.map.mapObject.invalidateSize();
-        }, 1000);
+        if (this.useNeshanSdk) {
+            this.initNeshanMap()
+        } else {
+            setInterval(() => {
+                if (this.$refs.map) {
+                    this.$refs.map.mapObject.invalidateSize();
+                }
+            }, 1000);
+        }
+    },
+    beforeDestroy() {
+        if (this.neshanMap) {
+            this.neshanMap.remove()
+            this.neshanMap = null
+        }
     },
     methods: {
+        initNeshanMap() {
+            this.neshanMap = window.MapUtils.createMap(this.mapElementId, {
+                center: this.coordinates,
+                zoom: this.zoom,
+            })
+
+            this.renderHomeMarkers()
+
+            setInterval(() => {
+                if (this.neshanMap) {
+                    this.neshanMap.invalidateSize()
+                }
+            }, 1000)
+        },
+        renderHomeMarkers() {
+            if (!this.neshanMap || !Array.isArray(this.homes)) {
+                return
+            }
+
+            this.homes.forEach((home) => {
+                if (!home.latitude || !home.longitude) {
+                    return
+                }
+
+                const NeshanL = window.MapUtils.neshanLeaflet();
+                const marker = NeshanL.marker([home.latitude, home.longitude]).addTo(this.neshanMap)
+                const popupHtml = `
+                    <div class="map-popup-wrap">
+                        <div class="map-popup">
+                            <strong>${home.name || ''}</strong><br>
+                            <a href="${home.link || '#'}">جزئیات</a>
+                        </div>
+                    </div>
+                `
+                marker.bindPopup(popupHtml)
+            })
+        },
         zoomUpdated(zoom) {
             this.zoom = zoom;
         },

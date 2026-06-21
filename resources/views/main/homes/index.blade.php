@@ -10,7 +10,6 @@
     <link href="{{ asset('assets/css/mobile-price-range.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/css/home-favorite.css') }}" rel="stylesheet">
     <link href="{{ public_asset_version('assets/css/homes-desktop.css') }}" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('vendor/leaflet/dist/leaflet.css') }}" />
 @endsection
 
 @section('content')
@@ -123,7 +122,6 @@
             mapDataUrl: @json(route('main.homes.map-data')),
         };
     </script>
-    <script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
     <script src="{{ asset('assets/js/guest-rating.js') }}"></script>
     <script src="{{ asset('assets/js/map-travel-jalali-calendar.js') }}"></script>
     <script src="{{ asset('assets/js/homes-mobile-search.js') }}"></script>

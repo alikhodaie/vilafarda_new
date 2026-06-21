@@ -1,9 +1,11 @@
 (function () {
     const config = window.homesDesktopMapConfig || {};
     const mapEl = document.getElementById('desktopHomesMap');
-    if (!mapEl || typeof L === 'undefined') {
+    if (!mapEl || typeof window.L === 'undefined' || typeof MapUtils === 'undefined') {
         return;
     }
+
+    const L = MapUtils.neshanLeaflet();
 
     const state = {
         map: null,
@@ -228,13 +230,11 @@
             return;
         }
 
-        state.map = L.map('desktopHomesMap', {
+        state.map = MapUtils.createMap('desktopHomesMap', {
+            center: [35.6892, 51.3890],
+            zoom: 6,
             zoomControl: false,
-        }).setView([35.6892, 51.3890], 6);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap',
-        }).addTo(state.map);
+        });
 
         state.map.on('click', hideMapPropertyPreview);
     }

@@ -532,8 +532,6 @@
 
 @section('scripts')
 <!-- Leaflet.js -->
-<link rel="stylesheet" href="{{ asset('vendor/leaflet/dist/leaflet.css') }}" />
-<script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
 <style>
@@ -2244,17 +2242,19 @@ let previewMarker = null;
 let selectedLat = null;
 let selectedLng = null;
 
+function mapL() {
+    return window.MapUtils ? window.MapUtils.neshanLeaflet() : window.L;
+}
+
 // Initialize map when modal is shown
 document.getElementById('mapSelectionModal').addEventListener('shown.bs.modal', function() {
     setTimeout(() => {
         if (!map) {
             // Initialize map centered on Iran
-            map = L.map('mapSelection').setView([32.4279, 53.6880], 6);
-            
-            // Add tile layer
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
+            map = MapUtils.createMap('mapSelection', {
+                center: [32.4279, 53.6880],
+                zoom: 6,
+            });
             
             // Add click event to map
             map.on('click', function(e) {
@@ -2267,7 +2267,7 @@ document.getElementById('mapSelectionModal').addEventListener('shown.bs.modal', 
                 }
                 
                 // Add new marker
-                marker = L.marker([lat, lng]).addTo(map);
+                marker = mapL().marker([lat, lng]).addTo(map);
                 
                 // Update selected coordinates
                 selectedLat = lat;
@@ -2288,7 +2288,7 @@ document.getElementById('mapSelectionModal').addEventListener('shown.bs.modal', 
                 const lng = parseFloat(existingLng);
                 
                 map.setView([lat, lng], 15);
-                marker = L.marker([lat, lng]).addTo(map);
+                marker = mapL().marker([lat, lng]).addTo(map);
                 selectedLat = lat;
                 selectedLng = lng;
                 updateLocationDisplay(lat, lng);
@@ -2325,20 +2325,17 @@ function renderLocationPreviewMap(lat, lng) {
     wrap.style.display = 'block';
 
     if (!previewMap) {
-        previewMap = L.map(container, {
-            zoomControl: true,
-            attributionControl: true
-        }).setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(previewMap);
-        previewMarker = L.marker([lat, lng]).addTo(previewMap);
+        previewMap = MapUtils.createMap(container, {
+            center: [lat, lng],
+            zoom: 15,
+        });
+        previewMarker = mapL().marker([lat, lng]).addTo(previewMap);
     } else {
         previewMap.setView([lat, lng], 15);
         if (previewMarker) {
             previewMarker.setLatLng([lat, lng]);
         } else {
-            previewMarker = L.marker([lat, lng]).addTo(previewMap);
+            previewMarker = mapL().marker([lat, lng]).addTo(previewMap);
         }
     }
 
@@ -2370,20 +2367,20 @@ function updateLocationDisplay(lat, lng) {
 
 // Reverse geocoding function (optional)
 function getAddressFromCoordinates(lat, lng) {
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=fa`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.display_name) {
-                const locationText = document.getElementById('locationText');
-                const lat = parseFloat(document.getElementById('latitude').value);
-                const lng = parseFloat(document.getElementById('longitude').value);
-                const coords = (!isNaN(lat) && !isNaN(lng))
-                    ? ('عرض: ' + lat.toFixed(6) + ' — طول: ' + lng.toFixed(6) + ' · ')
-                    : '';
-                locationText.textContent = coords + data.display_name;
+    MapUtils.reverseGeocode(lat, lng)
+        .then(function (address) {
+            if (!address) {
+                return;
             }
+            const locationText = document.getElementById('locationText');
+            const lat = parseFloat(document.getElementById('latitude').value);
+            const lng = parseFloat(document.getElementById('longitude').value);
+            const coords = (!isNaN(lat) && !isNaN(lng))
+                ? ('عرض: ' + lat.toFixed(6) + ' — طول: ' + lng.toFixed(6) + ' · ')
+                : '';
+            locationText.textContent = coords + address;
         })
-        .catch(error => {
+        .catch(function (error) {
             console.log('Error getting address:', error);
         });
 }

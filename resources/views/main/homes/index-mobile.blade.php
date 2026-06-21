@@ -1129,10 +1129,7 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
 @endsection
 
 @section('scripts')
-    <!-- Leaflet.js -->
-    <link rel="stylesheet" href="{{ asset('vendor/leaflet/dist/leaflet.css') }}" />
     <script src="{{ asset('assets/js/guest-rating.js') }}"></script>
-    <script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
     <script src="{{ asset('assets/js/map-travel-jalali-calendar.js') }}"></script>
     <script src="{{ asset('assets/js/homes-mobile-search.js') }}"></script>
     <script src="{{ asset('assets/js/mobile-price-range.js') }}"></script>
@@ -1166,6 +1163,8 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
             selectedHomeId: null,
             filters: initialMapSearch,
         };
+
+        const L = MapUtils.neshanLeaflet();
 
         const HOME_MARKER_HTML = `<div style="background: #1a1a1a; width: 28px; height: 28px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;"><i class="bi bi-house-fill" style="color: white; font-size: 14px;"></i></div>`;
 
@@ -1423,13 +1422,11 @@ body.map-filter-modal-open .modal-backdrop:last-of-type {
                 return;
             }
 
-            mapExplorerState.map = L.map('mapExplorerMap', {
+            mapExplorerState.map = MapUtils.createMap('mapExplorerMap', {
+                center: [35.6892, 51.3890],
+                zoom: 6,
                 zoomControl: false,
-            }).setView([35.6892, 51.3890], 6);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap',
-            }).addTo(mapExplorerState.map);
+            });
 
             mapExplorerState.map.on('click', hideMapPropertyPreview);
         }

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\SliderController;
 use App\Http\Controllers\Api\ConsultantController;
 use App\Http\Controllers\Api\ArticleController;
 use App\Http\Controllers\Api\LocationController;
+use App\Http\Controllers\Api\MapGeocodeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +49,8 @@ Route::get('/province', [HomeController::class, 'province']);
 // Location routes (برای فرم‌های ویرایش ملک در موبایل: ابتدا استان، سپن شهر)
 Route::get('/locations/provinces', [LocationController::class, 'provinces']);
 Route::get('/cities/{province}', [LocationController::class, 'cities']);
+
+Route::get('/map/reverse', [MapGeocodeController::class, 'reverse']);
 
 
 //comment

@@ -1,8 +1,23 @@
 <template>
     <div :style="`height: ${height}px`">
-        <l-map ref="map" :style="`height: ${height}px`" :zoom.sync="data_zoom" :center.sync="map_coordinates" @click="mapClicked"
-               @ready="onReady" @update:zoom="zoomUpdated" @update:center="centerUpdated">
-            <l-tile-layer :url="'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'" :attribution="attribution"></l-tile-layer>
+        <div
+            v-if="useNeshanSdk"
+            :id="mapElementId"
+            ref="neshanMapContainer"
+            :style="`height: ${height}px`"
+        ></div>
+        <l-map
+            v-else
+            ref="map"
+            :style="`height: ${height}px`"
+            :zoom.sync="data_zoom"
+            :center.sync="map_coordinates"
+            @click="mapClicked"
+            @ready="onReady"
+            @update:zoom="zoomUpdated"
+            @update:center="centerUpdated"
+        >
+            <l-tile-layer :url="tileUrl" :attribution="attribution"></l-tile-layer>
             <l-marker v-if="!layer && target_latitude !== null && target_longitude !== null" :lat-lng="target_coordinates"></l-marker>
             <l-circle
                 v-if="layer && target_coordinates"
@@ -21,8 +36,6 @@
 </template>
 
 <script>
-
-
 export default {
     name: "LeaftletMap",
     props: {
@@ -71,14 +84,25 @@ export default {
             type: Number
         },
     },
+    computed: {
+        useNeshanSdk() {
+            return window.MapUtils && window.MapUtils.usesNeshanSdk();
+        },
+        tileUrl() {
+            return (window.mapConfig && window.mapConfig.tileUrl)
+                || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+        },
+    },
     data() {
         return {
+            mapElementId: 'neshan-map-' + Math.random().toString(36).slice(2),
+            neshanMap: null,
+            neshanOverlay: null,
             map: null,
             data_zoom: 0,
-            attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
-
+            attribution: (window.mapConfig && window.mapConfig.attribution)
+                || '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors',
             map_coordinates: null,
-
             target_coordinates: null,
             target_latitude: null,
             target_longitude: null
@@ -95,51 +119,114 @@ export default {
     created() {
         this.data_zoom = this.zoom
 
-        if (this.latitude && this.longitude){
+        if (this.latitude && this.longitude) {
             this.setMarker(this.latitude, this.longitude)
         }
     },
     mounted() {
-        if (this.watch_province){
+        if (this.useNeshanSdk) {
+            this.initNeshanMap()
+        }
+
+        if (this.watch_province) {
             window.eventBus.$on('province_updated', (province) => {
-                if (this.map){
+                if (this.useNeshanSdk && this.neshanMap) {
+                    this.neshanMap.setView([province.latitude, province.longitude], this.zoom)
+                    this.resize()
+                } else if (this.map) {
                     this.map.mapObject.setView({lat: province.latitude, lng: province.longitude}, this.zoom)
                     this.resize()
-                }
-                else {
+                } else {
                     this.centerUpdated({lat: province.latitude, lng: province.longitude})
                 }
             })
         }
     },
+    beforeDestroy() {
+        if (this.neshanMap) {
+            this.neshanMap.remove()
+            this.neshanMap = null
+        }
+    },
     methods: {
-        onReady(){
+        initNeshanMap() {
+            const center = this.target_coordinates || [this.latitude, this.longitude]
+
+            this.neshanMap = window.MapUtils.createMap(this.mapElementId, {
+                center,
+                zoom: this.zoom,
+                scrollWheelZoom: !this.readonly,
+            })
+
+            this.renderNeshanOverlay(center)
+
+            if (!this.readonly) {
+                this.neshanMap.on('click', (event) => {
+                    this.setMarker(event.latlng.lat, event.latlng.lng)
+                })
+            }
+
+            this.$nextTick(() => {
+                this.resize()
+            })
+        },
+        renderNeshanOverlay(center) {
+            if (!this.neshanMap || !center) {
+                return
+            }
+
+            if (this.neshanOverlay) {
+                this.neshanMap.removeLayer(this.neshanOverlay)
+                this.neshanOverlay = null
+            }
+
+            if (this.layer) {
+                const NeshanL = window.MapUtils.neshanLeaflet();
+                this.neshanOverlay = NeshanL.circle(center, {
+                    radius: this.radius,
+                    color: this.circleColor,
+                    fillColor: this.circleFillColor,
+                    fillOpacity: this.circleFillOpacity,
+                    weight: 2,
+                }).addTo(this.neshanMap)
+            } else if (this.target_latitude !== null && this.target_longitude !== null) {
+                const NeshanL = window.MapUtils.neshanLeaflet();
+                this.neshanOverlay = NeshanL.marker(center).addTo(this.neshanMap)
+            }
+        },
+        onReady() {
             this.$nextTick(() => {
                 this.map = this.$refs.map;
             });
         },
-        zoomUpdated(zoom){
+        zoomUpdated(zoom) {
             this.data_zoom = zoom;
         },
-        centerUpdated(center){
+        centerUpdated(center) {
             this.map_coordinates = [center.lat, center.lng]
             this.resize()
         },
-        resize(){
-            if (this.map){
+        resize() {
+            if (this.neshanMap) {
+                this.neshanMap.invalidateSize()
+            } else if (this.map) {
                 this.map.mapObject._onResize();
             }
         },
-        mapClicked(data){
-            if (! this.readonly){
+        mapClicked(data) {
+            if (!this.readonly) {
                 this.setMarker(data.latlng.lat, data.latlng.lng)
             }
         },
-        setMarker(lat, lng){
+        setMarker(lat, lng) {
             this.centerUpdated({lat: lat, lng: lng})
             this.target_latitude = lat
             this.target_longitude = lng
             this.target_coordinates = [lat, lng]
+
+            if (this.useNeshanSdk) {
+                this.renderNeshanOverlay(this.target_coordinates)
+            }
         }
     }
 }

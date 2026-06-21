@@ -417,8 +417,6 @@
 @endsection
 
 @section('scripts')
-<script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
-<link rel="stylesheet" href="{{ asset('vendor/leaflet/dist/leaflet.css') }}" />
 
 <style>
 .mobile-edit-tabs {
@@ -599,6 +597,10 @@ let previewMap = null;
 let previewMarker = null;
 let selectedGalleryFiles = [];
 let selectedCoverFile = null;
+
+function mapL() {
+    return window.MapUtils ? window.MapUtils.neshanLeaflet() : window.L;
+}
 const canUseDataTransfer = typeof DataTransfer !== 'undefined';
 const MAX_GALLERY_IMAGES = 30;
 const existingImagesCount = {{ $home->images->count() }};
@@ -609,17 +611,16 @@ document.getElementById('mapModal').addEventListener('shown.bs.modal', function 
     const hasCoords = latVal && lngVal && latVal !== '' && lngVal !== '';
 
     if (!map) {
-        map = L.map('map').setView([32.4279, 53.6880], 6);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-        }).addTo(map);
+        map = MapUtils.createMap('map', {
+            center: [32.4279, 53.6880],
+            zoom: 6,
+        });
 
         map.on('click', function (e) {
             if (marker) {
                 map.removeLayer(marker);
             }
-            marker = L.marker(e.latlng).addTo(map);
+            marker = mapL().marker(e.latlng).addTo(map);
         });
     }
 
@@ -630,7 +631,7 @@ document.getElementById('mapModal').addEventListener('shown.bs.modal', function 
             if (marker) {
                 map.removeLayer(marker);
             }
-            marker = L.marker([lat, lng]).addTo(map);
+            marker = mapL().marker([lat, lng]).addTo(map);
             map.setView([lat, lng], 15);
         }
     } else if (marker) {
@@ -672,20 +673,17 @@ function renderLocationPreviewMap(lat, lng) {
     wrap.style.display = 'block';
 
     if (!previewMap) {
-        previewMap = L.map(container, {
-            zoomControl: true,
-            attributionControl: true,
-        }).setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-        }).addTo(previewMap);
-        previewMarker = L.marker([lat, lng]).addTo(previewMap);
+        previewMap = MapUtils.createMap(container, {
+            center: [lat, lng],
+            zoom: 15,
+        });
+        previewMarker = mapL().marker([lat, lng]).addTo(previewMap);
     } else {
         previewMap.setView([lat, lng], 15);
         if (previewMarker) {
             previewMarker.setLatLng([lat, lng]);
         } else {
-            previewMarker = L.marker([lat, lng]).addTo(previewMap);
+            previewMarker = mapL().marker([lat, lng]).addTo(previewMap);
         }
     }
 
@@ -732,16 +730,12 @@ function updateLocationDisplay(lat, lng, renderMap) {
 }
 
 function getAddressFromCoordinates(lat, lng) {
-    fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&accept-language=fa')
-        .then(function (response) { return response.json(); })
-        .then(function (data) {
-            if (!data.display_name) return;
+    MapUtils.reverseGeocode(lat, lng)
+        .then(function (address) {
+            if (!address) return;
             const locationText = document.getElementById('locationText');
             if (!locationText) return;
-            locationText.textContent = 'عرض: ' + lat.toFixed(6) + ' — طول: ' + lng.toFixed(6) + ' · ' + data.display_name;
-        })
-        .catch(function () {
-            //
+            locationText.textContent = 'عرض: ' + lat.toFixed(6) + ' — طول: ' + lng.toFixed(6) + ' · ' + address;
         });
 }
 

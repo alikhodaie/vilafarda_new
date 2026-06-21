@@ -642,3 +642,10 @@ if (! function_exists('sliderSlideAlt')) {
         return $index === 0 ? 'بنر '.$brand : 'بنر '.$brand.' — اسلاید '.($index + 1);
     }
 }
+
+if (! function_exists('map_js_config')) {
+    function map_js_config(): array
+    {
+        return \App\Support\MapConfig::toJsConfig();
+    }
+}

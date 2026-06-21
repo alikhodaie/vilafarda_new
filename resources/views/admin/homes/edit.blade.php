@@ -111,8 +111,6 @@
 @endsection
 
 @section('bottom-assets')
-    <link rel="stylesheet" href="{{ asset('vendor/leaflet/dist/leaflet.css') }}">
-    <script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
     <script src="{{ asset('assets/admin/js/home-edit-city-filter.js') }}"></script>
     <script src="{{ asset('assets/admin/js/home-edit-gallery-ui.js') }}"></script>
     <script src="{{ asset('assets/admin/js/home-edit-tabs.js') }}"></script>

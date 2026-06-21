@@ -1215,7 +1215,6 @@
         font-variant-numeric: tabular-nums;
     }
 </style>
-<link rel="stylesheet" href="{{ asset('vendor/leaflet/dist/leaflet.css') }}">
 @endsection
 
 @section('content')
@@ -1862,7 +1861,6 @@
 <script src="{{ asset('vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ asset('vendor/swiper/swiper-bundle.min.js') }}"></script>
 @if($home->latitude && $home->longitude)
-<script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
 @endif
 
 <script>
@@ -2772,18 +2770,15 @@ function initHomeDetailLocationMap() {
     const lng = {{ (float) $home->longitude }};
     const radius = 750;
 
-    const map = L.map(mapEl, {
-        zoomControl: true,
-        attributionControl: true,
+    const mapLeaflet = MapUtils.neshanLeaflet();
+
+    const map = MapUtils.createMap(mapEl, {
+        center: [lat, lng],
+        zoom: 12,
         scrollWheelZoom: false,
-    }).setView([lat, lng], 12);
+    });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    }).addTo(map);
-
-    L.circle([lat, lng], {
+    mapLeaflet.circle([lat, lng], {
         radius: radius,
         color: '#D39D1A',
         fillColor: '#D39D1A',
@@ -2793,7 +2788,7 @@ function initHomeDetailLocationMap() {
 
     const fitBounds = () => {
         map.invalidateSize({ pan: false });
-        const bounds = L.circle([lat, lng], { radius: radius }).getBounds();
+        const bounds = mapLeaflet.circle([lat, lng], { radius: radius }).getBounds();
         map.fitBounds(bounds, { padding: [24, 24], maxZoom: 14 });
     };
 

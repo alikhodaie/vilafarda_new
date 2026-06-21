@@ -30,5 +30,8 @@ window.__homeFavoriteConfig = {
 <link rel="stylesheet" href="{{ asset('vendor/swiper/swiper-bundle.min.css') }}" />
 
 @include('layouts.main.partials.analytics')
+@include('partials.map-config-script')
+@include('partials.map-leaflet-assets')
+<script src="{{ public_asset_version('assets/js/map-utils.js') }}"></script>
 
 @yield('top-assets')

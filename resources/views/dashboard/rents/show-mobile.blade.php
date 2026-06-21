@@ -16,7 +16,6 @@
 @section('styles')
     <link rel="stylesheet" href="{{ asset('assets/css/rent-show-mobile.css') }}">
     @if($showRentLocationMap)
-        <link rel="stylesheet" href="{{ asset('vendor/leaflet/dist/leaflet.css') }}">
     @endif
 @endsection
 
@@ -241,7 +240,6 @@
 
 @if($showRentLocationMap)
     @section('scripts')
-        <script src="{{ asset('vendor/leaflet/dist/leaflet.js') }}"></script>
         <script src="{{ asset('assets/js/rent-location-map.js') }}"></script>
     @endsection
 @endif
