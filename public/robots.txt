@@ -6,4 +6,4 @@ Disallow: /register
 Disallow: /login-temp
 Disallow: /call-back
 
-Sitemap: /sitemap.xml
+Sitemap: https://vilafarda.ir/sitemap.xml
