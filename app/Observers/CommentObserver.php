@@ -6,6 +6,7 @@ use App\Classes\SMS;
 use App\Models\Comment;
 use App\Models\Home;
 use App\Models\Order;
+use App\Services\HomeProfileStatsService;
 
 class CommentObserver
 {
@@ -18,6 +19,7 @@ class CommentObserver
     public function created(Comment $comment)
     {
         $comment->updateCounter();
+        $this->refreshHomePerformanceStats($comment);
     }
 
     /**
@@ -30,6 +32,7 @@ class CommentObserver
     {
         if ($comment->isDirty('status')){
             $comment->updateCounter();
+            $this->refreshHomePerformanceStats($comment);
 
             if ($comment->status === Comment::CONFIRMED && $comment->commentable_type === Home::class){
 //                $order = $comment->commentable->orders()
@@ -54,6 +57,7 @@ class CommentObserver
     public function deleted(Comment $comment)
     {
         $comment->updateCounter();
+        $this->refreshHomePerformanceStats($comment);
     }
 
     /**
@@ -65,6 +69,7 @@ class CommentObserver
     public function restored(Comment $comment)
     {
         $comment->updateCounter();
+        $this->refreshHomePerformanceStats($comment);
     }
 
     /**
@@ -76,5 +81,21 @@ class CommentObserver
     public function forceDeleted(Comment $comment)
     {
         $comment->updateCounter();
+        $this->refreshHomePerformanceStats($comment);
+    }
+
+    private function refreshHomePerformanceStats(Comment $comment): void
+    {
+        if ($comment->commentable_type !== Home::class) {
+            return;
+        }
+
+        $home = $comment->relationLoaded('commentable')
+            ? $comment->commentable
+            : Home::query()->find($comment->commentable_id);
+
+        if ($home) {
+            app(HomeProfileStatsService::class)->recalculateGuestReviewTier($home);
+        }
     }
 }

@@ -92,13 +92,13 @@
                             <td class="text-nowrap">
                                 <div class="d-inline-flex align-items-center gap-1">
                                     <span>{{ $home->user->full_name }}</span>
-                                    <x-admin.user-contact-button :user="$home->user" />
+                                    <x-admin.user-contact-button :home="$home" />
                                 </div>
                             </td>
                             <td class="text-nowrap">
                                 <div class="d-flex align-items-center">
                                     @if($home->cover)
-                                        <img width="75" src="{{ $home->cover_path }}" alt="{{ $home->title }}">
+                                        <img width="75" src="{{ $home->cover_path }}" alt="{{ $home->title }}" loading="lazy" onerror="this.remove()">
                                     @endif
                                     <div class="ms-2">{{ $home->name }}</div>
                                 </div>
@@ -152,39 +152,91 @@
         </div>
 
     </x-admin.card>
+@endsection
 
+@push('modals')
     <div class="modal fade" id="adminUserContactModal" tabindex="-1" aria-labelledby="adminUserContactModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title" id="adminUserContactModalLabel">اطلاعات تماس</h5>
+                    <h5 class="modal-title" id="adminUserContactModalLabel">اطلاعات تماس و پروفایل میزبان</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
                 </div>
                 <div class="modal-body pt-2">
-                    <p class="fw-semibold mb-3" id="adminUserContactName">—</p>
-                    <ul class="list-unstyled mb-0 small">
-                        <li class="mb-2 d-flex align-items-start gap-2">
-                            <span class="fas fa-mobile-alt text-500 mt-1"></span>
-                            <span>
-                                <span class="text-muted d-block">موبایل</span>
-                                <a href="#" id="adminUserContactMobile" class="fw-semibold text-decoration-none">—</a>
-                            </span>
-                        </li>
-                        <li class="mb-2 d-flex align-items-start gap-2">
-                            <span class="fas fa-envelope text-500 mt-1"></span>
-                            <span>
-                                <span class="text-muted d-block">ایمیل</span>
-                                <a href="#" id="adminUserContactEmail" class="fw-semibold text-decoration-none text-break">—</a>
-                            </span>
-                        </li>
-                        <li class="d-flex align-items-start gap-2">
-                            <span class="fas fa-hashtag text-500 mt-1"></span>
-                            <span>
-                                <span class="text-muted d-block">شناسه کاربر</span>
-                                <span id="adminUserContactId" class="fw-semibold">—</span>
-                            </span>
-                        </li>
-                    </ul>
+                    <div id="adminUserContactContent">
+                        <p class="fw-semibold mb-1" id="adminUserContactName">—</p>
+                        <p class="text-muted small mb-3" id="adminUserContactHomeName">—</p>
+                        <ul class="list-unstyled mb-0 small">
+                            <li class="mb-2 d-flex align-items-start gap-2">
+                                <span class="fas fa-mobile-alt text-500 mt-1"></span>
+                                <span>
+                                    <span class="text-muted d-block">موبایل</span>
+                                    <a href="#" id="adminUserContactMobile" class="fw-semibold text-decoration-none">—</a>
+                                </span>
+                            </li>
+                            <li class="mb-2 d-flex align-items-start gap-2">
+                                <span class="fas fa-envelope text-500 mt-1"></span>
+                                <span>
+                                    <span class="text-muted d-block">ایمیل</span>
+                                    <a href="#" id="adminUserContactEmail" class="fw-semibold text-decoration-none text-break">—</a>
+                                </span>
+                            </li>
+                            <li class="mb-3 d-flex align-items-start gap-2">
+                                <span class="fas fa-hashtag text-500 mt-1"></span>
+                                <span>
+                                    <span class="text-muted d-block">شناسه کاربر</span>
+                                    <span id="adminUserContactId" class="fw-semibold">—</span>
+                                </span>
+                            </li>
+                        </ul>
+
+                        <hr class="my-3">
+
+                        <div class="small">
+                            <p class="fw-semibold mb-2">پاسخ به درخواست‌های رزرو این اقامتگاه</p>
+                            <div id="adminUserContactOrdersEmpty" class="text-muted d-none">هنوز درخواست رزروی برای این اقامتگاه بررسی نشده است.</div>
+                            <div id="adminUserContactOrdersStats" class="d-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">درجه عملکرد</span>
+                                    <span id="adminUserContactOrdersTier" class="badge rounded-pill">—</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">تایید</span>
+                                    <span id="adminUserContactApprovalPercent" class="fw-semibold text-success">—</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span class="text-muted">رد</span>
+                                    <span id="adminUserContactRejectionPercent" class="fw-semibold text-danger">—</span>
+                                </div>
+                                <div class="text-muted mt-2" style="font-size: 11px;">
+                                    <span id="adminUserContactOrdersCounts">—</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <div class="small">
+                            <p class="fw-semibold mb-2">امتیاز نظرات مهمان‌های این اقامتگاه</p>
+                            <div id="adminUserContactReviewEmpty" class="text-muted d-none">نظری ثبت نشده است.</div>
+                            <div id="adminUserContactReviewStats" class="d-none">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-muted">میانگین امتیاز</span>
+                                    <span id="adminUserContactReviewScore" class="fw-semibold">—</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="text-muted">درجه</span>
+                                    <span id="adminUserContactReviewTier" class="badge rounded-pill">—</span>
+                                </div>
+                                <div class="text-muted mt-2" style="font-size: 11px;">
+                                    <span id="adminUserContactReviewCount">—</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="adminUserContactError" class="alert alert-danger small mb-0 d-none" role="alert">
+                        اطلاعات میزبان در دسترس نیست.
+                    </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <a href="#" id="adminUserContactEditLink" class="btn btn-primary btn-sm d-none">مشاهده پروفایل</a>
@@ -193,52 +245,166 @@
             </div>
         </div>
     </div>
-@endsection
+@endpush
 
-@section('bottom-assets')
+@push('after-vue')
     <script>
-        document.getElementById('adminUserContactModal').addEventListener('show.bs.modal', function (event) {
-            const trigger = event.relatedTarget;
-            if (!trigger) return;
+        (function () {
+            const MODAL_ID = 'adminUserContactModal';
+            let lastTrigger = null;
 
-            const name = trigger.dataset.userName || '—';
-            const mobile = trigger.dataset.userMobile || '';
-            const email = trigger.dataset.userEmail || '';
-            const userId = trigger.dataset.userId || '—';
-            const editUrl = trigger.dataset.userEditUrl || '';
+            document.addEventListener('click', function (event) {
+                const trigger = event.target.closest('.admin-user-contact-trigger');
+                if (trigger) {
+                    lastTrigger = trigger;
+                }
+            }, true);
 
-            document.getElementById('adminUserContactName').textContent = name;
-            document.getElementById('adminUserContactId').textContent = userId;
+            function profileFromTrigger(trigger) {
+                if (!trigger) {
+                    return null;
+                }
 
-            const mobileEl = document.getElementById('adminUserContactMobile');
-            if (mobile) {
-                mobileEl.textContent = mobile;
-                mobileEl.href = 'tel:' + mobile;
-                mobileEl.classList.remove('text-muted');
-            } else {
-                mobileEl.textContent = 'ثبت نشده';
-                mobileEl.removeAttribute('href');
-                mobileEl.classList.add('text-muted');
+                const ds = trigger.dataset;
+                if (!ds.userId) {
+                    return null;
+                }
+
+                const accepted = parseInt(ds.ordersAccepted || '0', 10);
+                const rejected = parseInt(ds.ordersRejected || '0', 10);
+                const guestCount = parseInt(ds.guestReviewsCount || '0', 10);
+
+                return {
+                    home_id: ds.homeId || '',
+                    home_name: ds.homeName || '',
+                    id: ds.userId,
+                    name: ds.userName || '',
+                    mobile: ds.userMobile || '',
+                    email: ds.userEmail || '',
+                    edit_url: ds.userEditUrl || '',
+                    order_response: {
+                        accepted: accepted,
+                        rejected: rejected,
+                        total: accepted + rejected,
+                        approval_percent_display: ds.ordersApprovalPercent || null,
+                        rejection_percent_display: ds.ordersRejectionPercent || null,
+                        tier_label: ds.ordersTierLabel || null,
+                        tier_color: ds.ordersTierColor || 'secondary',
+                    },
+                    guest_reviews: {
+                        count: guestCount,
+                        average_score_display: ds.guestReviewsScore || null,
+                        tier_label: ds.guestTierLabel || null,
+                        tier_color: ds.guestTierColor || 'secondary',
+                    },
+                };
             }
 
-            const emailEl = document.getElementById('adminUserContactEmail');
-            if (email) {
-                emailEl.textContent = email;
-                emailEl.href = 'mailto:' + email;
-                emailEl.classList.remove('text-muted');
-            } else {
-                emailEl.textContent = 'ثبت نشده';
-                emailEl.removeAttribute('href');
-                emailEl.classList.add('text-muted');
+            function setContactLink(el, value, prefix) {
+                if (value) {
+                    el.textContent = value;
+                    el.href = prefix + value;
+                    el.classList.remove('text-muted');
+                } else {
+                    el.textContent = 'ثبت نشده';
+                    el.removeAttribute('href');
+                    el.classList.add('text-muted');
+                }
             }
 
-            const editLink = document.getElementById('adminUserContactEditLink');
-            if (editUrl) {
-                editLink.href = editUrl;
-                editLink.classList.remove('d-none');
-            } else {
-                editLink.classList.add('d-none');
+            function setTierBadge(el, label, color) {
+                el.textContent = label || '—';
+                el.className = 'badge rounded-pill badge-soft-' + (color || 'secondary');
             }
-        });
+
+            function showProfile(data) {
+                const contentEl = document.getElementById('adminUserContactContent');
+                const errorEl = document.getElementById('adminUserContactError');
+
+                document.getElementById('adminUserContactName').textContent = data.name || '—';
+                document.getElementById('adminUserContactHomeName').textContent = data.home_name
+                    ? 'اقامتگاه: ' + data.home_name
+                    : '—';
+                document.getElementById('adminUserContactId').textContent = data.id || '—';
+                setContactLink(document.getElementById('adminUserContactMobile'), data.mobile, 'tel:');
+                setContactLink(document.getElementById('adminUserContactEmail'), data.email, 'mailto:');
+
+                const editLink = document.getElementById('adminUserContactEditLink');
+                if (data.edit_url) {
+                    editLink.href = data.edit_url;
+                    editLink.classList.remove('d-none');
+                } else {
+                    editLink.classList.add('d-none');
+                }
+
+                const orderResponse = data.order_response || {};
+                const ordersEmpty = document.getElementById('adminUserContactOrdersEmpty');
+                const ordersStats = document.getElementById('adminUserContactOrdersStats');
+
+                if (!orderResponse.total) {
+                    ordersEmpty.classList.remove('d-none');
+                    ordersStats.classList.add('d-none');
+                } else {
+                    ordersEmpty.classList.add('d-none');
+                    ordersStats.classList.remove('d-none');
+                    document.getElementById('adminUserContactApprovalPercent').textContent = orderResponse.approval_percent_display || '—';
+                    document.getElementById('adminUserContactRejectionPercent').textContent = orderResponse.rejection_percent_display || '—';
+                    document.getElementById('adminUserContactOrdersCounts').textContent =
+                        (orderResponse.accepted || 0) + ' تایید · ' + (orderResponse.rejected || 0) + ' رد از ' + orderResponse.total + ' درخواست رزرو';
+                    setTierBadge(
+                        document.getElementById('adminUserContactOrdersTier'),
+                        orderResponse.tier_label,
+                        orderResponse.tier_color
+                    );
+                }
+
+                const reviews = data.guest_reviews || {};
+                const reviewEmpty = document.getElementById('adminUserContactReviewEmpty');
+                const reviewStats = document.getElementById('adminUserContactReviewStats');
+
+                if (!reviews.count || !reviews.average_score_display) {
+                    reviewEmpty.classList.remove('d-none');
+                    reviewStats.classList.add('d-none');
+                } else {
+                    reviewEmpty.classList.add('d-none');
+                    reviewStats.classList.remove('d-none');
+                    document.getElementById('adminUserContactReviewScore').textContent = reviews.average_score_display;
+                    document.getElementById('adminUserContactReviewCount').textContent =
+                        'بر اساس ' + reviews.count + ' نظر مهمان';
+                    setTierBadge(
+                        document.getElementById('adminUserContactReviewTier'),
+                        reviews.tier_label,
+                        reviews.tier_color
+                    );
+                }
+
+                contentEl.classList.remove('d-none');
+                errorEl.classList.add('d-none');
+            }
+
+            document.addEventListener('show.bs.modal', function (event) {
+                if (!event.target || event.target.id !== MODAL_ID) {
+                    return;
+                }
+
+                const related = event.relatedTarget;
+                const trigger = (related && related.closest)
+                    ? related.closest('.admin-user-contact-trigger') || related
+                    : (related || lastTrigger);
+
+                const profile = profileFromTrigger(trigger);
+
+                const contentEl = document.getElementById('adminUserContactContent');
+                const errorEl = document.getElementById('adminUserContactError');
+
+                if (!profile) {
+                    contentEl.classList.add('d-none');
+                    errorEl.classList.remove('d-none');
+                    return;
+                }
+
+                showProfile(profile);
+            });
+        })();
     </script>
-@endsection
+@endpush

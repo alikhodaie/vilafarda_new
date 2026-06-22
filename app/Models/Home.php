@@ -1109,6 +1109,18 @@ class Home extends Model
         return max(1, min(5, (int) round((float) $this->score)));
     }
 
+    public function performanceTiersPayload(): array
+    {
+        return [
+            'order_response_tier' => $this->order_response_tier,
+            'order_response_tier_label' => \App\Support\PerformanceTier::label($this->order_response_tier),
+            'order_response_tier_color' => \App\Support\PerformanceTier::color($this->order_response_tier),
+            'guest_review_tier' => $this->guest_review_tier,
+            'guest_review_tier_label' => \App\Support\PerformanceTier::label($this->guest_review_tier),
+            'guest_review_tier_color' => \App\Support\PerformanceTier::color($this->guest_review_tier),
+        ];
+    }
+
     public function guestRatingPayload(): array
     {
         $hasReviews = $this->hasGuestReviews();

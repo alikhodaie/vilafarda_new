@@ -3,7 +3,9 @@
 namespace App\Observers;
 
 use App\Classes\SMS;
+use App\Models\Home;
 use App\Models\Order;
+use App\Services\HomeProfileStatsService;
 use App\Services\HomeStatisticsService;
 use App\Services\HostPayoutService;
 use App\Services\OrderAdminSmsService;
@@ -86,6 +88,7 @@ class OrderObserver
                 foreach ($orders as $item){
                     if ($order->checkInterference($item)){
                         $item->update(['status' => Order::REJECTED]);
+                        $this->refreshHomeOrderStats($item);
                     }
                 }
             }
@@ -175,6 +178,23 @@ class OrderObserver
                 }
                 $order->renter()->increment('count_done_orders', $amount);
             }
+
+            $this->refreshHomeOrderStats($order);
+        }
+    }
+
+    private function refreshHomeOrderStats(Order $order): void
+    {
+        if (! $order->home_id) {
+            return;
+        }
+
+        $home = $order->relationLoaded('home')
+            ? $order->home
+            : Home::query()->find($order->home_id);
+
+        if ($home) {
+            app(HomeProfileStatsService::class)->recalculateOrderResponse($home);
         }
     }
 

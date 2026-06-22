@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Home;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\HostAdminProfileService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 
@@ -41,5 +42,12 @@ class AjaxController extends Controller
         $articles = Article::query()->search()->paginate(10)->appends($request->all());
 
         return response()->json($articles);
+    }
+
+    public function hostProfile(Home $home, HostAdminProfileService $hostAdminProfileService)
+    {
+        $this->authorize('index', Home::class);
+
+        return response()->json($hostAdminProfileService->buildForHome($home));
     }
 }

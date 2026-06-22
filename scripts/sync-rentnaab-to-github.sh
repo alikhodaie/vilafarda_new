@@ -21,7 +21,9 @@ echo "==> rsync از $SRC به $DST"
 rsync -a --delete \
   --exclude '.git/' \
   --exclude '.env' \
-  --exclude '.env.*' \
+  --exclude '.env.backup' \
+  --exclude '.env.production' \
+  --exclude '.env.local' \
   --exclude 'node_modules/' \
   --exclude '/vendor/' \
   --exclude '.user.ini' \

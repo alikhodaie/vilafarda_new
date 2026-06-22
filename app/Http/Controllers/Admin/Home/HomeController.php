@@ -30,6 +30,7 @@ class HomeController extends Controller
             ->orderBy('status')
             ->paginate(10)
             ->appends($request->all());
+
         return view('admin.homes.index', compact('homes'));
     }
 

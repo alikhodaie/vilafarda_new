@@ -31,6 +31,8 @@
 <!--    End of Main Content-->
 <!-- ===============================================-->
 
+@stack('modals')
+
 {{--@include('layouts.admin.partials.customize')--}}
 
 @include('layouts.admin.partials.script')

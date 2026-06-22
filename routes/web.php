@@ -488,6 +488,7 @@ Route::prefix('/admin')->name('admin.')->middleware(['auth', 'admin'])->group(fu
     # region Ajax
     Route::prefix('/ajax')->name('ajax.')->group(function (){
         Route::get('users', [AjaxController::class, 'users'])->name('users');
+        Route::get('homes/{home}/host-profile', [AjaxController::class, 'hostProfile'])->name('homes.host-profile');
         Route::get('homes', [AjaxController::class, 'homes'])->name('homes');
         Route::get('articles', [AjaxController::class, 'articles'])->name('articles');
     });
