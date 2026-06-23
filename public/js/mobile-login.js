@@ -63,19 +63,40 @@ class MobileLogin {
     }
 
     bindOtpEvents() {
-        document.querySelectorAll('.otp-input').forEach((input, index) => {
-            input.addEventListener('input', (e) => {
-                this.handleOtpInput(e, index);
-            });
+        const otpAutofill = document.getElementById('otp-autofill');
+        const otpWrapper = document.getElementById('otp-boxes-wrapper');
 
-            input.addEventListener('keydown', (e) => {
-                this.handleOtpKeydown(e, index);
-            });
+        if (!otpAutofill) {
+            return;
+        }
 
-            input.addEventListener('paste', (e) => {
-                this.handleOtpPaste(e);
-            });
+        otpAutofill.addEventListener('input', (e) => {
+            this.handleOtpAutofillInput(e);
         });
+
+        otpAutofill.addEventListener('change', (e) => {
+            this.handleOtpAutofillInput(e);
+        });
+
+        otpAutofill.addEventListener('paste', (e) => {
+            this.handleOtpPaste(e);
+        });
+
+        otpAutofill.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && otpAutofill.value === '') {
+                this.distributeOtpToBoxes('');
+            }
+        });
+
+        if (otpWrapper) {
+            otpWrapper.addEventListener('click', () => {
+                otpAutofill.focus();
+            });
+        }
+    }
+
+    getOtpAutofillInput() {
+        return document.getElementById('otp-autofill');
     }
 
     getOtpInputs() {
@@ -83,6 +104,11 @@ class MobileLogin {
     }
 
     getOtpValue() {
+        const otpAutofill = this.getOtpAutofillInput();
+        if (otpAutofill && otpAutofill.value) {
+            return this.normalizeOtpValue(otpAutofill.value);
+        }
+
         return Array.from(this.getOtpInputs()).reverse().map(input => input.value).join('');
     }
 
@@ -102,6 +128,11 @@ class MobileLogin {
     }
 
     clearOtpInput() {
+        const otpAutofill = this.getOtpAutofillInput();
+        if (otpAutofill) {
+            otpAutofill.value = '';
+        }
+
         this.getOtpInputs().forEach(input => {
             input.value = '';
         });
@@ -119,6 +150,11 @@ class MobileLogin {
             return;
         }
 
+        const otpAutofill = this.getOtpAutofillInput();
+        if (!otpAutofill) {
+            return;
+        }
+
         this.abortWebOtp();
         const ac = new AbortController();
         this.otpAbortController = ac;
@@ -133,7 +169,8 @@ class MobileLogin {
                 return;
             }
 
-            this.fillOtpValue(otp.code);
+            otpAutofill.value = this.normalizeOtpValue(otp.code);
+            this.fillOtpValue(otpAutofill.value);
         }).catch(() => {});
     }
 
@@ -143,16 +180,25 @@ class MobileLogin {
             return;
         }
 
+        const otpAutofill = this.getOtpAutofillInput();
+        if (otpAutofill) {
+            otpAutofill.value = normalized;
+        }
+
         this.distributeOtpToBoxes(normalized);
 
         if (normalized.length === 5) {
             setTimeout(() => this.verifyOtp(), 300);
-        } else {
-            const inputs = this.getOtpInputs();
-            const nextIndex = inputs.length - 1 - normalized.length;
-            if (nextIndex >= 0) {
-                inputs[nextIndex].focus();
-            }
+        }
+    }
+
+    handleOtpAutofillInput(event) {
+        const value = this.normalizeOtpValue(event.target.value);
+        event.target.value = value;
+        this.distributeOtpToBoxes(value);
+
+        if (value.length === 5) {
+            setTimeout(() => this.verifyOtp(), 300);
         }
     }
 
@@ -250,12 +296,11 @@ class MobileLogin {
         document.getElementById('password-login-step').style.display = 'none';
         document.getElementById('register-step').style.display = 'none';
         
-        // Focus first OTP box (leftmost in RTL) and listen for SMS autofill
+        // Focus OTP overlay input and listen for SMS autofill
         setTimeout(() => {
-            const otpInputs = this.getOtpInputs();
-            const leftmostInput = otpInputs[otpInputs.length - 1];
-            if (leftmostInput) {
-                leftmostInput.focus();
+            const otpAutofill = this.getOtpAutofillInput();
+            if (otpAutofill) {
+                otpAutofill.focus();
             }
             this.requestWebOtp();
         }, 100);
@@ -302,45 +347,6 @@ class MobileLogin {
         document.getElementById('last-name-input').value = '';
         this.abortWebOtp();
         this.clearOtpInput();
-    }
-
-    handleOtpInput(event, index) {
-        const input = event.target;
-        let value = this.normalizeOtpValue(input.value);
-
-        if (value.length > 1) {
-            this.fillOtpValue(value);
-            return;
-        }
-
-        input.value = value;
-
-        if (value.length === 1) {
-            const otpInputs = this.getOtpInputs();
-            const nextIndex = index - 1;
-            if (nextIndex >= 0) {
-                otpInputs[nextIndex].focus();
-            }
-            this.checkAndAutoSubmit();
-        }
-    }
-
-    checkAndAutoSubmit() {
-        const allFilled = Array.from(this.getOtpInputs()).every(input => input.value.length === 1);
-
-        if (allFilled) {
-            setTimeout(() => this.verifyOtp(), 300);
-        }
-    }
-
-    handleOtpKeydown(event, index) {
-        if (event.key === 'Backspace' && event.target.value === '' && index < 4) {
-            const otpInputs = this.getOtpInputs();
-            const prevIndex = index + 1;
-            if (prevIndex < otpInputs.length) {
-                otpInputs[prevIndex].focus();
-            }
-        }
     }
 
     handleOtpPaste(event) {
@@ -395,9 +401,9 @@ class MobileLogin {
             } else {
                 this.showError(data.message || 'کد تایید اشتباه است');
                 this.clearOtpInput();
-                const otpInputs = this.getOtpInputs();
-                if (otpInputs.length) {
-                    otpInputs[otpInputs.length - 1].focus();
+                const otpAutofill = this.getOtpAutofillInput();
+                if (otpAutofill) {
+                    otpAutofill.focus();
                 }
             }
         } catch (error) {
