@@ -36,8 +36,9 @@
                         <span class="input-group-text bg-light border-end-0">
                             <i class="bi bi-shield-check text-muted"></i>
                         </span>
-                        <input type="text" class="form-control border-start-0 text-center" 
+                        <input type="tel" class="form-control border-start-0 text-center" 
                                placeholder="کد 5 رقمی" id="code" name="code" 
+                               inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code"
                                value="{{ old('code') }}" maxlength="5" style="font-size: 18px; letter-spacing: 2px;">
                     </div>
                 </div>

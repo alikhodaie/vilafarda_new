@@ -92,5 +92,6 @@ return [
         'source' => 'LoginTempController::send',
         'category' => 'auth',
         'parameters' => ['CODE'],
+        'description' => 'برای autofill خودکار در اندروید، انتهای متن پیامک باید شامل @vilafarda.ir #CODE باشد (مثال: کد ورود شما 12345 @vilafarda.ir #12345)',
     ],
 ];

@@ -48,12 +48,12 @@
         <!-- OTP Step -->
         <div id="otp-step" class="w-100" style="display: none;">
             <!-- OTP Inputs -->
-            <div class="w-100 mt-4 d-flex justify-content-center gap-2">
-                <input type="text" class="otp-input form-control text-center" maxlength="1" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
-                <input type="text" class="otp-input form-control text-center" maxlength="1" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
-                <input type="text" class="otp-input form-control text-center" maxlength="1" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
-                <input type="text" class="otp-input form-control text-center" maxlength="1" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
-                <input type="text" class="otp-input form-control text-center" maxlength="1" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
+            <div class="w-100 mt-4 d-flex justify-content-center gap-2" id="otp-boxes">
+                <input type="tel" class="otp-input form-control text-center" maxlength="1" inputmode="numeric" pattern="[0-9]*" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
+                <input type="tel" class="otp-input form-control text-center" maxlength="1" inputmode="numeric" pattern="[0-9]*" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
+                <input type="tel" class="otp-input form-control text-center" maxlength="1" inputmode="numeric" pattern="[0-9]*" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
+                <input type="tel" class="otp-input form-control text-center" maxlength="1" inputmode="numeric" pattern="[0-9]*" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
+                <input type="tel" class="otp-input otp-input-autofill form-control text-center" maxlength="5" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" style="width: 50px; height: 50px; border-radius: 8px; font-size: 18px; font-weight: bold;">
             </div>
             <!-- OTP Timer and Resend -->
             <div class="w-100 mt-3 text-center">
@@ -161,7 +161,7 @@
             box-shadow: 0 0 0 0.2rem rgba(17, 17, 17, 0.25) !important;
             outline: none !important;
         }
-        
+
         .otp-input {
             border: 2px solid #e9ecef;
         }

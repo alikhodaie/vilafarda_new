@@ -65,11 +65,21 @@ class AuthController extends Controller
             'user_id' => $user?->id,
         ]);
 
-        return response()->json([
+        if (app()->isLocal()) {
+            Log::info("OTP for {$phone}: {$otp}");
+        }
+
+        $response = [
             'success' => true,
             'message' => 'کد تایید ارسال شد',
-            'user_exists' => $user ? true : false
-        ]);
+            'user_exists' => (bool) $user,
+        ];
+
+        if (app()->isLocal()) {
+            $response['debug_otp'] = $otp;
+        }
+
+        return response()->json($response);
     }
 
     /**

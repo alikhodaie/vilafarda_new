@@ -5,6 +5,7 @@ class MobileLogin {
         this.otpTimer = null;
         this.otpTimeLeft = 0;
         this.otpResent = false;
+        this.otpAbortController = null;
         this.init();
     }
 
@@ -24,15 +25,7 @@ class MobileLogin {
         });
 
         // OTP input events
-        document.querySelectorAll('.otp-input').forEach((input, index) => {
-            input.addEventListener('input', (e) => {
-                this.handleOtpInput(e, index);
-            });
-            
-            input.addEventListener('keydown', (e) => {
-                this.handleOtpKeydown(e, index);
-            });
-        });
+        this.bindOtpEvents();
 
         // Verify OTP button
         document.getElementById('verify-btn').addEventListener('click', () => {
@@ -67,6 +60,100 @@ class MobileLogin {
 
         this.bindPasswordToggle('password-login-input', 'toggle-password-login-input');
         this.bindPasswordToggle('password-input', 'toggle-password-input');
+    }
+
+    bindOtpEvents() {
+        document.querySelectorAll('.otp-input').forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                this.handleOtpInput(e, index);
+            });
+
+            input.addEventListener('keydown', (e) => {
+                this.handleOtpKeydown(e, index);
+            });
+
+            input.addEventListener('paste', (e) => {
+                this.handleOtpPaste(e);
+            });
+        });
+    }
+
+    getOtpInputs() {
+        return document.querySelectorAll('.otp-input');
+    }
+
+    getOtpValue() {
+        return Array.from(this.getOtpInputs()).reverse().map(input => input.value).join('');
+    }
+
+    normalizeOtpValue(value) {
+        value = value.replace(/[\u06F0-\u06F9]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x06F0 + 48));
+        value = value.replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48));
+        return value.replace(/\D/g, '').substring(0, 5);
+    }
+
+    distributeOtpToBoxes(value) {
+        const digits = this.normalizeOtpValue(value).split('');
+        const inputs = this.getOtpInputs();
+
+        inputs.forEach((input, index) => {
+            input.value = digits[inputs.length - 1 - index] || '';
+        });
+    }
+
+    clearOtpInput() {
+        this.getOtpInputs().forEach(input => {
+            input.value = '';
+        });
+    }
+
+    abortWebOtp() {
+        if (this.otpAbortController) {
+            this.otpAbortController.abort();
+            this.otpAbortController = null;
+        }
+    }
+
+    requestWebOtp() {
+        if (!('OTPCredential' in window)) {
+            return;
+        }
+
+        this.abortWebOtp();
+        const ac = new AbortController();
+        this.otpAbortController = ac;
+
+        setTimeout(() => ac.abort(), 3 * 60 * 1000);
+
+        navigator.credentials.get({
+            otp: { transport: ['sms'] },
+            signal: ac.signal
+        }).then(otp => {
+            if (!otp?.code) {
+                return;
+            }
+
+            this.fillOtpValue(otp.code);
+        }).catch(() => {});
+    }
+
+    fillOtpValue(value) {
+        const normalized = this.normalizeOtpValue(value);
+        if (!normalized) {
+            return;
+        }
+
+        this.distributeOtpToBoxes(normalized);
+
+        if (normalized.length === 5) {
+            setTimeout(() => this.verifyOtp(), 300);
+        } else {
+            const inputs = this.getOtpInputs();
+            const nextIndex = inputs.length - 1 - normalized.length;
+            if (nextIndex >= 0) {
+                inputs[nextIndex].focus();
+            }
+        }
     }
 
     bindPasswordToggle(inputId, buttonId) {
@@ -132,6 +219,10 @@ class MobileLogin {
                 }
             } else if (data.success) {
                 this.showOtpStep();
+                if (data.debug_otp) {
+                    this.showSuccess(`کد تست (لوکال): ${data.debug_otp}`);
+                    setTimeout(() => this.fillOtpValue(data.debug_otp), 150);
+                }
             } else {
                 this.showError(data.message || 'خطا در بررسی شماره موبایل');
             }
@@ -159,15 +250,14 @@ class MobileLogin {
         document.getElementById('password-login-step').style.display = 'none';
         document.getElementById('register-step').style.display = 'none';
         
-        // Focus first OTP input (rightmost in RTL, but we want leftmost)
+        // Focus first OTP box (leftmost in RTL) and listen for SMS autofill
         setTimeout(() => {
-            const otpInputs = document.querySelectorAll('.otp-input');
-            // In RTL layout, the first input in DOM is visually on the right
-            // So we need to focus the last input to get the leftmost visual position
+            const otpInputs = this.getOtpInputs();
             const leftmostInput = otpInputs[otpInputs.length - 1];
             if (leftmostInput) {
                 leftmostInput.focus();
             }
+            this.requestWebOtp();
         }, 100);
         
         // Update title
@@ -179,10 +269,7 @@ class MobileLogin {
         document.getElementById('password-input').value = '';
         document.getElementById('first-name-input').value = '';
         document.getElementById('last-name-input').value = '';
-        document.querySelectorAll('.otp-input').forEach(input => {
-            input.value = '';
-        });
-        // OTP resend/timer logic
+        this.clearOtpInput();
         this.otpResent = false;
         this.startOtpTimer(180); // 3 minutes
         document.getElementById('resend-otp-btn').style.display = 'none';
@@ -213,70 +300,57 @@ class MobileLogin {
         document.getElementById('password-input').value = '';
         document.getElementById('first-name-input').value = '';
         document.getElementById('last-name-input').value = '';
-        document.querySelectorAll('.otp-input').forEach(input => {
-            input.value = '';
-        });
+        this.abortWebOtp();
+        this.clearOtpInput();
     }
 
     handleOtpInput(event, index) {
         const input = event.target;
-        let value = input.value;
-        // Convert Persian/Arabic digits to English
-        value = value.replace(/[\u06F0-\u06F9]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x06F0 + 48));
-        value = value.replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48));
-        // Only allow numbers
-        if (!/^\d*$/.test(value)) {
-            value = value.replace(/\D/g, '');
-        }
-        // Limit to one digit
+        let value = this.normalizeOtpValue(input.value);
+
         if (value.length > 1) {
-            value = value.charAt(0);
+            this.fillOtpValue(value);
+            return;
         }
+
         input.value = value;
-        // Move to next input (from left to right visually)
+
         if (value.length === 1) {
-            const otpInputs = document.querySelectorAll('.otp-input');
-            // In RTL, we need to go backwards in the array to move left visually
+            const otpInputs = this.getOtpInputs();
             const nextIndex = index - 1;
             if (nextIndex >= 0) {
-                const nextInput = otpInputs[nextIndex];
-                if (nextInput) {
-                    nextInput.focus();
-                }
+                otpInputs[nextIndex].focus();
             }
-            // Check if all inputs are filled and auto-submit
             this.checkAndAutoSubmit();
         }
     }
 
     checkAndAutoSubmit() {
-        const otpInputs = document.querySelectorAll('.otp-input');
-        const allFilled = Array.from(otpInputs).every(input => input.value.length === 1);
-        
+        const allFilled = Array.from(this.getOtpInputs()).every(input => input.value.length === 1);
+
         if (allFilled) {
-            // Auto-submit after a short delay to let user see the last digit
-            setTimeout(() => {
-                this.verifyOtp();
-            }, 300);
+            setTimeout(() => this.verifyOtp(), 300);
         }
     }
 
     handleOtpKeydown(event, index) {
         if (event.key === 'Backspace' && event.target.value === '' && index < 4) {
-            const otpInputs = document.querySelectorAll('.otp-input');
-            // In RTL, we need to go forwards in the array to move right visually
+            const otpInputs = this.getOtpInputs();
             const prevIndex = index + 1;
             if (prevIndex < otpInputs.length) {
-                const prevInput = otpInputs[prevIndex];
-                prevInput.focus();
+                otpInputs[prevIndex].focus();
             }
         }
     }
 
+    handleOtpPaste(event) {
+        event.preventDefault();
+        const pasted = (event.clipboardData || window.clipboardData).getData('text');
+        this.fillOtpValue(pasted);
+    }
+
     async verifyOtp() {
-        const otpInputs = document.querySelectorAll('.otp-input');
-        // In RTL layout, we need to reverse the order to get the correct OTP
-        const otp = Array.from(otpInputs).reverse().map(input => input.value).join('');
+        const otp = this.getOtpValue();
         
         if (otp.length !== 5) {
             this.showError('لطفا کد 5 رقمی را کامل وارد کنید');
@@ -320,10 +394,11 @@ class MobileLogin {
                 }
             } else {
                 this.showError(data.message || 'کد تایید اشتباه است');
-                // Clear OTP inputs
-                otpInputs.forEach(input => input.value = '');
-                // Focus the leftmost input (last in DOM for RTL)
-                otpInputs[otpInputs.length - 1].focus();
+                this.clearOtpInput();
+                const otpInputs = this.getOtpInputs();
+                if (otpInputs.length) {
+                    otpInputs[otpInputs.length - 1].focus();
+                }
             }
         } catch (error) {
             this.showError('خطا در ارتباط با سرور');
@@ -334,6 +409,7 @@ class MobileLogin {
 
     showRegisterStep() {
         this.currentStep = 'register';
+        this.abortWebOtp();
         
         // Hide OTP step
         document.getElementById('otp-step').style.display = 'none';
@@ -471,6 +547,7 @@ class MobileLogin {
 
     showPasswordLoginStep() {
         this.currentStep = 'password-login';
+        this.abortWebOtp();
         // Hide OTP step
         document.getElementById('otp-step').style.display = 'none';
         // Show password login step
@@ -567,8 +644,8 @@ class MobileLogin {
             });
             const data = await response.json();
             if (data.success) {
-                // Reset OTP inputs and timer
-                document.querySelectorAll('.otp-input').forEach(input => input.value = '');
+                this.clearOtpInput();
+                this.requestWebOtp();
                 this.startOtpTimer(180);
                 document.getElementById('otp-timer').style.display = 'none';
                 document.getElementById('resend-otp-btn').style.display = 'none';
