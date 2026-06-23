@@ -6,6 +6,7 @@ class MobileLogin {
         this.otpTimeLeft = 0;
         this.otpResent = false;
         this.otpAbortController = null;
+        this.otpVerifyTimer = null;
         this.init();
     }
 
@@ -63,36 +64,33 @@ class MobileLogin {
     }
 
     bindOtpEvents() {
-        const otpAutofill = document.getElementById('otp-autofill');
-        const otpWrapper = document.getElementById('otp-boxes-wrapper');
+        const inputs = this.getOtpInputs();
 
-        if (!otpAutofill) {
-            return;
-        }
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                this.handleOtpInput(e, index);
+            });
 
-        otpAutofill.addEventListener('input', (e) => {
-            this.handleOtpAutofillInput(e);
+            input.addEventListener('change', (e) => {
+                if (e.target.value.length > 1) {
+                    this.handleOtpInput(e, index);
+                }
+            });
+
+            input.addEventListener('keydown', (e) => {
+                this.handleOtpKeydown(e, index);
+            });
+
+            input.addEventListener('paste', (e) => {
+                this.handleOtpPaste(e);
+            });
         });
 
-        otpAutofill.addEventListener('change', (e) => {
-            this.handleOtpAutofillInput(e);
-        });
-
-        otpAutofill.addEventListener('paste', (e) => {
-            this.handleOtpPaste(e);
-        });
-
-        otpAutofill.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && otpAutofill.value === '') {
-                this.distributeOtpToBoxes('');
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && this.currentStep === 'otp') {
+                this.requestWebOtp();
             }
         });
-
-        if (otpWrapper) {
-            otpWrapper.addEventListener('click', () => {
-                otpAutofill.focus();
-            });
-        }
     }
 
     getOtpAutofillInput() {
@@ -104,11 +102,6 @@ class MobileLogin {
     }
 
     getOtpValue() {
-        const otpAutofill = this.getOtpAutofillInput();
-        if (otpAutofill && otpAutofill.value) {
-            return this.normalizeOtpValue(otpAutofill.value);
-        }
-
         return Array.from(this.getOtpInputs()).reverse().map(input => input.value).join('');
     }
 
@@ -119,7 +112,8 @@ class MobileLogin {
     }
 
     distributeOtpToBoxes(value) {
-        const digits = this.normalizeOtpValue(value).split('');
+        const normalized = this.normalizeOtpValue(value);
+        const digits = normalized.split('');
         const inputs = this.getOtpInputs();
 
         inputs.forEach((input, index) => {
@@ -128,9 +122,9 @@ class MobileLogin {
     }
 
     clearOtpInput() {
-        const otpAutofill = this.getOtpAutofillInput();
-        if (otpAutofill) {
-            otpAutofill.value = '';
+        if (this.otpVerifyTimer) {
+            clearTimeout(this.otpVerifyTimer);
+            this.otpVerifyTimer = null;
         }
 
         this.getOtpInputs().forEach(input => {
@@ -146,12 +140,7 @@ class MobileLogin {
     }
 
     requestWebOtp() {
-        if (!('OTPCredential' in window)) {
-            return;
-        }
-
-        const otpAutofill = this.getOtpAutofillInput();
-        if (!otpAutofill) {
+        if (!('OTPCredential' in window) || this.currentStep !== 'otp') {
             return;
         }
 
@@ -165,40 +154,71 @@ class MobileLogin {
             otp: { transport: ['sms'] },
             signal: ac.signal
         }).then(otp => {
-            if (!otp?.code) {
+            if (!otp?.code || this.currentStep !== 'otp') {
                 return;
             }
 
-            otpAutofill.value = this.normalizeOtpValue(otp.code);
-            this.fillOtpValue(otpAutofill.value);
+            this.applyOtpCode(otp.code);
         }).catch(() => {});
     }
 
-    fillOtpValue(value) {
-        const normalized = this.normalizeOtpValue(value);
+    applyOtpCode(code) {
+        const normalized = this.normalizeOtpValue(code);
         if (!normalized) {
             return;
-        }
-
-        const otpAutofill = this.getOtpAutofillInput();
-        if (otpAutofill) {
-            otpAutofill.value = normalized;
         }
 
         this.distributeOtpToBoxes(normalized);
 
         if (normalized.length === 5) {
-            setTimeout(() => this.verifyOtp(), 300);
+            this.scheduleAutoVerify();
         }
     }
 
-    handleOtpAutofillInput(event) {
-        const value = this.normalizeOtpValue(event.target.value);
-        event.target.value = value;
-        this.distributeOtpToBoxes(value);
+    fillOtpValue(value) {
+        this.applyOtpCode(value);
+    }
 
-        if (value.length === 5) {
-            setTimeout(() => this.verifyOtp(), 300);
+    scheduleAutoVerify() {
+        if (this.otpVerifyTimer) {
+            clearTimeout(this.otpVerifyTimer);
+        }
+
+        this.otpVerifyTimer = setTimeout(() => {
+            this.otpVerifyTimer = null;
+            this.verifyOtp();
+        }, 300);
+    }
+
+    handleOtpInput(event, index) {
+        const input = event.target;
+        let value = this.normalizeOtpValue(input.value);
+
+        if (value.length > 1) {
+            input.value = '';
+            this.applyOtpCode(value);
+            return;
+        }
+
+        input.value = value;
+
+        if (value.length === 1 && index > 0) {
+            const otpInputs = this.getOtpInputs();
+            otpInputs[index - 1].focus();
+        }
+
+        if (this.getOtpValue().length === 5) {
+            this.scheduleAutoVerify();
+        }
+    }
+
+    handleOtpKeydown(event, index) {
+        if (event.key === 'Backspace' && event.target.value === '' && index < 4) {
+            const otpInputs = this.getOtpInputs();
+            const prevInput = otpInputs[index + 1];
+            if (prevInput) {
+                prevInput.focus();
+            }
         }
     }
 
@@ -296,7 +316,7 @@ class MobileLogin {
         document.getElementById('password-login-step').style.display = 'none';
         document.getElementById('register-step').style.display = 'none';
         
-        // Focus OTP overlay input and listen for SMS autofill
+        // Focus leftmost OTP box and listen for SMS autofill
         setTimeout(() => {
             const otpAutofill = this.getOtpAutofillInput();
             if (otpAutofill) {
