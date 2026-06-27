@@ -1060,12 +1060,7 @@ async function persistDraftStep(step) {
         if (coverEl && coverEl.files && coverEl.files.length) {
             fd.append('cover', coverEl.files[0]);
         }
-        const imagesEl = document.getElementById('images');
-        if (imagesEl && imagesEl.files && imagesEl.files.length) {
-            for (let i = 0; i < imagesEl.files.length; i++) {
-                fd.append('images[]', imagesEl.files[i]);
-            }
-        }
+        appendGalleryFilesToFormData(fd);
     } else if (step === 11) {
         const documentEl = document.getElementById('document');
         if (documentEl && documentEl.files && documentEl.files.length) {
@@ -1531,15 +1526,41 @@ function shouldSkipClientCompress(file) {
 
 function setFileInputFromFile(input, file) {
     if (!input || !file) {
-        return;
+        return false;
     }
     try {
         const dt = new DataTransfer();
         dt.items.add(file);
         input.files = dt.files;
+        return input.files && input.files.length > 0;
     } catch (err) {
         // برخی مرورگرهای موبایل اجازهٔ ست کردن files را نمی‌دهند.
+        return false;
     }
+}
+
+function appendGalleryFilesToFormData(fd) {
+    const imagesEl = document.getElementById('images');
+    if (imagesEl && imagesEl.files && imagesEl.files.length) {
+        for (let i = 0; i < imagesEl.files.length; i++) {
+            fd.append('images[]', imagesEl.files[i]);
+        }
+        return;
+    }
+
+    selectedGalleryItems.forEach(function (item) {
+        if (item && item.file) {
+            fd.append('images[]', item.file);
+        }
+    });
+}
+
+function galleryFilesNeedManualSubmit() {
+    if (selectedGalleryItems.length === 0) {
+        return false;
+    }
+    const imagesEl = document.getElementById('images');
+    return !imagesEl || !imagesEl.files || !imagesEl.files.length;
 }
 
 function formatFileSize(bytes) {
@@ -2038,17 +2059,41 @@ document.getElementById('createHomeForm').addEventListener('submit', async funct
     blurCreateHomeNavButtons();
 
     const docInput = document.getElementById('document');
-    if (docInput && docInput.files && docInput.files.length && typeof window.prepareCompressedDocumentInput === 'function') {
+    const needsDocumentPrep = docInput && docInput.files && docInput.files.length
+        && typeof window.prepareCompressedDocumentInput === 'function';
+    const needsGallerySubmit = galleryFilesNeedManualSubmit();
+
+    if (needsDocumentPrep || needsGallerySubmit) {
         e.preventDefault();
         try {
-            await window.prepareCompressedDocumentInput('document');
+            if (needsDocumentPrep) {
+                await window.prepareCompressedDocumentInput('document');
+            }
+
+            if (needsGallerySubmit) {
+                const fd = new FormData(e.target);
+                appendGalleryFilesToFormData(fd);
+                const res = await fetch(e.target.action, {
+                    method: 'POST',
+                    body: fd,
+                    credentials: 'same-origin',
+                    redirect: 'follow',
+                });
+                window.location.href = res.url;
+                return;
+            }
+
             e.target.submit();
         } catch (err) {
             formSubmitBusy = false;
             if (submitBtn) {
                 submitBtn.disabled = false;
             }
-            showStepValidationMessage('خطا در آماده‌سازی فایل مدرک. دوباره تلاش کنید.');
+            showStepValidationMessage(
+                needsDocumentPrep
+                    ? 'خطا در آماده‌سازی فایل مدرک. دوباره تلاش کنید.'
+                    : 'خطا در ارسال تصاویر گالری. دوباره تلاش کنید.'
+            );
         }
         return;
     }
