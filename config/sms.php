@@ -6,6 +6,8 @@ return [
         'order_created_renter' => env('SMS_PATTERN_ORDER_RENTER', '300047'),
         'order_created_owner' => env('SMS_PATTERN_ORDER_OWNER', '233577'),
         'order_created_admin' => env('SMS_PATTERN_ORDER_ADMIN', '431957'),
+        // پیامک به میزبان هنگام عدم پاسخ به درخواست و بسته‌شدن خودکار تقویم
+        'order_pending_timeout_owner' => env('SMS_PATTERN_PENDING_TIMEOUT_OWNER', ''),
     ],
     'parameter_names' => [
         'order_created_admin' => [

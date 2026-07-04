@@ -80,6 +80,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// مسیر کوتاه تقویم میزبان برای درج در پیامک (محدودیت ۲۵ کاراکتری sms.ir)
+Route::get('/hc/{home}', fn ($home) => redirect()->route('dashboard.homes.custom.date.show', $home))
+    ->name('host.calendar.short');
+
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.index');
 Route::get('/sitemap/static.xml', [SitemapController::class, 'staticPages'])->name('sitemap.static');
 Route::get('/sitemap/landings.xml', [SitemapController::class, 'landings'])->name('sitemap.landings');

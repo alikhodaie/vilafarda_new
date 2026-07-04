@@ -99,12 +99,34 @@ class OrderObserver
                         'value' => Str::limit($order->home->code, 25, ''),
                     ]
                     ]);
-                SMS::sendPattern($order->owner->mobile, '356697', [
-                    [
-                        'name' => 'ID',
-                        'value' => Str::limit($order->home->code, 25, ''),
-                    ]
-                ]);
+
+                if ($order->wasExpiredDueToHostNonApproval()){
+                    // میزبان به درخواست پاسخ نداده و مهلت تمام شده؛ تقویم آن روزها بسته شد.
+                    $timeoutPattern = config('sms.patterns.order_pending_timeout_owner');
+                    if ($timeoutPattern){
+                        SMS::sendPattern($order->owner->mobile, $timeoutPattern, [
+                            [
+                                'name' => 'HOST-NAME',
+                                'value' => Str::limit($order->owner->full_name, 25, ''),
+                            ],
+                            [
+                                'name' => 'HOME-NAME',
+                                'value' => Str::limit($order->home->name, 25, ''),
+                            ],
+                            [
+                                'name' => 'CALENDAR-LINK',
+                                'value' => $order->hostCalendarLinkForSms(),
+                            ],
+                        ], ['related' => $order, 'source' => 'OrderObserver::updated']);
+                    }
+                } else {
+                    SMS::sendPattern($order->owner->mobile, '356697', [
+                        [
+                            'name' => 'ID',
+                            'value' => Str::limit($order->home->code, 25, ''),
+                        ]
+                    ]);
+                }
 
 
                 $amount = 1;
@@ -121,7 +143,11 @@ class OrderObserver
                     [
                         'name' => 'HOME-NAME',
                         'value' => Str::limit($order->home->name, 25, ''),
-                    ]
+                    ],
+                    [
+                        'name' => 'REASON',
+                        'value' => Str::limit($order->rejectReasonLabel() ?? Order::REJECT_REASONS[Order::REJECT_REASON_BOOKED], 25, ''),
+                    ],
                     ]);
 
 //                SMS::sendPattern($order->owner->mobile, 'oogvrnsz22do5mc', ['name' => $order->home->name]);

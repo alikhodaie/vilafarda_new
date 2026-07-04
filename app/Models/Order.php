@@ -473,7 +473,35 @@ class Order extends Model
             return false;
         }
 
+        $this->closeHomeCalendarForRequestedDates();
+
         return $this->cancel();
+    }
+
+    /**
+     * بستن تقویم روزهای درخواست‌شده هنگام عدم پاسخ میزبان و لغو خودکار درخواست.
+     * هر شبِ رزرو به‌صورت روزِ بسته (قیمت ۰) در تقویم اقامتگاه ثبت می‌شود.
+     */
+    public function closeHomeCalendarForRequestedDates(): void
+    {
+        $home = $this->home;
+
+        if (! $home || ! $this->start_at || ! $this->end_at) {
+            return;
+        }
+
+        foreach (CarbonPeriod::create($this->start_at, $this->end_at) as $day) {
+            $home->upsertCustomDate($day, 0, max(1, (int) $home->getMinNightsForDate($day)));
+        }
+    }
+
+    /**
+     * مسیر کوتاه تقویم میزبان برای درج در پیامک (محدودیت ۲۵ کاراکتری sms.ir).
+     * در متن قالب sms.ir قبل از متغیر بنویسید: https://vilafarda.ir/
+     */
+    public function hostCalendarLinkForSms(): string
+    {
+        return ltrim(route('host.calendar.short', $this->home_id, false), '/');
     }
 
     public function cancelDueToPaymentTimeout(): bool
