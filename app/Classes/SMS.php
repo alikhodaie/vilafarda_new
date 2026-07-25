@@ -6,14 +6,12 @@ use App\Models\SmsLog;
 use App\Models\User;
 use App\Support\SmsTemplates;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Ippanel\Client;
 use Throwable;
 
 class SMS
 {
-    const URL = 'https://api.sms.ir/v1/send/verify';
-
     public static function sendPattern(string $mobile, string $pattern, array $parameters = [], array $context = []): bool
     {
         $user = isset($context['user_id'])
@@ -46,30 +44,37 @@ class SMS
             return true;
         }
 
-        $data = [
-            'mobile' => $mobile,
-            'templateId' => (int) $pattern,
-            'parameters' => self::normalizeParameters($parameters),
-        ];
+        $sender = config('sms.sender');
+        $apiKey = config('ippanel.api_key');
 
-        $header = [
-            'Content-Type' => 'application/json',
-            'Accept' => 'text/plain',
-            'x-api-key' => config('sms.api-key'),
-        ];
+        if (! $sender || ! $apiKey || ! $pattern) {
+            self::writeLog(array_merge($logData, [
+                'status' => SmsLog::STATUS_FAILED,
+                'response_body' => null,
+                'error_message' => 'تنظیمات IPPanel (API Key، شماره فرستنده یا کد پترن) ناقص است',
+            ]));
+
+            return false;
+        }
 
         try {
-            $response = Http::withHeaders($header)
-                ->timeout(15)
-                ->post(self::URL, $data);
+            $client = app(Client::class);
+            $response = $client->sendPattern(
+                $pattern,
+                $sender,
+                self::normalizeMobile($mobile),
+                self::toIppanelParams($parameters)
+            );
 
-            $body = $response->json();
-            $success = $response->successful() && (int) ($body['status'] ?? 0) === 1;
+            $success = $response->isSuccessful();
 
             self::writeLog(array_merge($logData, [
                 'status' => $success ? SmsLog::STATUS_SENT : SmsLog::STATUS_FAILED,
-                'response_body' => $response->body(),
-                'error_message' => $success ? null : (string) ($body['message'] ?? 'ارسال ناموفق'),
+                'response_body' => json_encode([
+                    'data' => $response->getData(),
+                    'meta' => $response->getMeta(),
+                ], JSON_UNESCAPED_UNICODE),
+                'error_message' => $success ? null : ($response->getMessage() ?? 'ارسال ناموفق'),
             ]));
 
             return $success;
@@ -80,6 +85,34 @@ class SMS
                 'error_message' => $e->getMessage(),
             ]));
 
+            return false;
+        }
+    }
+
+    public static function sendBulk(array $mobiles, string $message, array $context = []): bool
+    {
+        if ($mobiles === []) {
+            return true;
+        }
+
+        if (app()->isLocal()) {
+            return true;
+        }
+
+        $sender = config('sms.sender');
+        $apiKey = config('ippanel.api_key');
+
+        if (! $sender || ! $apiKey || trim($message) === '') {
+            return false;
+        }
+
+        try {
+            $client = app(Client::class);
+            $recipients = array_map([self::class, 'normalizeMobile'], $mobiles);
+            $response = $client->sendWebservice($message, $sender, $recipients);
+
+            return $response->isSuccessful();
+        } catch (Throwable) {
             return false;
         }
     }
@@ -136,5 +169,35 @@ class SMS
         }
 
         return $normalized;
+    }
+
+    protected static function toIppanelParams(array $parameters): array
+    {
+        $params = [];
+
+        foreach (self::normalizeParameters($parameters) as $parameter) {
+            $params[$parameter['name']] = $parameter['value'];
+        }
+
+        return $params;
+    }
+
+    protected static function normalizeMobile(string $mobile): string
+    {
+        $digits = preg_replace('/\D+/', '', $mobile) ?? '';
+
+        if ($digits === '') {
+            return $mobile;
+        }
+
+        if (strpos($digits, '98') === 0) {
+            return '+'.$digits;
+        }
+
+        if (strpos($digits, '0') === 0) {
+            return '+98'.substr($digits, 1);
+        }
+
+        return '+98'.$digits;
     }
 }

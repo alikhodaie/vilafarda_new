@@ -27,8 +27,8 @@ class OrderAdminSmsService
 
     private const DEFAULT_GUEST_PARAM_NAMES = [
         'home_name' => 'HOME_NAME',
-        'consultant_name' => 'consultant_name',
-        'consultant_mobile' => 'consultant_mobile',
+        'consultant_name' => 'CONSULTANT_NAME',
+        'consultant_mobile' => 'CONSULTANT_MOBILE',
     ];
 
     public const MODE_ALWAYS = 'always';
@@ -204,8 +204,8 @@ class OrderAdminSmsService
     }
 
     /**
-     * مسیر تقویم بدون دامنه (حداکثر ۲۵ کاراکتر در sms.ir).
-     * در متن قالب sms.ir حتماً قبل از متغیر بنویسید: https://vilafarda.ir/
+     * مسیر تقویم بدون دامنه (حداکثر ۲۵ کاراکتر در پترن).
+     * در متن قالب IPPanel حتماً قبل از متغیر بنویسید: https://vilafarda.ir/
      * نتیجه: https://vilafarda.ir/admin/homes/117/date
      */
     public function calendarLink(Order $order): string

@@ -33,7 +33,7 @@ class LoginTempController extends Controller
         }
 
         $item = VerificationToken::generateToken($request->get('mobile'), VerificationToken::LOGIN);
-        SMS::sendPattern($request->get('mobile'), '120268', [[
+        SMS::sendPattern($request->get('mobile'), config('sms.patterns.login_otp'), [[
             'name' => 'CODE',
             'value' => $item->token,
         ]]);

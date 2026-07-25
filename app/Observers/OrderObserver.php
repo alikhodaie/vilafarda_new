@@ -76,7 +76,7 @@ class OrderObserver
 
         if ($order->isDirty('status')){
             if ($order->status === Order::AWAITING_PAYMENT){
-                SMS::sendPattern($order->renter->mobile, '328688', [
+                SMS::sendPattern($order->renter->mobile, config('sms.patterns.order_awaiting_payment'), [
                     [
                         'name' => 'ID',
                         'value' => Str::limit($order->home->code, 25, ''),
@@ -93,7 +93,7 @@ class OrderObserver
                 }
             }
             if ($order->status === Order::CANCELED){
-                SMS::sendPattern($order->renter->mobile, '356697', [
+                SMS::sendPattern($order->renter->mobile, config('sms.patterns.order_canceled'), [
                     [
                         'name' => 'ID',
                         'value' => Str::limit($order->home->code, 25, ''),
@@ -120,7 +120,7 @@ class OrderObserver
                         ], ['related' => $order, 'source' => 'OrderObserver::updated']);
                     }
                 } else {
-                    SMS::sendPattern($order->owner->mobile, '356697', [
+                    SMS::sendPattern($order->owner->mobile, config('sms.patterns.order_canceled'), [
                         [
                             'name' => 'ID',
                             'value' => Str::limit($order->home->code, 25, ''),
@@ -139,7 +139,7 @@ class OrderObserver
                 $order->renter()->increment('count_canceled_orders', $amount);
             }
             if ($order->status === Order::REJECTED){
-                SMS::sendPattern($order->renter->mobile, '277906', [
+                SMS::sendPattern($order->renter->mobile, config('sms.patterns.order_rejected'), [
                     [
                         'name' => 'HOME-NAME',
                         'value' => Str::limit($order->home->name, 25, ''),
@@ -167,7 +167,7 @@ class OrderObserver
             if ($order->status === Order::WAITING_FOR_RENTER){
                 app(HostPayoutService::class)->createForOrder($order);
 //                SMS::sendPattern([$order->renter->mobile], "درخواست رزور شما برای اقماتگاه {$order->home->name} رد شد.");
-                SMS::sendPattern($order->owner->mobile, '588298', [
+                SMS::sendPattern($order->owner->mobile, config('sms.patterns.order_waiting_for_renter'), [
                     [
                         'name' => 'ID',
                         'value' => Str::limit($order->home->code, 25, ''),

@@ -57,9 +57,9 @@ class AuthController extends Controller
         Cache::put('otp_' . $phone, $otp, now()->addMinutes(5));
         Cache::put('otp_time_' . $phone, now(), now()->addMinutes(5));
 
-        // Send SMS via sms.ir
-        SMS::sendPattern($phone, '120268', [
-            ['name' => 'code', 'value' => $otp],
+        // Send SMS via IPPanel
+        SMS::sendPattern($phone, config('sms.patterns.login_otp'), [
+            ['name' => 'CODE', 'value' => $otp],
         ], [
             'source' => 'AuthController::checkPhone',
             'user_id' => $user?->id,

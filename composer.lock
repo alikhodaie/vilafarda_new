@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "729d00907a1ed5b7eac4a5ac3cbc83f5",
+    "content-hash": "37b921408fd0f9156005d087e08ef364",
     "packages": [
         {
             "name": "alkoumi/laravel-hijri-date",
@@ -1431,6 +1431,55 @@
                 }
             ],
             "time": "2025-04-04T15:09:55+00:00"
+        },
+        {
+            "name": "ippanelcom/laravel-sdk",
+            "version": "1.0.5",
+            "dist": {
+                "type": "path",
+                "url": "laravel-sdk-main",
+                "reference": "8b25d4c3bd2dcc0c3a8b31e998b214a0c1577d62"
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0",
+                "php": "^7.4|^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Ippanel\\IppanelServiceProvider"
+                    ],
+                    "aliases": {
+                        "IPPanel": "Ippanel\\Facades\\IPPanel"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Ippanel\\": "src/IPPanel/"
+                }
+            },
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "IPPanel",
+                    "email": "devops@ippanel.com"
+                }
+            ],
+            "description": "Laravel SDK for IPPanel SMS API",
+            "homepage": "https://github.com/ippanelcom/laravel-sdk",
+            "keywords": [
+                "ippanel",
+                "laravel",
+                "notification",
+                "sms"
+            ],
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "jaybizzle/crawler-detect",
@@ -9066,13 +9115,15 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {},
+    "stability-flags": {
+        "ippanelcom/laravel-sdk": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
         "php": "^7.3|^8.0",
         "ext-soap": "*"
     },
-    "platform-dev": {},
+    "platform-dev": [],
     "plugin-api-version": "2.6.0"
 }

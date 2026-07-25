@@ -1,13 +1,26 @@
 <?php
 
 return [
-    'api-key' => env('SMS_API_KEY'),
+    /*
+    |--------------------------------------------------------------------------
+    | IPPanel — شماره خط ارسال
+    |--------------------------------------------------------------------------
+    | فرمت: +981000xxxx
+    */
+    'sender' => env('SMS_SENDER', ''),
+
     'patterns' => [
-        'order_created_renter' => env('SMS_PATTERN_ORDER_RENTER', '300047'),
-        'order_created_owner' => env('SMS_PATTERN_ORDER_OWNER', '233577'),
-        'order_created_admin' => env('SMS_PATTERN_ORDER_ADMIN', '431957'),
-        // پیامک به میزبان هنگام عدم پاسخ به درخواست و بسته‌شدن خودکار تقویم
+        'order_created_renter' => env('SMS_PATTERN_ORDER_RENTER', ''),
+        'order_created_owner' => env('SMS_PATTERN_ORDER_OWNER', ''),
+        'order_created_admin' => env('SMS_PATTERN_ORDER_ADMIN', ''),
+        'order_awaiting_payment' => env('SMS_PATTERN_AWAITING_PAYMENT', ''),
+        'order_canceled' => env('SMS_PATTERN_CANCELED', ''),
+        'order_rejected' => env('SMS_PATTERN_REJECTED', ''),
         'order_pending_timeout_owner' => env('SMS_PATTERN_PENDING_TIMEOUT_OWNER', ''),
+        'order_waiting_for_renter' => env('SMS_PATTERN_WAITING_FOR_RENTER', ''),
+        'before_residence' => env('SMS_PATTERN_BEFORE_RESIDENCE', ''),
+        'after_residence' => env('SMS_PATTERN_AFTER_RESIDENCE', ''),
+        'login_otp' => env('SMS_PATTERN_LOGIN_OTP', ''),
     ],
     'parameter_names' => [
         'order_created_admin' => [
@@ -24,10 +37,10 @@ return [
         ],
         'order_created_renter' => [
             'home_name' => 'HOME_NAME',
-            'consultant_name' => 'consultant_name',
-            'consultant_mobile' => 'consultant_mobile',
+            'consultant_name' => 'CONSULTANT_NAME',
+            'consultant_mobile' => 'CONSULTANT_MOBILE',
         ],
     ],
-    'parameter_max_length' => (int) env('SMS_PARAMETER_MAX_LENGTH', 25),
+    'parameter_max_length' => (int) env('SMS_PARAMETER_MAX_LENGTH', 40),
     'calendar_url_prefix' => env('SMS_CALENDAR_URL_PREFIX', 'https://vilafarda.ir/'),
 ];
