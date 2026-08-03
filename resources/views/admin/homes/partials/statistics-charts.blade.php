@@ -1,6 +1,6 @@
 @php
     $metricLabels = [
-        'income' => 'درآمد (تومان)',
+        'income' => 'درآمد کمیسیون (تومان)',
         'views' => 'بازدید',
         'clicks' => 'کلیک',
     ];
@@ -27,6 +27,13 @@
                 <option value="line">خطی</option>
                 <option value="pie">دایره‌ای</option>
             </select>
+            <a href="{{ route('admin.income-report') }}"
+               class="btn btn-sm btn-outline-primary"
+               target="_blank"
+               rel="noopener">
+                <i class="fa fa-download me-1"></i>
+                خروجی PDF درآمد یک‌ساله
+            </a>
         </div>
     </div>
 

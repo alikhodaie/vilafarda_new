@@ -381,6 +381,7 @@ Route::get('/h/{home}', function (int $home) {
 Route::prefix('/admin')->name('admin.')->middleware(['auth', 'admin'])->group(function (){
     Route::get('/', [AdminMainController::class, 'index'])->name('index');
     Route::get('/order-count', [AdminMainController::class, 'orderCount'])->name('order-count');
+    Route::get('/income-report', [AdminMainController::class, 'incomeReport'])->name('income-report');
 
     Route::post('/tinymce/upload', [TinyMceEditorController::class, 'upload'])->name('tinymce_upload');
 

@@ -10,6 +10,7 @@ use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Morilog\Jalali\Jalalian;
+use niklasravnsborg\LaravelPdf\Facades\Pdf;
 
 class MainController extends Controller
 {
@@ -23,6 +24,26 @@ class MainController extends Controller
         });
 
         return view('admin.index', compact('homeCharts', 'chartDays'));
+    }
+
+    public function incomeReport(Request $request)
+    {
+        $report = app(HomeStatisticsService::class)->buildYearlyIncomeReport($request);
+
+        // مسیر محلی لوگو (نه URL) تا mPDF مجبور به درخواست HTTP به همان سرور نشود
+        // در غیر این صورت روی سرور تک‌نخی (php artisan serve) قفل می‌شود.
+        $logoPath = null;
+        $logoFilename = setting('app:logo');
+        if ($logoFilename) {
+            $absolute = public_path(\App\Models\Setting::FILE_PATH.ltrim($logoFilename, '/'));
+            if (is_file($absolute)) {
+                $logoPath = $absolute;
+            }
+        }
+
+        $pdf = Pdf::loadView('admin.reports.income-pdf', compact('report', 'logoPath'));
+
+        return $pdf->download('income-report-'.now()->format('Y-m-d').'.pdf');
     }
 
     public function orderCount(Request $request)

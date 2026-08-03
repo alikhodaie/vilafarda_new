@@ -73,9 +73,8 @@ class HomeStatisticsService
         foreach (CarbonPeriod::create($start, $end) as $date) {
             $key = $date->toDateString();
             $row = $dailyAggregates->get($key);
-            $orderIncome = (int) ($incomeFromOrders[$key] ?? 0);
-            $storedIncome = (int) (optional($row)->income ?? 0);
-            $income = max($storedIncome, $orderIncome);
+            // درآمد ادمین = کمیسیون کسر شده از مبلغ سفارش‌ها، نه کل مبلغ فروش
+            $income = (int) ($incomeFromOrders[$key] ?? 0);
 
             $labels[] = Jalalian::fromCarbon($date)->format('Y/m/d');
             $series['income'][] = $income;
@@ -97,6 +96,72 @@ class HomeStatisticsService
                 'clicks' => array_sum($series['clicks']),
             ],
             'days' => $days,
+            'homes_count' => $homeIds->count(),
+        ];
+    }
+
+    /**
+     * گزارش یک‌ساله‌ی درآمد (کمیسیون) ادمین به تفکیک ماه شمسی.
+     * برای خروجی PDF استفاده می‌شود.
+     */
+    public function buildYearlyIncomeReport(?Request $request = null): array
+    {
+        $homeIds = $request
+            ? $this->filteredHomeIds($request)
+            : Home::query()->where('is_draft', false)->pluck('id');
+
+        // ۱۲ ماه شمسی اخیر (شامل ماه جاری) به‌صورت سطل‌های خالی
+        $months = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $month = $i === 0 ? Jalalian::now() : Jalalian::now()->subMonths($i);
+            $key = $month->format('Y/m');
+            $months[$key] = [
+                'label' => $key,
+                'gross' => 0,
+                'commission' => 0,
+                'orders' => 0,
+            ];
+        }
+
+        $start = Jalalian::now()->subMonths(11)->getFirstDayOfMonth()->toCarbon()->startOfDay();
+        $end = now()->endOfDay();
+
+        if ($homeIds->isNotEmpty()) {
+            $rows = $this->paidOrdersQuery($homeIds, $start, $end)
+                ->selectRaw(
+                    'DATE(COALESCE(orders.paid_at, orders.created_at)) as stat_date, '
+                    .'SUM(orders.price) as gross, '
+                    .$this->commissionExpression().' as commission, '
+                    .'COUNT(orders.id) as orders_count'
+                )
+                ->groupBy('stat_date')
+                ->get();
+
+            foreach ($rows as $row) {
+                $key = Jalalian::fromCarbon(Carbon::parse($row->stat_date))->format('Y/m');
+
+                if (! isset($months[$key])) {
+                    continue;
+                }
+
+                $months[$key]['gross'] += (int) $row->gross;
+                $months[$key]['commission'] += (int) $row->commission;
+                $months[$key]['orders'] += (int) $row->orders_count;
+            }
+        }
+
+        $months = array_values($months);
+
+        return [
+            'months' => $months,
+            'totals' => [
+                'gross' => array_sum(array_column($months, 'gross')),
+                'commission' => array_sum(array_column($months, 'commission')),
+                'orders' => array_sum(array_column($months, 'orders')),
+            ],
+            'from' => Jalalian::fromCarbon($start)->format('Y/m/d'),
+            'to' => Jalalian::fromCarbon($end)->format('Y/m/d'),
+            'generated_at' => Jalalian::now()->format('Y/m/d - H:i'),
             'homes_count' => $homeIds->count(),
         ];
     }
@@ -137,28 +202,60 @@ class HomeStatisticsService
             return [];
         }
 
-        $paidStatuses = [
+        return $this->paidOrdersQuery($homeIds, $start, $end)
+            ->selectRaw('DATE(COALESCE(orders.paid_at, orders.created_at)) as stat_date, '.$this->commissionExpression().' as total')
+            ->groupBy('stat_date')
+            ->pluck('total', 'stat_date')
+            ->map(fn ($total) => (int) $total)
+            ->all();
+    }
+
+    /**
+     * وضعیت‌هایی که به‌عنوان سفارش پرداخت‌شده/درآمدزا در نظر گرفته می‌شوند.
+     */
+    protected function paidOrderStatuses(): array
+    {
+        return [
             Order::DONE,
             Order::IN_RENT,
             Order::WAITING_FOR_RENTER,
             Order::AWAITING_PAYMENT,
         ];
+    }
 
+    /**
+     * کوئری پایه سفارش‌های درآمدزا به همراه join با اقامتگاه‌ها (برای دسترسی به سیاست لغو/کمیسیون).
+     */
+    protected function paidOrdersQuery(Collection $homeIds, Carbon $start, Carbon $end)
+    {
         return Order::query()
-            ->whereIn('home_id', $homeIds)
-            ->whereIn('status', $paidStatuses)
+            ->join('homes', 'homes.id', '=', 'orders.home_id')
+            ->whereIn('orders.home_id', $homeIds)
+            ->whereIn('orders.status', $this->paidOrderStatuses())
             ->where(function ($query) use ($start, $end) {
-                $query->whereBetween('paid_at', [$start, $end])
+                $query->whereBetween('orders.paid_at', [$start, $end])
                     ->orWhere(function ($inner) use ($start, $end) {
-                        $inner->whereNull('paid_at')
-                            ->whereBetween('created_at', [$start, $end]);
+                        $inner->whereNull('orders.paid_at')
+                            ->whereBetween('orders.created_at', [$start, $end]);
                     });
-            })
-            ->selectRaw('DATE(COALESCE(paid_at, created_at)) as stat_date, SUM(price) as total')
-            ->groupBy('stat_date')
-            ->pluck('total', 'stat_date')
-            ->map(fn ($total) => (int) $total)
-            ->all();
+            });
+    }
+
+    /**
+     * عبارت SQL محاسبه‌ی کمیسیون ادمین بر اساس درصد کمیسیونِ سیاست لغو هر اقامتگاه.
+     * درصدها از تنظیمات خوانده و به‌صورت عدد صحیح داخل عبارت درج می‌شوند (ورودی امن).
+     */
+    protected function commissionExpression(): string
+    {
+        $easy = (int) setting('commission:easy', 0);
+        $balanced = (int) setting('commission:balanced', 0);
+        $strict = (int) setting('commission:strict', 0);
+
+        return "SUM(orders.price * (CASE homes.reject_policy"
+            ." WHEN '".Home::EASY."' THEN {$easy}"
+            ." WHEN '".Home::BALANCED."' THEN {$balanced}"
+            ." WHEN '".Home::STRICT."' THEN {$strict}"
+            ." ELSE 0 END) / 100)";
     }
 
     protected function topHomesPie(Collection $homeIds, Carbon $start, Carbon $end, string $metric): array
@@ -168,25 +265,9 @@ class HomeStatisticsService
         }
 
         if ($metric === 'income') {
-            $paidStatuses = [
-                Order::DONE,
-                Order::IN_RENT,
-                Order::WAITING_FOR_RENTER,
-                Order::AWAITING_PAYMENT,
-            ];
-
-            $rows = Order::query()
-                ->whereIn('home_id', $homeIds)
-                ->whereIn('status', $paidStatuses)
-                ->where(function ($query) use ($start, $end) {
-                    $query->whereBetween('paid_at', [$start, $end])
-                        ->orWhere(function ($inner) use ($start, $end) {
-                            $inner->whereNull('paid_at')
-                                ->whereBetween('created_at', [$start, $end]);
-                        });
-                })
-                ->select('home_id', DB::raw('SUM(price) as total'))
-                ->groupBy('home_id')
+            $rows = $this->paidOrdersQuery($homeIds, $start, $end)
+                ->select('orders.home_id as home_id', DB::raw($this->commissionExpression().' as total'))
+                ->groupBy('orders.home_id')
                 ->orderByDesc('total')
                 ->limit(8)
                 ->with('home:id,name')
@@ -195,7 +276,7 @@ class HomeStatisticsService
             return $rows->map(fn ($row) => [
                 'name' => $row->home?->name ?: ('#'.$row->home_id),
                 'value' => (int) $row->total,
-            ])->values()->all();
+            ])->filter(fn ($item) => $item['value'] > 0)->values()->all();
         }
 
         $column = $metric === 'clicks' ? 'clicks' : 'views';
