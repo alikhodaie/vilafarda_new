@@ -54,7 +54,7 @@
                         @endcan
                     </li>
                 @endif
-                @if(auth()->user()->can('index', \App\Models\Health::class) || auth()->user()->can('index', \App\Models\Variable::class) || auth()->user()->can('index', \App\Models\Home::class) || auth()->user()->can('index', \App\Models\Option::class) || auth()->user()->can('indexHome', \App\Models\Category::class))
+                @if(auth()->user()->can('index', \App\Models\Health::class) || auth()->user()->can('index', \App\Models\Variable::class) || auth()->user()->can('index', \App\Models\Home::class) || auth()->user()->can('index', \App\Models\Option::class) || auth()->user()->can('indexHome', \App\Models\Category::class) || auth()->user()->can('indexCalendarSync', \App\Models\Home::class))
                     <li class="nav-item">
                         <!-- label-->
                         <div class="row navbar-vertical-label-wrapper mt-3 mb-2">
@@ -121,6 +121,14 @@
                                 <div class="d-flex align-items-center">
                                     <span class="nav-link-icon"><span class="fas fa-list-alt"></span></span>
                                     <span class="nav-link-text ps-1">{{ __('title.categories') }}</span>
+                                </div>
+                            </a>
+                        @endcan
+                        @can('indexCalendarSync', \App\Models\Home::class)
+                            <a class="nav-link @if($active === 'homes-calendar-sync') active @endif" href="{{ route('admin.homes.calendar-sync.index') }}" role="button" aria-expanded="false">
+                                <div class="d-flex align-items-center">
+                                    <span class="nav-link-icon"><span class="fas fa-sync-alt"></span></span>
+                                    <span class="nav-link-text ps-1">{{ __('title.calendar_sync') }}</span>
                                 </div>
                             </a>
                         @endcan

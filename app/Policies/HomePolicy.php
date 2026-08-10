@@ -49,4 +49,24 @@ class HomePolicy
     {
         return $user->hasPermissionTo('home-dates:destroy');
     }
+
+    public function indexCalendarSync(User $user): bool
+    {
+        return $user->checkPermissionTo('home-calendar-sync:index');
+    }
+
+    public function updateCalendarSync(User $user): bool
+    {
+        return $user->checkPermissionTo('home-calendar-sync:update');
+    }
+
+    public function syncCalendar(User $user, Home $home): bool
+    {
+        return $user->checkPermissionTo('home-calendar-sync:sync') && ! $home->is_draft;
+    }
+
+    public function syncAllCalendar(User $user): bool
+    {
+        return $user->checkPermissionTo('home-calendar-sync:sync');
+    }
 }

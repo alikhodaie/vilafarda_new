@@ -77,6 +77,12 @@ class PermissionTableSeeder extends Seeder
             ['name' => 'home-dates:destroy', 'fa_name' => 'حذف تقویم', 'group' => 'homes', 'fa_group' => 'املاک', 'guard_name' => 'web'],
             # endregion
 
+            # region Home Calendar Sync
+            ['name' => 'home-calendar-sync:index', 'fa_name' => 'مشاهده به‌روزرسانی تقویم', 'group' => 'homes', 'fa_group' => 'املاک', 'guard_name' => 'web'],
+            ['name' => 'home-calendar-sync:update', 'fa_name' => 'ویرایش به‌روزرسانی تقویم', 'group' => 'homes', 'fa_group' => 'املاک', 'guard_name' => 'web'],
+            ['name' => 'home-calendar-sync:sync', 'fa_name' => 'اجرای همگام‌سازی تقویم', 'group' => 'homes', 'fa_group' => 'املاک', 'guard_name' => 'web'],
+            # endregion
+
             # region Home variables
             ['name' => 'home-variables:index', 'fa_name' => 'نمایش قانون', 'group' => 'homes', 'fa_group' => 'املاک', 'guard_name' => 'web'],
             ['name' => 'home-variables:create', 'fa_name' => 'ایجاد قانون', 'group' => 'homes', 'fa_group' => 'املاک', 'guard_name' => 'web'],

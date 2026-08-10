@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\DiscountController;
 use App\Http\Controllers\Admin\DiscountUseController;
 use App\Http\Controllers\Admin\FAQ\FAQCategoryController;
 use App\Http\Controllers\Admin\FAQ\FAQController;
+use App\Http\Controllers\Admin\Home\HomeCalendarSyncController;
 use App\Http\Controllers\Admin\Home\HomeCategoryController;
 use App\Http\Controllers\Admin\Home\HomeController as AdminHomeController;
 use App\Http\Controllers\Admin\Home\HomeCoverController;
@@ -460,6 +461,13 @@ Route::prefix('/admin')->name('admin.')->middleware(['auth', 'admin'])->group(fu
 
         # region Categories
         Route::resource('categories', HomeCategoryController::class)->except(['show']);
+        # endregion
+
+        # region Calendar Sync
+        Route::get('calendar-sync', [HomeCalendarSyncController::class, 'index'])->name('calendar-sync.index');
+        Route::put('calendar-sync', [HomeCalendarSyncController::class, 'update'])->name('calendar-sync.update');
+        Route::post('calendar-sync/sync-all', [HomeCalendarSyncController::class, 'syncAll'])->name('calendar-sync.sync-all');
+        Route::post('calendar-sync/{home}/sync', [HomeCalendarSyncController::class, 'sync'])->name('calendar-sync.sync');
         # endregion
 
         Route::resource('', AdminHomeController::class)->parameter('', 'home');

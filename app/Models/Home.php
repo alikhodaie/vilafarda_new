@@ -1812,6 +1812,11 @@ class Home extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function calendarSource()
+    {
+        return $this->hasOne(HomeCalendarSource::class);
+    }
+
     public function province()
     {
         return $this->belongsTo(Province::class);
