@@ -8,14 +8,14 @@
         </div>
         <div class="col-12 col-md-4 mt-2">
             <label for="code">@lang('title.code')</label>
-            <input type="text" class="form-control" name="code" id="code" value="{{ request('code') }}">
+            <input type="text" class="form-control" name="code" id="code" value="{{ request('code') }}" placeholder="کد اقامتگاه">
         </div>
         <div class="col-12 col-md-4 mt-2">
             <label for="name">@lang('title.name')</label>
-            <input type="text" class="form-control" name="name" id="name" value="{{ request('name') }}">
+            <input type="text" class="form-control" name="name" id="name" value="{{ request('name') }}" placeholder="نام اقامتگاه یا کد">
         </div>
         <div class="col-12 col-md-4 mt-2">
-            <label for="user">@lang('title.user')</label>
+            <label for="user">@lang('title.user') / میزبان</label>
             <user-input
                 @if(request()->filled('user'))
                 old="{{ request('user') }}"
@@ -49,19 +49,27 @@
 
     <x-admin.card title="{{ __('title.calendar_sync') }}">
         <div class="alert alert-info mb-3" role="alert">
-            لینک صفحه اقامتگاه در سایت‌های دیگر (مثل جاجیگا) را وارد کنید. پلتفرم به‌صورت خودکار تشخیص داده می‌شود.
-            همگام‌سازی خودکار فعلاً برای <strong>جاجیگا</strong> فعال است.
+            لینک صفحه اقامتگاه در سایت‌های دیگر (مثل جاجیگا یا جاباما) را وارد کنید. پلتفرم به‌صورت خودکار تشخیص داده می‌شود.
+            همگام‌سازی فعلاً برای <strong>جاجیگا</strong> و <strong>جاباما</strong> فعال است.
             <hr class="my-2">
-            <strong>همگام‌سازی دستی:</strong> بدون نیاز به روشن بودن سوئیچ «همگام‌سازی خودکار» کار می‌کند.
-            <strong>همگام‌سازی خودکار:</strong> فقط برای اقامتگاه‌هایی که سوئیچشان روشن است (در Job زمان‌بندی‌شده اجرا می‌شود).
+            <strong>ترتیب لیست:</strong> اول اقامتگاه‌های لینک‌دار (قدیمی‌ترین به‌روزرسانی بالاتر)، بعد بدون لینک.
+            <br>
+            <strong>محدودیت همگام‌سازی دستی:</strong> بین هر درخواست حداقل {{ $syncCooldownTotal }} ثانیه فاصله لازم است تا IP مسدود نشود.
+            <span id="calendar-sync-cooldown-banner"
+                  class="d-none ms-1"
+                  data-remaining="{{ (int) $syncCooldownSeconds }}">
+                بعدی: <strong id="calendar-sync-cooldown-banner-text">—</strong>
+            </span>
         </div>
 
         @can('syncAllCalendar', \App\Models\Home::class)
             <div class="d-flex flex-wrap gap-2 justify-content-end mb-3">
                 <form method="POST" action="{{ route('admin.homes.calendar-sync.sync-all') }}" class="d-inline"
-                      onsubmit="return confirm('همگام‌سازی دستی برای همه اقامتگاه‌های دارای لینک خارجی انجام شود؟');">
+                      onsubmit="return confirm('فقط قدیمی‌ترین اقامتگاه لینک‌دار (نفر اول صف) همگام شود؟');">
                     @csrf
-                    <button type="submit" class="btn btn-outline-primary">
+                    <button type="submit"
+                            class="btn btn-outline-primary calendar-sync-action-btn"
+                            @disabled($syncCooldownSeconds > 0)>
                         <span class="fas fa-sync-alt me-1"></span>
                         @lang('title.manual_sync_all')
                     </button>
@@ -86,14 +94,15 @@
                                 <th scope="col">@lang('title.platform')</th>
                                 <th scope="col" style="min-width: 280px;">@lang('title.external_link')</th>
                                 <th scope="col">@lang('title.auto_sync')</th>
-                                <th scope="col">@lang('title.last_sync')</th>
+                                <th scope="col" style="min-width: 170px;">@lang('title.last_sync')</th>
                                 <th class="text-end" scope="col">@lang('title.manual_sync_actions')</th>
                             </tr>
                         </thead>
                         <tbody>
                         @foreach($homes as $home)
                             @php($source = $home->calendarSource)
-                            <tr class="align-middle">
+                            @php($hasLink = filled($source?->external_url))
+                            <tr class="align-middle {{ $hasLink ? '' : 'table-light' }}">
                                 <td class="text-nowrap">
                                     <span class="badge rounded-pill badge-soft-primary">{{ $home->code ?: '—' }}</span>
                                     <small class="d-block text-muted mt-1">#{{ $home->id }}</small>
@@ -130,12 +139,15 @@
                                         name="sources[{{ $home->id }}][external_url]"
                                         class="form-control form-control-sm"
                                         value="{{ old('sources.'.$home->id.'.external_url', $source?->external_url) }}"
-                                        placeholder="https://www.jajiga.com/room/..."
+                                        placeholder="https://www.jabama.com/stay/... یا jajiga.com/room/..."
                                         dir="ltr"
                                         @cannot('updateCalendarSync', \App\Models\Home::class) disabled @endcannot
                                     >
                                     @if($source?->external_room_id)
                                         <small class="text-muted d-block mt-1">شناسه خارجی: {{ $source->external_room_id }}</small>
+                                    @endif
+                                    @if(! $hasLink)
+                                        <small class="text-warning d-block mt-1">بدون لینک</small>
                                     @endif
                                 </td>
                                 <td class="text-nowrap">
@@ -151,9 +163,10 @@
                                         >
                                     </div>
                                 </td>
-                                <td class="text-nowrap" style="min-width: 160px;">
+                                <td class="text-nowrap" style="min-width: 170px;">
                                     @if($source?->last_synced_at)
-                                        <div>{{ jdate($source->last_synced_at)->format('Y/m/d H:i') }}</div>
+                                        <div class="fw-semi-bold">{{ jdate($source->last_synced_at)->format('Y/m/d H:i') }}</div>
+                                        <small class="text-muted d-block">{{ $source->last_synced_at->diffForHumans() }}</small>
                                         @if($source->syncStatusLabel())
                                             <span class="badge rounded-pill badge-soft-{{ $source->syncStatusColor() }} mt-1">
                                                 {{ $source->syncStatusLabel() }}
@@ -162,29 +175,42 @@
                                         @if($source->last_sync_message)
                                             <small class="d-block text-muted mt-1" style="font-size: 11px;">{{ $source->last_sync_message }}</small>
                                         @endif
+                                    @elseif($hasLink)
+                                        <span class="badge rounded-pill badge-soft-warning">هنوز همگام نشده</span>
                                     @else
                                         <span class="text-muted">—</span>
                                     @endif
                                 </td>
                                 <td class="text-end text-nowrap">
-                                    <div class="d-inline-flex align-items-center gap-2">
-                                        @can('showDate', $home)
-                                            <a href="{{ route('admin.homes.date.show', $home) }}" class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="@lang('title.calendar')">
-                                                <span class="fas fa-calendar-alt"></span>
-                                            </a>
-                                        @endcan
+                                    <div class="d-inline-flex flex-column align-items-end gap-1">
+                                        <div class="d-inline-flex align-items-center gap-2">
+                                            @can('showDate', $home)
+                                                <a href="{{ route('admin.homes.date.show', $home) }}" class="btn btn-sm btn-light" data-bs-toggle="tooltip" title="@lang('title.calendar')">
+                                                    <span class="fas fa-calendar-alt"></span>
+                                                </a>
+                                            @endcan
+                                            @can('syncCalendar', $home)
+                                                @if($hasLink)
+                                                    <button
+                                                        type="submit"
+                                                        form="calendar-sync-now-{{ $home->id }}"
+                                                        class="btn btn-sm btn-primary calendar-sync-action-btn"
+                                                        @disabled($syncCooldownSeconds > 0)
+                                                    >
+                                                        <span class="fas fa-sync-alt me-1"></span>
+                                                        @lang('title.manual_sync')
+                                                    </button>
+                                                @else
+                                                    <span class="text-muted small">لینک ثبت نشده</span>
+                                                @endif
+                                            @endcan
+                                        </div>
                                         @can('syncCalendar', $home)
-                                            @if($source?->external_url)
-                                                <button
-                                                    type="submit"
-                                                    form="calendar-sync-now-{{ $home->id }}"
-                                                    class="btn btn-sm btn-primary"
-                                                >
-                                                    <span class="fas fa-sync-alt me-1"></span>
-                                                    @lang('title.manual_sync')
-                                                </button>
-                                            @else
-                                                <span class="text-muted small">لینک ثبت نشده</span>
+                                            @if($hasLink)
+                                                <small class="calendar-sync-countdown text-muted {{ $syncCooldownSeconds > 0 ? '' : 'd-none' }}"
+                                                       style="font-size: 11px;">
+                                                    قابل به‌روزرسانی تا <span class="calendar-sync-countdown-value">{{ (int) $syncCooldownSeconds }}</span> ثانیه دیگر
+                                                </small>
                                             @endif
                                         @endcan
                                     </div>
@@ -221,3 +247,80 @@
         @endif
     </x-admin.card>
 @endsection
+
+@push('bottom-assets')
+<script>
+(function () {
+    var remaining = parseInt(@json((int) $syncCooldownSeconds), 10) || 0;
+    var banner = document.getElementById('calendar-sync-cooldown-banner');
+    var bannerText = document.getElementById('calendar-sync-cooldown-banner-text');
+    var buttons = document.querySelectorAll('.calendar-sync-action-btn');
+    var countdowns = document.querySelectorAll('.calendar-sync-countdown');
+    var timerId = null;
+
+    function toPersianDigits(value) {
+        return String(value).replace(/\d/g, function (digit) {
+            return '۰۱۲۳۴۵۶۷۸۹'[digit];
+        });
+    }
+
+    function formatSeconds(total) {
+        var minutes = Math.floor(total / 60);
+        var seconds = total % 60;
+        var mm = String(minutes).padStart(2, '0');
+        var ss = String(seconds).padStart(2, '0');
+        return toPersianDigits(mm + ':' + ss);
+    }
+
+    function render() {
+        var disabled = remaining > 0;
+
+        buttons.forEach(function (btn) {
+            btn.disabled = disabled;
+        });
+
+        countdowns.forEach(function (el) {
+            var valueEl = el.querySelector('.calendar-sync-countdown-value');
+            if (disabled) {
+                el.classList.remove('d-none');
+                if (valueEl) {
+                    valueEl.textContent = toPersianDigits(remaining);
+                }
+            } else {
+                el.classList.add('d-none');
+            }
+        });
+
+        if (banner && bannerText) {
+            if (disabled) {
+                banner.classList.remove('d-none');
+                bannerText.textContent = formatSeconds(remaining);
+            } else {
+                banner.classList.add('d-none');
+            }
+        }
+    }
+
+    function tick() {
+        if (remaining <= 0) {
+            remaining = 0;
+            render();
+            if (timerId) {
+                clearInterval(timerId);
+                timerId = null;
+            }
+            return;
+        }
+
+        remaining -= 1;
+        render();
+    }
+
+    render();
+
+    if (remaining > 0) {
+        timerId = setInterval(tick, 1000);
+    }
+})();
+</script>
+@endpush

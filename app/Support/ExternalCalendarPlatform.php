@@ -67,7 +67,7 @@ class ExternalCalendarPlatform
                 '#jajiga\.com/room/(\d+)#i',
             ]),
             self::JABAMA => self::firstMatch($url, [
-                '#jabama\.com/stay/([a-z0-9-]+)#i',
+                '#jabama\.com/stay/[a-z0-9\-]*?(\d+)(?:[/?]|$)#i',
                 '#jabama\.com/(?:room|place)/(\d+)#i',
             ]),
             self::OTAGHAK => self::firstMatch($url, [

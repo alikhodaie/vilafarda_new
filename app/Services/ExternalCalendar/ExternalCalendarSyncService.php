@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\DB;
 class ExternalCalendarSyncService
 {
     public function __construct(
-        private JajigaCalendarFetcher $jajigaFetcher
+        private JajigaCalendarFetcher $jajigaFetcher,
+        private JabamaCalendarFetcher $jabamaFetcher
     ) {}
 
     public function sync(Home $home, bool $manual = false): HomeCalendarSource
@@ -30,11 +31,7 @@ class ExternalCalendarSyncService
             throw new \RuntimeException('شناسه اقامتگاه از روی لینک خارجی قابل تشخیص نیست.');
         }
 
-        if (! JajigaCalendarFetcher::supports($source->platform)) {
-            throw new \RuntimeException('همگام‌سازی برای پلتفرم «'.$source->platformLabel().'» هنوز پیاده‌سازی نشده است.');
-        }
-
-        $blockedDates = $this->jajigaFetcher->fetchUnavailableDates($source->external_room_id);
+        $blockedDates = $this->fetchUnavailableDates($source->platform, $source->external_room_id);
         $previousBlocked = collect($source->last_blocked_dates ?? [])->filter()->values()->all();
 
         DB::transaction(function () use ($home, $source, $blockedDates, $previousBlocked) {
@@ -70,6 +67,23 @@ class ExternalCalendarSyncService
         });
 
         return $source->fresh();
+    }
+
+    private function fetchUnavailableDates(?string $platform, string $roomId): array
+    {
+        if (JajigaCalendarFetcher::supports($platform)) {
+            return $this->jajigaFetcher->fetchUnavailableDates($roomId);
+        }
+
+        if (JabamaCalendarFetcher::supports($platform)) {
+            return $this->jabamaFetcher->fetchUnavailableDates($roomId);
+        }
+
+        $label = $platform
+            ? \App\Support\ExternalCalendarPlatform::label($platform)
+            : 'نامشخص';
+
+        throw new \RuntimeException('همگام‌سازی برای پلتفرم «'.$label.'» هنوز پیاده‌سازی نشده است.');
     }
 
     private function hasActiveOrderOnDate(Home $home, string $date): bool

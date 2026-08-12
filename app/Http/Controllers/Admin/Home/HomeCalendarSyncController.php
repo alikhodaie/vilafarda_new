@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\Home\UpdateHomeCalendarSourcesRequest;
 use App\Models\Home;
 use App\Models\HomeCalendarSource;
 use App\Services\ExternalCalendar\ExternalCalendarSyncService;
+use App\Support\ExternalCalendarSyncCooldown;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,9 +22,22 @@ class HomeCalendarSyncController extends Controller
         $homes = Home::query()
             ->with(['user', 'calendarSource'])
             ->where('is_draft', false)
-            ->search()
+            ->when($request->filled('id'), function ($query) use ($request) {
+                $query->where('homes.id', $request->get('id'));
+            })
+            ->when($request->filled('name'), function ($query) use ($request) {
+                $name = '%'.(string) $request->input('name').'%';
+
+                $query->where(function ($builder) use ($name) {
+                    $builder->where('homes.name', 'like', $name)
+                        ->orWhere('homes.code', 'like', $name);
+                });
+            })
             ->when($request->filled('code'), function ($query) use ($request) {
-                $query->where('code', 'like', '%'.$request->string('code').'%');
+                $query->where('homes.code', 'like', '%'.(string) $request->input('code').'%');
+            })
+            ->when($request->filled('user'), function ($query) use ($request) {
+                $query->where('homes.user_id', $request->get('user'));
             })
             ->when($request->filled('has_external_link'), function ($query) use ($request) {
                 if ($request->get('has_external_link') === 'yes') {
@@ -48,11 +62,43 @@ class HomeCalendarSyncController extends Controller
                     $builder->where('sync_enabled', $enabled);
                 });
             })
-            ->orderByDesc('id')
+            ->orderByRaw("
+                CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM home_calendar_sources hcs
+                    WHERE hcs.home_id = homes.id
+                      AND hcs.external_url IS NOT NULL
+                      AND hcs.external_url <> ''
+                ) THEN 0 ELSE 1 END ASC
+            ")
+            ->orderByRaw("
+                COALESCE((
+                    SELECT hcs.last_synced_at
+                    FROM home_calendar_sources hcs
+                    WHERE hcs.home_id = homes.id
+                      AND hcs.external_url IS NOT NULL
+                      AND hcs.external_url <> ''
+                    LIMIT 1
+                ), CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM home_calendar_sources hcs2
+                    WHERE hcs2.home_id = homes.id
+                      AND hcs2.external_url IS NOT NULL
+                      AND hcs2.external_url <> ''
+                ) THEN '1970-01-01 00:00:00' ELSE '9999-12-31 23:59:59' END) ASC
+            ")
+            ->orderByDesc('homes.id')
             ->paginate(20)
             ->appends($request->all());
 
-        return view('admin.homes.calendar-sync.index', compact('homes'));
+        $syncCooldownSeconds = ExternalCalendarSyncCooldown::remainingSeconds();
+        $syncCooldownTotal = ExternalCalendarSyncCooldown::SECONDS;
+
+        return view('admin.homes.calendar-sync.index', compact(
+            'homes',
+            'syncCooldownSeconds',
+            'syncCooldownTotal'
+        ));
     }
 
     public function update(UpdateHomeCalendarSourcesRequest $request)
@@ -74,7 +120,9 @@ class HomeCalendarSyncController extends Controller
                 $syncEnabled = ! empty($data['sync_enabled']);
 
                 if ($externalUrl === '') {
-                    $home->calendarSource()?->delete();
+                    if ($home->calendarSource) {
+                        $home->calendarSource->delete();
+                    }
                     continue;
                 }
 
@@ -110,12 +158,20 @@ class HomeCalendarSyncController extends Controller
     {
         $this->authorize('syncCalendar', $home);
 
-        return $this->runSync($home, $syncService, manual: true);
+        if ($redirect = $this->cooldownRedirectIfNeeded()) {
+            return $redirect;
+        }
+
+        return $this->runSync($home, $syncService, true);
     }
 
     public function syncAll(Request $request, ExternalCalendarSyncService $syncService)
     {
         $this->authorize('syncAllCalendar', Home::class);
+
+        if ($redirect = $this->cooldownRedirectIfNeeded()) {
+            return $redirect;
+        }
 
         $homes = Home::query()
             ->with('calendarSource')
@@ -123,42 +179,70 @@ class HomeCalendarSyncController extends Controller
             ->whereHas('calendarSource', function ($query) {
                 $query->whereNotNull('external_url')->where('external_url', '!=', '');
             })
+            ->orderByRaw("
+                COALESCE((
+                    SELECT hcs.last_synced_at
+                    FROM home_calendar_sources hcs
+                    WHERE hcs.home_id = homes.id
+                    LIMIT 1
+                ), '1970-01-01 00:00:00') ASC
+            ")
             ->orderByDesc('id')
+            ->limit(1)
             ->get();
 
-        $successCount = 0;
-        $failedCount = 0;
-        $messages = [];
+        $home = $homes->first();
 
-        foreach ($homes as $home) {
-            $result = $this->runSync($home, $syncService, manual: true, redirect: false);
-
-            if ($result['success']) {
-                $successCount++;
-                continue;
-            }
-
-            $failedCount++;
-            $messages[] = ($home->code ?: '#'.$home->id).' — '.$result['message'];
-        }
-
-        if ($failedCount === 0) {
+        if (! $home) {
             return redirect()
                 ->back()
-                ->with('success', 'همگام‌سازی دستی '.$successCount.' اقامتگاه با موفقیت انجام شد.');
+                ->with('danger', 'اقامتگاهی با لینک خارجی برای همگام‌سازی پیدا نشد.');
         }
 
-        $summary = 'موفق: '.$successCount.' | ناموفق: '.$failedCount;
+        $result = $this->runSync($home, $syncService, true, false, true);
+
+        if ($result['success']) {
+            return redirect()
+                ->back()
+                ->with('success', 'همگام‌سازی «'.($home->code ?: '#'.$home->id).'» انجام شد. برای مورد بعدی '.$this->cooldownLabel().' صبر کنید.');
+        }
 
         return redirect()
             ->back()
-            ->with('warning', $summary."\n".implode("\n", array_slice($messages, 0, 5)).($failedCount > 5 ? "\n..." : ''));
+            ->with('danger', ($home->code ?: '#'.$home->id).' — '.$result['message']);
     }
 
-    private function runSync(Home $home, ExternalCalendarSyncService $syncService, bool $manual = false, bool $redirect = true)
+    private function cooldownLabel(): string
     {
+        return ExternalCalendarSyncCooldown::SECONDS.' ثانیه';
+    }
+
+    private function cooldownRedirectIfNeeded()
+    {
+        $remaining = ExternalCalendarSyncCooldown::remainingSeconds();
+
+        if ($remaining <= 0) {
+            return null;
+        }
+
+        return redirect()
+            ->back()
+            ->with('danger', 'برای جلوگیری از مسدود شدن IP، '.$remaining.' ثانیه دیگر صبر کنید و دوباره همگام‌سازی کنید.');
+    }
+
+    private function runSync(
+        Home $home,
+        ExternalCalendarSyncService $syncService,
+        bool $manual = false,
+        bool $redirect = true,
+        bool $markCooldown = true
+    ) {
         try {
             $source = $syncService->sync($home, $manual);
+
+            if ($markCooldown) {
+                ExternalCalendarSyncCooldown::mark();
+            }
 
             if (! $redirect) {
                 return [
@@ -171,6 +255,10 @@ class HomeCalendarSyncController extends Controller
                 ->back()
                 ->with('success', $source->last_sync_message ?: 'همگام‌سازی با موفقیت انجام شد.');
         } catch (Exception $e) {
+            if ($markCooldown) {
+                ExternalCalendarSyncCooldown::mark();
+            }
+
             if ($source = $home->calendarSource) {
                 $source->update([
                     'last_synced_at' => now(),
