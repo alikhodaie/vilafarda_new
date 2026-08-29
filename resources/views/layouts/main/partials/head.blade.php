@@ -5,6 +5,7 @@
 
 <title>{{ $documentTitle ?? siteName() }}</title>
 @include('layouts.main.partials.favicon')
+@include('layouts.main.partials.pwa-head')
 
 <!-- Bootstrap icons (local) -->
 <link rel="stylesheet" href="{{ asset('vendor/bootstrap-icons/font/bootstrap-icons.min.css') }}">

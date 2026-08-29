@@ -772,6 +772,7 @@ class JsonLdService
             'main.call-back',
             'main.add-to-home.ios',
             'main.add-to-home.android',
+            'pwa.offline',
         ];
 
         return in_array($routeName, $noindexRoutes, true);

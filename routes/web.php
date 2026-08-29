@@ -65,9 +65,15 @@ use App\Http\Controllers\Main\Home\HomeFavoriteController;
 use App\Http\Controllers\Main\LandingPageController;
 use App\Http\Controllers\Main\MainController;
 use App\Http\Controllers\Main\NewsletterController;
+use App\Http\Controllers\Main\PwaController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Webhook\SmsController;
+use App\Http\Middleware\EncryptCookies;
+use App\Http\Middleware\VerifyCsrfToken;
 use App\Models\Setting;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -90,6 +96,22 @@ Route::get('/sitemap/static.xml', [SitemapController::class, 'staticPages'])->na
 Route::get('/sitemap/landings.xml', [SitemapController::class, 'landings'])->name('sitemap.landings');
 Route::get('/sitemap/homes.xml', [SitemapController::class, 'homes'])->name('sitemap.homes');
 Route::get('/sitemap/articles.xml', [SitemapController::class, 'articles'])->name('sitemap.articles');
+
+$pwaWithoutSession = [
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    VerifyCsrfToken::class,
+];
+
+Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])
+    ->withoutMiddleware($pwaWithoutSession)
+    ->name('pwa.manifest');
+Route::get('/sw.js', [PwaController::class, 'serviceWorker'])
+    ->withoutMiddleware($pwaWithoutSession)
+    ->name('pwa.service-worker');
+Route::get('/offline', [PwaController::class, 'offline'])->name('pwa.offline');
 
 Route::get('/favicon.ico', function () {
     $stored = setting('app:favicon');

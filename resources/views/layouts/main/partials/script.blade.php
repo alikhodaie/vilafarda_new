@@ -19,6 +19,7 @@
 <script src="{{ public_asset_version('assets/js/custom.js') }}"></script>
 <script src="{{ public_asset_version('assets/js/home-favorite.js') }}"></script>
 <script src="{{ public_asset_version('assets/js/app.js') }}"></script>
+<script src="{{ public_asset_version('assets/js/pwa-register.js') }}" defer></script>
 <!-- ============================================================== -->
 <!-- This page plugins -->
 <!-- ============================================================== -->

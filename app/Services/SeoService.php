@@ -35,6 +35,9 @@ class SeoService
         'main.call-back',
         'main.add-to-home.ios',
         'main.add-to-home.android',
+        'pwa.offline',
+        'pwa.manifest',
+        'pwa.service-worker',
     ];
 
     /**

@@ -13,6 +13,7 @@ window.__homeFavoriteConfig = {
 @include('layouts.main.partials.seo-meta')
 <title>{{ $documentTitle ?? siteName() }}</title>
 @include('layouts.main.partials.favicon')
+@include('layouts.main.partials.pwa-head')
 
 <!-- Bootstrap CSS (RTL - local) -->
 <link href="{{ asset('vendor/bootstrap/css/bootstrap.rtl.min.css') }}" rel="stylesheet">
