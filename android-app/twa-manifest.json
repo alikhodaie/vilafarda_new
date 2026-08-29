@@ -18,8 +18,8 @@
   "fullScopeUrl": "https://www.vilafarda.ir/",
   "minSdkVersion": 21,
   "orientation": "portrait",
-  "appVersionName": "1.0.1",
-  "appVersionCode": 2,
+  "appVersionName": "1.1.0",
+  "appVersionCode": 3,
   "additionalTrustedOrigins": [
     "https://vilafarda.ir"
   ],
