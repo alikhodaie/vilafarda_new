@@ -45,4 +45,13 @@ class PwaRoutesTest extends TestCase
             ->assertSee('اتصال اینترنت برقرار نیست')
             ->assertHeader('X-Robots-Tag', 'noindex, nofollow');
     }
+
+    public function test_assetlinks_includes_android_package(): void
+    {
+        $response = $this->get('/.well-known/assetlinks.json');
+
+        $response->assertOk();
+        $response->assertJsonPath('0.target.package_name', 'com.vilafarda.app');
+        $response->assertJsonPath('0.target.namespace', 'android_app');
+    }
 }

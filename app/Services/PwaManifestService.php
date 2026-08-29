@@ -36,6 +36,13 @@ class PwaManifestService
             'background_color' => self::BACKGROUND_COLOR,
             'categories' => ['travel'],
             'icons' => $icons,
+            'prefer_related_applications' => true,
+            'related_applications' => [
+                [
+                    'platform' => 'play',
+                    'id' => (string) config('pwa.android_package', 'com.vilafarda.app'),
+                ],
+            ],
         ];
 
         if ($icons !== []) {

@@ -1,0 +1,5 @@
+<resources>
+    <array name="additionalTrustedOrigins">
+        <item>https://vilafarda.ir</item>
+    </array>
+</resources>

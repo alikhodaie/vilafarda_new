@@ -28,8 +28,7 @@
                 </a>
                 <a href="{{ route('main.add-to-home.android') }}" class="mobile-site-footer__install-btn">
                     <i class="bi bi-android2" aria-hidden="true"></i>
-                    <span class="mobile-site-footer__install-label">افزودن به صفحه اصلی</span>
-                    <span class="mobile-site-footer__install-platform">اندروید</span>
+                    <span class="mobile-site-footer__install-label">دانلود اپلیکیشن</span>
                 </a>
             </div>
         </section>

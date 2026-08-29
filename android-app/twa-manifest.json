@@ -1,0 +1,30 @@
+{
+  "packageId": "com.vilafarda.app",
+  "host": "www.vilafarda.ir",
+  "name": "vilafarda",
+  "launcherName": "ویلا فردا",
+  "display": "standalone",
+  "themeColor": "#D39D1A",
+  "themeColorDark": "#D39D1A",
+  "navigationColor": "#D39D1A",
+  "navigationColorDark": "#111111",
+  "backgroundColor": "#FFFFFF",
+  "enableNotifications": false,
+  "startUrl": "/?utm_source=twa",
+  "iconUrl": "https://www.vilafarda.ir/files/setting/favicon-1782198495-512.png",
+  "maskableIconUrl": "https://www.vilafarda.ir/files/setting/favicon-1782198495-512.png",
+  "webManifestUrl": "https://www.vilafarda.ir/manifest.webmanifest",
+  "fallbackType": "customtabs",
+  "fullScopeUrl": "https://www.vilafarda.ir/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "additionalTrustedOrigins": [
+    "https://vilafarda.ir"
+  ],
+  "signingKey": {
+    "path": "./keystore/vilafarda.keystore",
+    "alias": "vilafarda"
+  }
+}

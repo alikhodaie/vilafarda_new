@@ -111,7 +111,11 @@ Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])
 Route::get('/sw.js', [PwaController::class, 'serviceWorker'])
     ->withoutMiddleware($pwaWithoutSession)
     ->name('pwa.service-worker');
+Route::get('/.well-known/assetlinks.json', [PwaController::class, 'assetLinks'])
+    ->withoutMiddleware($pwaWithoutSession)
+    ->name('pwa.assetlinks');
 Route::get('/offline', [PwaController::class, 'offline'])->name('pwa.offline');
+Route::get('/app/vilafarda.apk', [PwaController::class, 'apk'])->name('pwa.apk');
 
 Route::get('/favicon.ico', function () {
     $stored = setting('app:favicon');
