@@ -3,6 +3,23 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <queries>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <package android:name="com.android.chrome" />
+        <package android:name="com.chrome.beta" />
+        <package android:name="com.chrome.dev" />
+        <package android:name="com.chrome.canary" />
+        <package android:name="com.google.android.apps.chrome" />
+        <package android:name="org.mozilla.firefox" />
+        <package android:name="com.sec.android.app.sbrowser" />
+    </queries>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -19,7 +36,8 @@
             android:alwaysRetainTaskState="true"
             android:exported="true"
             android:label="@string/launcher_name"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:documentLaunchMode="never">
 
             <meta-data
                 android:name="android.support.customtabs.trusted.DEFAULT_URL"
@@ -45,6 +63,12 @@
             <meta-data
                 android:name="android.support.customtabs.trusted.ADDITIONAL_TRUSTED_ORIGINS"
                 android:resource="@array/additionalTrustedOrigins" />
+            <meta-data
+                android:name="android.support.customtabs.trusted.FILE_PROVIDER_AUTHORITY"
+                android:value="com.vilafarda.app.fileprovider" />
+            <meta-data
+                android:name="android.support.customtabs.trusted.FALLBACK_STRATEGY"
+                android:value="webview" />
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -78,5 +102,15 @@
             android:name="com.google.androidbrowserhelper.trusted.WebViewFallbackActivity"
             android:configChanges="orientation|screenSize"
             android:exported="false" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.vilafarda.app.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/filepaths" />
+        </provider>
     </application>
 </manifest>

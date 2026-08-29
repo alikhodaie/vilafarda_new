@@ -1,5 +1,5 @@
 <resources>
-    <array name="additionalTrustedOrigins">
+    <string-array name="additionalTrustedOrigins">
         <item>https://vilafarda.ir</item>
-    </array>
+    </string-array>
 </resources>
