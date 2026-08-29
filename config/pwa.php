@@ -1,3 +1,5 @@
+<?php
+
 return [
     'android_package' => env('PWA_ANDROID_PACKAGE', 'com.vilafarda.app'),
     'apk_filename' => env('PWA_APK_FILENAME', 'vilafarda.apk'),
