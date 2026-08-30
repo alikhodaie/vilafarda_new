@@ -14,7 +14,12 @@ document.addEventListener('DOMContentLoaded', function () {
             villas.forEach(home => {
                 const imgSrc = home.cover_path || home.cover || '';
                 const discount = home.discount_percent > 0 ? home.discount_percent : null;
-                const badge = discount ? `<div class="discount-badge" style="position:absolute;top:10px;left:25px;z-index:2;">${discount}%</div>` : '';
+                const persianPrice = home.off_price
+                    ? Number(home.off_price).toLocaleString('fa-IR')
+                    : '';
+                const badge = discount
+                    ? `<div class="discount-badge" style="position:absolute;top:10px;left:25px;z-index:2;">${Number(discount).toLocaleString('fa-IR')}٪</div>`
+                    : '';
                 const slide = document.createElement('div');
                 slide.className = 'swiper-slide';
                 slide.style.minWidth = '200px';
@@ -29,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <a href="/homes/${home.id}">
                             <div class="villa-card p-2" style="width:100%; position:relative; height:360px; display:flex; flex-direction:column; justify-content:flex-end;">
                                 <div class="home-card-image-wrap" style="background:#eee; border-radius: 3rem; overflow:hidden; height:100%; width:100%; position:relative; display:flex; flex-direction:column; justify-content:flex-end;">
-                                    <img src="${imgSrc}" style="width:100%; height:100%; object-fit:cover; border-radius:3rem;" alt="${window.SeoImage ? window.SeoImage.escapeAttr(window.SeoImage.altForHome(home)) : ''}" width="260" height="360" loading="lazy" decoding="async">
+                                    <img src="${imgSrc}" style="width:100%; height:100%; object-fit:cover; border-radius:3rem;" alt="${window.SeoImage ? window.SeoImage.escapeAttr(window.SeoImage.altForHome(home)) : ''}" width="260" height="360" loading="lazy" decoding="async" onerror="this.style.display='none'">
                                     ${badge}
                                     <div class="villa-card__image-gradient" aria-hidden="true"></div>
                                     <div class="villa-card__caption">
@@ -39,7 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                         </div>
                                         <div class="d-flex align-items-center justify-content-between mt-1">
                                             <span class="villa-card__caption-price">
-                                                ${home.off_price ? Number(home.off_price).toLocaleString() + ' تومان' : ''}
+                                                ${persianPrice}
                                                 <span class="villa-card__caption-price-unit">تومان/هر شب</span>
                                             </span>
                                         </div>

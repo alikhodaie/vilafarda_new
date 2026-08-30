@@ -114,14 +114,15 @@ class HomeController extends Controller
                 ]);
             }
 
-            UploadValidation::validateUploadedOrFail($request->file('cover'), 'cover', 'کاور');
-
-            try {
-                $home->updateCover($request->file('cover'));
-            } catch (\Throwable $e) {
-                throw ValidationException::withMessages([
-                    'cover' => $e->getMessage(),
-                ]);
+            if (UploadValidation::isUsableUploadedFile($request->file('cover'))) {
+                UploadValidation::validateUploadedOrFail($request->file('cover'), 'cover', 'کاور');
+                try {
+                    $home->updateCover($request->file('cover'));
+                } catch (\Throwable $e) {
+                    throw ValidationException::withMessages([
+                        'cover' => $e->getMessage(),
+                    ]);
+                }
             }
 
             $documentFile = $request->file('document');
@@ -183,10 +184,11 @@ class HomeController extends Controller
         try {
             DB::beginTransaction();
 
-            /** @var UploadedFile|null $coverFile */
             $coverFile = $request->file('cover');
-            if ($coverFile instanceof UploadedFile) {
+            if (UploadValidation::isUsableUploadedFile($coverFile)) {
                 UploadValidation::validateUploadedOrFail($coverFile, 'cover', 'کاور');
+            } else {
+                $coverFile = null;
             }
 
             $slugInput = trim((string) $request->input('slug', ''));
@@ -233,7 +235,7 @@ class HomeController extends Controller
                 $home->updateVariable($variable_id, $value);
             }
 
-            if ($coverFile instanceof UploadedFile) {
+            if ($coverFile) {
                 try {
                     $home->updateCover($coverFile);
                 } catch (\Throwable $e) {

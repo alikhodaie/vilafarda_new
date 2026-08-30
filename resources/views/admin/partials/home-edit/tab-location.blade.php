@@ -13,7 +13,8 @@
     </div>
     <div class="col-12 col-md-6 mb-3">
         <label for="admin-home-city">@lang('title.city')</label>
-        <select name="city" id="admin-home-city" class="form-control" required>
+        <select name="city" id="admin-home-city" class="form-control" required
+                data-current-city="{{ old('city', $home->city_id) }}">
             <option value="">@lang('title.select')</option>
             @foreach($cities as $city)
                 <option value="{{ $city->id }}" data-province="{{ $city->province_id }}"

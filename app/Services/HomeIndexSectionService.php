@@ -96,10 +96,7 @@ class HomeIndexSectionService
                 return collect();
         }
 
-        return $query
-            ->limit($limit)
-            ->get()
-            ->map(fn (Home $home) => self::formatListingHome($home, $date));
+        return self::takeHomesWithCover($query, $date, $limit);
     }
 
     public static function hasOpenTomorrowHomes(): bool
@@ -147,9 +144,17 @@ class HomeIndexSectionService
             $query->where('homes.city_id', $cityId);
         }
 
+        return self::takeHomesWithCover($query, $date, $limit);
+    }
+
+    private static function takeHomesWithCover($query, Carbon $date, int $limit): Collection
+    {
         return $query
-            ->limit($limit)
+            ->limit(max($limit * 6, 30))
             ->get()
+            ->filter(fn (Home $home) => $home->hasUsableCoverImage())
+            ->take($limit)
+            ->values()
             ->map(fn (Home $home) => self::formatListingHome($home, $date));
     }
 

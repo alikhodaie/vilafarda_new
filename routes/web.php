@@ -454,6 +454,7 @@ Route::prefix('/admin')->name('admin.')->middleware(['auth', 'admin'])->group(fu
         Route::prefix('/{home}/image')->name('image.')->group(function (){
             Route::get('/', [AdminHomeImageController::class, 'index'])->name('index');
             Route::post('/bulk-delete', [AdminHomeImageController::class, 'bulkDestroy'])->name('bulk-delete');
+            Route::post('/delete-all', [AdminHomeImageController::class, 'destroyAll'])->name('delete-all');
             Route::post('/', [AdminHomeImageController::class, 'store'])->name('store');
             Route::patch('/{image}', [AdminHomeImageController::class, 'update'])->name('update');
             Route::delete('/{image}', [AdminHomeImageController::class, 'destroy'])->name('delete');

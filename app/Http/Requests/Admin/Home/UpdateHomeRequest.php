@@ -76,7 +76,15 @@ class UpdateHomeRequest extends FormRequest
             'type' => ['required', Rule::in(array_keys(Home::TYPES))],
             'area' => ['required', Rule::in(array_keys(Home::AREAS))],
             'province' => ['required', 'exists:provinces,id'],
-            'city' => ['required', Rule::exists('cities', 'id')->where('province_id', request()->get('province'))],
+            'city' => [
+                'required',
+                Rule::exists('cities', 'id')->where(function ($query) {
+                    $provinceId = $this->input('province');
+                    if ($provinceId) {
+                        $query->where('province_id', $provinceId);
+                    }
+                }),
+            ],
             'address' => ['required', 'string', 'max:500'],
             'latitude' => ['required', 'numeric', 'max:1000'],
             'longitude' => ['required', 'numeric', 'max:1000'],

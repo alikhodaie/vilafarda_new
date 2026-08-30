@@ -13,7 +13,6 @@ use App\Support\UploadValidation;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 
@@ -115,11 +114,7 @@ class HomeController extends Controller
                     $home->update($stepData);
                     break;
                 case 2:
-                    $cover = $request->file('cover');
-                    if ($cover instanceof UploadedFile) {
-                        UploadValidation::validateUploadedOrFail($cover, 'cover', 'کاور');
-                        $home->addCover($cover);
-                    }
+                    $this->applyCoverUploadIfPresent($home, $request);
                     $galleryWarnings = UploadValidation::appendGalleryImagesBestEffort($home, $request->file('images'), 'تصویر');
                     break;
                 case 3:
@@ -171,11 +166,7 @@ class HomeController extends Controller
                     ]);
                     break;
                 case 11:
-                    $doc = $request->file('document');
-                    if ($doc instanceof UploadedFile) {
-                        UploadValidation::validateUploadedOrFail($doc, 'document', 'سند');
-                        $home->addDocument($doc);
-                    }
+                    $this->applyDocumentUploadIfPresent($home, $request);
                     break;
             }
 
@@ -247,21 +238,11 @@ class HomeController extends Controller
             $this->syncHomeOptionsAndHealths($home, $request);
             $this->syncHomeSafeties($home, $request);
 
-            // Handle cover image (به‌جای hasFile؛ در بعضی سرورها hasFile برای آپلود معتبر false می‌شود)
-            $cover = $request->file('cover');
-            if ($cover instanceof UploadedFile) {
-                UploadValidation::validateUploadedOrFail($cover, 'cover', 'کاور');
-                $home->addCover($cover);
-            }
+            $this->applyCoverUploadIfPresent($home, $request);
 
             $galleryWarnings = UploadValidation::appendGalleryImagesBestEffort($home, $request->file('images'), 'تصویر');
 
-            // Handle document
-            $doc = $request->file('document');
-            if ($doc instanceof UploadedFile) {
-                UploadValidation::validateUploadedOrFail($doc, 'document', 'سند');
-                $home->addDocument($doc);
-            }
+            $this->applyDocumentUploadIfPresent($home, $request);
 
             DB::commit();
 
@@ -396,11 +377,7 @@ class HomeController extends Controller
             $this->syncHomeOptionsAndHealths($home, $request);
             $this->syncHomeSafeties($home, $request);
 
-            $cover = $request->file('cover');
-            if ($cover instanceof UploadedFile) {
-                UploadValidation::validateUploadedOrFail($cover, 'cover', 'کاور');
-                $home->addCover($cover);
-            }
+            $this->applyCoverUploadIfPresent($home, $request);
 
             if ($request->filled('delete_existing_images')) {
                 $imagesToDelete = $home->images()->whereIn('id', $request->get('delete_existing_images'))->get();
@@ -412,11 +389,7 @@ class HomeController extends Controller
 
             $galleryWarnings = UploadValidation::appendGalleryImagesBestEffort($home, $request->file('images'), 'تصویر');
 
-            $doc = $request->file('document');
-            if ($doc instanceof UploadedFile) {
-                UploadValidation::validateUploadedOrFail($doc, 'document', 'سند');
-                $home->addDocument($doc);
-            }
+            $this->applyDocumentUploadIfPresent($home, $request);
 
             if ($request->filled('variables')){
                 foreach ($request->get('variables') as $variable_id => $value){
@@ -433,7 +406,7 @@ class HomeController extends Controller
             DB::commit();
 
             $successMessage = 'اطلاعات اقامتگاه با موفقیت به‌روزرسانی شد';
-            $hadDocumentUpload = $request->file('document') instanceof UploadedFile;
+            $hadDocumentUpload = UploadValidation::isUsableUploadedFile($request->file('document'));
 
             if ($request->is_mobile ?? false) {
                 $redirect = redirect()
@@ -587,5 +560,27 @@ class HomeController extends Controller
             Error::catch($e, __CLASS__, __FUNCTION__);
             return redirect()->back()->with('danger', __('text.whoops'));
         }
+    }
+
+    private function applyCoverUploadIfPresent(Home $home, Request $request): void
+    {
+        $cover = $request->file('cover');
+        if (! UploadValidation::isUsableUploadedFile($cover)) {
+            return;
+        }
+
+        UploadValidation::validateUploadedOrFail($cover, 'cover', 'کاور');
+        $home->addCover($cover);
+    }
+
+    private function applyDocumentUploadIfPresent(Home $home, Request $request): void
+    {
+        $doc = $request->file('document');
+        if (! UploadValidation::isUsableUploadedFile($doc)) {
+            return;
+        }
+
+        UploadValidation::validateUploadedOrFail($doc, 'document', 'سند');
+        $home->addDocument($doc);
     }
 }

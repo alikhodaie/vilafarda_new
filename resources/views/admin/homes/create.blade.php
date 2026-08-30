@@ -3,7 +3,7 @@
 @section('content')
     <x-admin.card title="{{ __('title.create home') }}">
      
-        <form action="{{ route('admin.homes.store') }}" enctype="multipart/form-data" method="POST" class="p-3 row">
+        <form action="{{ route('admin.homes.store') }}" enctype="multipart/form-data" method="POST" class="p-3 row" id="admin-home-create-form">
             @csrf
 
             <div class="col-12 col-md-4 mb-3">
@@ -60,15 +60,12 @@
             <div class="col-12 mb-3">
                 <div class="form-group row">
                     <div class="col-md-12 text-center">
-                        <img id="cover" width="200" alt="cover"
-                             src="/"/>
+                        <img id="cover-preview-img" width="200" alt="cover" src="" class="rounded border d-none" style="max-height: 220px; object-fit: contain;">
                     </div>
-                    <div class="col-md-12 mt-5">
-                        <div class="form-group">
-                            <div class="custom-file">
-                                <input onchange="readURL(this, 'cover');" type="file" class="form-control-file" name="cover">
-                            </div>
-                        </div>
+                    <div class="col-md-12 mt-3">
+                        <label for="cover" class="form-label">@lang('title.cover')</label>
+                        <input type="file" class="form-control" name="cover" id="cover" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif">
+                        <p class="text-muted small mb-0 mt-2" id="cover-file-name">پس از انتخاب، حجم قبل و بعد از بهینه‌سازی اینجا دیده می‌شود.</p>
                     </div>
                 </div>
             </div>
@@ -290,24 +287,19 @@
             </div>
 
             <div class="col-12 mt-5 d-flex justify-content-center">
-                <button class="btn btn-falcon-success">@lang('title.submit')</button>
+                <button type="submit" class="btn btn-falcon-success" id="adminHomeCreateSubmit">@lang('title.submit')</button>
                 <a href="{{ route('admin.homes.index') }}" class="btn btn-falcon-danger">@lang('title.return')</a>
             </div>
         </form>
     </x-admin.card>
+
+    <x-image-compress-overlay />
 @endsection
 
 @section('bottom-assets')
-    <script>
-        function readURL(input, id) {
-            if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.onload = function (e) {
-                    // jQuery('#' + id).attr('src', e.target.result);
-                    document.querySelector('#' + id).src = e.target.result
-                };
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="{{ asset('assets/css/image-compress-overlay.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="{{ asset('assets/js/home-image-compress.js') }}?v=20260829"></script>
+    <script src="{{ asset('assets/js/mobile-document-compress.js') }}"></script>
+    <script src="{{ asset('assets/admin/js/home-edit-gallery-ui.js') }}?v=20260829"></script>
 @endsection

@@ -1,4 +1,4 @@
-@include('admin.partials.home-edit.help', ['text' => '<strong>رسانه:</strong> کاور، گالری، ویدیو و مدارک. تصاویر جدید با ذخیرهٔ فرم آپلود می‌شوند؛ برای حذف تصاویر فعلی می‌توانید از چک‌باکس «حذف» یا ابزار حذف دسته‌ای استفاده کنید.'])
+@include('admin.partials.home-edit.help', ['text' => '<strong>رسانه:</strong> کاور، گالری، ویدیو و مدارک. تصاویر جدید با ذخیرهٔ فرم آپلود می‌شوند. برای پاک کردن همهٔ عکس‌های فعلی از دکمهٔ «حذف همه تصاویر این اقامتگاه» استفاده کنید (بدون ذخیرهٔ فرم اصلی).'])
 @include('admin.partials.seo-performance-guide')
 
 <div class="card border-primary mb-4">
@@ -24,36 +24,55 @@
     </div>
 </div>
 
-@if(!$home->images->isEmpty())
+@php
+    $hasGalleryImages = !$home->images->isEmpty();
+    $hasCoverImage = (bool) $home->cover;
+    $deleteAllConfirm = ($hasGalleryImages && $hasCoverImage)
+        ? 'همه تصاویر گالری و کاور این اقامتگاه برای همیشه حذف می‌شوند. ادامه می‌دهید؟'
+        : ($hasCoverImage
+            ? 'تصویر کاور این اقامتگاه برای همیشه حذف می‌شود. ادامه می‌دهید؟'
+            : 'همه تصاویر گالری این اقامتگاه برای همیشه حذف می‌شوند. ادامه می‌دهید؟');
+@endphp
+@if($hasGalleryImages || $hasCoverImage)
     <div class="border rounded-3 px-3 pt-3 pb-2 bg-white mb-4">
-        <div class="fw-semibold small text-secondary mb-2">حذف دسته‌ای تصاویر گالری (بدون ذخیرهٔ فرم اصلی)</div>
+        <div class="fw-semibold small text-secondary mb-2">حذف تصاویر (بدون ذخیرهٔ فرم اصلی)</div>
         <div class="d-flex flex-wrap align-items-center gap-3 p-3 rounded-3 bg-light border mb-3">
-            <div class="form-check mb-0">
-                <input type="checkbox" class="form-check-input" id="admin-gallery-select-all">
-                <label class="form-check-label small fw-semibold" for="admin-gallery-select-all">انتخاب همه</label>
-            </div>
-            <button type="submit" form="form-bulk-delete-images" class="btn btn-danger btn-sm rounded-pill px-4"
-                    id="admin-gallery-bulk-delete-btn" disabled
-                    onclick="return confirm('تصاویر انتخاب‌شده برای همیشه حذف شوند؟');">
-                <span class="fas fa-trash-alt ms-1"></span> حذف انتخاب‌شده‌ها
-            </button>
-            <span class="text-muted small" id="admin-gallery-selected-hint"></span>
-        </div>
-        <div class="row g-3 pb-3">
-            @foreach($home->images as $image)
-                <div class="col-6 col-md-4 col-lg-3">
-                    <label class="admin-gallery-tile position-relative rounded-3 overflow-hidden border mb-0 d-block cursor-pointer bg-white shadow-sm">
-                        <input type="checkbox" name="ids[]" value="{{ $image->id }}" form="form-bulk-delete-images"
-                               class="form-check-input position-absolute top-0 start-0 m-2 admin-gallery-check"
-                               style="width: 1.15rem; height: 1.15rem; z-index: 2;">
-                        <img src="{{ $image->image_path }}" alt="{{ $image->original_name }}"
-                             class="w-100 d-block" style="height: 140px; object-fit: cover;">
-                        <div class="small text-truncate px-2 py-2 border-top bg-light text-secondary"
-                             title="{{ $image->original_name }}">{{ $image->original_name }}</div>
-                    </label>
+            @if($hasGalleryImages)
+                <div class="form-check mb-0">
+                    <input type="checkbox" class="form-check-input" id="admin-gallery-select-all">
+                    <label class="form-check-label small fw-semibold" for="admin-gallery-select-all">انتخاب همه</label>
                 </div>
-            @endforeach
+                <button type="button" class="btn btn-danger btn-sm rounded-pill px-4"
+                        id="admin-gallery-bulk-delete-btn" disabled>
+                    <span class="fas fa-trash-alt ms-1"></span> حذف انتخاب‌شده‌ها
+                </button>
+                <span class="text-muted small" id="admin-gallery-selected-hint"></span>
+            @endif
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-4"
+                    id="admin-gallery-delete-all-btn"
+                    data-confirm="{{ $deleteAllConfirm }}">
+                <span class="fas fa-times-circle ms-1"></span> حذف همه تصاویر این اقامتگاه
+            </button>
         </div>
+        @if($hasGalleryImages)
+            <div class="row g-3 pb-3">
+                @foreach($home->images as $image)
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <label class="admin-gallery-tile position-relative rounded-3 overflow-hidden border mb-0 d-block cursor-pointer bg-white shadow-sm">
+                            <input type="checkbox" value="{{ $image->id }}"
+                                   class="form-check-input position-absolute top-0 start-0 m-2 admin-gallery-check"
+                                   style="width: 1.15rem; height: 1.15rem; z-index: 2;">
+                            <img src="{{ $image->image_path }}" alt="{{ $image->original_name }}"
+                                 class="w-100 d-block" style="height: 140px; object-fit: cover;">
+                            <div class="small text-truncate px-2 py-2 border-top bg-light text-secondary"
+                                 title="{{ $image->original_name }}">{{ $image->original_name }}</div>
+                        </label>
+                    </div>
+                @endforeach
+            </div>
+        @elseif($hasCoverImage)
+            <p class="text-muted small mb-3">گالری خالی است؛ این دکمه فقط کاور را حذف می‌کند.</p>
+        @endif
     </div>
 @endif
 
@@ -67,12 +86,12 @@
     @endif
     <div id="cover-preview-wrap" class="mb-3 rounded-3 overflow-hidden border shadow-sm d-none bg-light" style="max-width: 320px;">
         <img src="" alt="" id="cover-preview-img" class="w-100 d-block" style="max-height: 220px; object-fit: contain;">
-        <div id="cover-preview-caption" class="small text-center py-1 bg-white border-top text-muted">پیش‌نمایش کاور جدید</div>
+        <div id="cover-preview-caption" class="small text-center py-1 bg-white border-top text-muted" style="font-size: 12px; line-height: 1.6;">پیش‌نمایش کاور جدید</div>
     </div>
     <div class="rounded-3 border border-2 border-dashed bg-light p-4 text-center admin-upload-dropzone">
         <label for="cover" class="mb-0 cursor-pointer d-block">
             <span class="fas fa-image fa-2x text-secondary mb-2 d-block"></span>
-            <span class="d-block text-secondary small mb-2">کاور اصلی اقامتگاه — روی سرور به WebP با کیفیت بالا ذخیره می‌شود. این تصویر اولین عکس صفحهٔ اقامتگاه و کارت‌های لیست است؛ افقی، روشن و بدون واترمارک انتخاب کنید.</span>
+            <span class="d-block text-secondary small mb-2">کاور اصلی اقامتگاه — بلافاصله فشرده می‌شود و حجم قبل/بعد زیر پیش‌نمایش دیده می‌شود. این تصویر اولین عکس صفحهٔ اقامتگاه و کارت‌های لیست است.</span>
             <span class="btn btn-sm btn-primary px-4 rounded-pill">انتخاب تصویر کاور</span>
         </label>
         <input type="file" name="cover" id="cover" class="d-none" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif">
@@ -115,7 +134,7 @@
     <div class="rounded-3 border border-2 border-dashed bg-white p-4 text-center admin-upload-dropzone">
         <label for="gallery" class="mb-0 cursor-pointer d-block">
             <span class="fas fa-images fa-2x text-primary mb-2 d-block opacity-75"></span>
-            <span class="d-block text-secondary small mb-2">افزودن تصاویر گالری — با ذخیرهٔ فرم آپلود می‌شود (حداکثر ۳۰ تصویر). بعد از آپلود، برای هر تصویر فیلد «متن alt» در بالا ظاهر می‌شود.</span>
+            <span class="d-block text-secondary small mb-2">افزودن تصاویر گالری — با انتخاب، فشرده می‌شوند و حجم قبل/بعد زیر هر عکس دیده می‌شود (حداکثر ۳۰ تصویر).</span>
             <span class="btn btn-sm btn-outline-primary px-4 rounded-pill">انتخاب تصاویر گالری</span>
         </label>
         <input type="file" name="gallery[]" id="gallery" class="d-none" accept="image/*" multiple

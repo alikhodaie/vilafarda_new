@@ -41,6 +41,18 @@ final class UploadValidation
     }
 
     /**
+     * فایل واقعی و سالم — نه input خالی، نه آپلود ناقص.
+     * hasFile() روی بعضی سرورها برای فایل معتبر false می‌شود؛ instanceof به‌تنهایی
+     * فایل خالی را هم true می‌کند و نباید کاور قبلی را جایگزین کند.
+     */
+    public static function isUsableUploadedFile($file): bool
+    {
+        return $file instanceof UploadedFile
+            && $file->isValid()
+            && (int) $file->getSize() > 0;
+    }
+
+    /**
      * @throws ValidationException
      */
     public static function validateUploadedOrFail(?UploadedFile $file, string $attributeKey, string $persianLabel): void

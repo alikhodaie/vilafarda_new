@@ -74,7 +74,7 @@
                     </div>
 
                     <div class="col-12 mt-4 pt-3 border-top d-flex justify-content-center gap-2 flex-wrap sticky-bottom bg-white py-2">
-                        <button type="submit" class="btn btn-falcon-success px-4">
+                        <button type="submit" class="btn btn-falcon-success px-4" id="adminHomeEditSubmit">
                             <span class="fas fa-save ms-1"></span> @lang('title.edit')
                         </button>
                         <a href="{{ route('admin.homes.index') }}" class="btn btn-falcon-danger px-4">@lang('title.return')</a>
@@ -85,6 +85,14 @@
                     <form action="{{ route('admin.homes.image.bulk-delete', $home) }}" method="POST"
                           id="form-bulk-delete-images" class="d-none" aria-hidden="true">
                         @csrf
+                        <input type="hidden" name="open_tab" value="tab-media">
+                    </form>
+                @endif
+                @if(!$home->images->isEmpty() || $home->cover)
+                    <form action="{{ route('admin.homes.image.delete-all', $home) }}" method="POST"
+                          id="form-delete-all-images" class="d-none" aria-hidden="true">
+                        @csrf
+                        <input type="hidden" name="open_tab" value="tab-media">
                     </form>
                 @endif
             </div>
@@ -108,11 +116,17 @@
             </div>
         </div>
     </div>
+
+    <x-image-compress-overlay />
 @endsection
 
 @section('bottom-assets')
-    <script src="{{ asset('assets/admin/js/home-edit-city-filter.js') }}"></script>
-    <script src="{{ asset('assets/admin/js/home-edit-gallery-ui.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('assets/css/image-compress-overlay.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    <script src="{{ asset('assets/js/home-image-compress.js') }}?v=20260829"></script>
+    <script src="{{ asset('assets/js/mobile-document-compress.js') }}"></script>
+    <script src="{{ asset('assets/admin/js/home-edit-city-filter.js') }}?v=20260829b"></script>
+    <script src="{{ asset('assets/admin/js/home-edit-gallery-ui.js') }}?v=20260829c"></script>
     <script src="{{ asset('assets/admin/js/home-edit-tabs.js') }}"></script>
     <script src="{{ asset('assets/admin/js/home-edit-bedrooms.js') }}"></script>
     <script src="{{ asset('assets/admin/js/home-edit-map.js') }}"></script>

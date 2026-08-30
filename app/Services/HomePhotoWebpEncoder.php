@@ -59,9 +59,9 @@ class HomePhotoWebpEncoder
             $filename = Str::random(32).'.webp';
             $relativePath = $dir.'/'.$filename;
 
-            Storage::makeDirectory($dir);
+            Storage::disk('public-folder')->makeDirectory($dir);
 
-            $absolute = Storage::path($relativePath);
+            $absolute = Storage::disk('public-folder')->path($relativePath);
 
             $image->toWebp($quality)->save($absolute);
 
@@ -77,6 +77,57 @@ class HomePhotoWebpEncoder
                 'name' => $filename,
                 'size' => $size,
                 'type' => 'image/webp',
+            ];
+        } finally {
+            foreach ($cleanupRaster as $tmpPath) {
+                @unlink($tmpPath);
+            }
+        }
+    }
+
+    /**
+     * کنار فایل JPG/PNG یک sidecar با پسوند .webp می‌سازد (مثلاً cover.jpg.webp)
+     * تا Nginx با Accept: image/webp همان URL را WebP سرو کند.
+     *
+     * @return array{sidecar: string, bytes: int, original_bytes: int}|null
+     */
+    public function writeSidecarWebp(string $absoluteSource, int $maxEdge = 1920, int $quality = 80): ?array
+    {
+        if (! is_file($absoluteSource) || filesize($absoluteSource) < 1) {
+            return null;
+        }
+
+        $sidecar = $absoluteSource.'.webp';
+        $originalBytes = (int) filesize($absoluteSource);
+        $cleanupRaster = [];
+        $readPath = $absoluteSource;
+
+        try {
+            if (HeicToRasterConverter::looksLikeHeicPath($absoluteSource)) {
+                $converted = HeicToRasterConverter::convertToTempJpeg($absoluteSource);
+                $readPath = $converted['path'];
+                $cleanupRaster = $converted['cleanup'];
+            }
+
+            $image = Image::read($readPath);
+
+            if ($image->isAnimated()) {
+                $image->removeAnimation(0);
+            }
+
+            $image->scaleDown($maxEdge, $maxEdge);
+            $image->toWebp($quality)->save($sidecar);
+
+            if (! is_file($sidecar) || filesize($sidecar) < 1) {
+                @unlink($sidecar);
+
+                return null;
+            }
+
+            return [
+                'sidecar' => $sidecar,
+                'bytes' => (int) filesize($sidecar),
+                'original_bytes' => $originalBytes,
             ];
         } finally {
             foreach ($cleanupRaster as $tmpPath) {

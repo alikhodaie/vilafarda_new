@@ -354,15 +354,15 @@ class Home extends Model
 
     public function getPriceFormatted($today = false, $tomorrow = false)
     {
-        $price = number_format($this->week_price);
+        $price = $this->week_price;
         if ($today){
-            $price = number_format($this->getPrice(now()->startOfDay()));
+            $price = $this->getPrice(now()->startOfDay());
         }
         if ($tomorrow){
-            $price = number_format($this->getPrice(now()->addDay()->startOfDay()));
+            $price = $this->getPrice(now()->addDay()->startOfDay());
         }
 
-        return $price;
+        return persianNumber($price);
     }
 
     public function price($today = false, $tomorrow = false)
@@ -567,40 +567,35 @@ class Home extends Model
 
     public function deleteCover(): Home
     {
-        if ($this->cover){
-            Storage::delete(self::FILE_PATH.$this->id.'/'.$this->cover);
-        }
+        $oldCover = $this->cover;
         $this->update(['cover' => null]);
+        $this->deleteHomeImageFileAfterCommit($oldCover);
 
         return $this;
     }
 
     public function updateCover(UploadedFile $file): Home
     {
-        $this->deleteCover();
-
-        $stored = app(HomePhotoWebpEncoder::class)->storeOptimizedWebp($file, self::FILE_PATH.$this->id);
-        $this->update(['cover' => $stored['name']]);
-
-        return $this;
+        return $this->addCover($file);
     }
 
     public function deleteVideo(): Home
     {
-        if ($this->video){
-            Storage::delete(self::FILE_PATH.$this->id.'/'.$this->video);
-        }
+        $oldVideo = $this->video;
         $this->update(['video' => null]);
+        $this->deleteHomeImageFileAfterCommit($oldVideo);
 
         return $this;
     }
 
     public function updateVideo(UploadedFile $file): Home
     {
-        $this->deleteVideo();
-
-        $file = basename($file->store(self::FILE_PATH.$this->id.'/'));
-        $this->update(['video' => $file]);
+        $oldVideo = $this->video;
+        $name = basename($file->store(self::FILE_PATH.$this->id.'/', 'public-folder'));
+        $this->update(['video' => $name]);
+        if ($oldVideo && $oldVideo !== $name) {
+            $this->deleteHomeImageFileAfterCommit($oldVideo);
+        }
 
         return $this;
     }
@@ -1228,7 +1223,7 @@ class Home extends Model
         }
 
         if (! $cover) {
-            return asset('assets/images/placeholder.jpg');
+            return $this->firstExistingHomeImageUrl() ?: '';
         }
 
         if (filter_var($cover, FILTER_VALIDATE_URL)) {
@@ -1239,7 +1234,54 @@ class Home extends Model
             return asset('storage/' . ltrim($cover, '/'));
         }
 
-        return asset($this->getImagePath() . $cover);
+        $relative = $this->getImagePath() . $cover;
+        if (Storage::disk('public-folder')->exists($relative)) {
+            return asset($relative);
+        }
+
+        // فایل کاور نیست؛ اگر عکس دیگری از همین اقامتگاه روی دیسک باشد همان را نشان بده.
+        // هرگز assets/images/placeholder.jpg (آواتار پیش‌فرض کاربر) را به‌جای کاور نگذار.
+        return $this->firstExistingHomeImageUrl() ?: asset($relative);
+    }
+
+    /**
+     * آیا روی دیسک حداقل یک عکس قابل‌نمایش برای این اقامتگاه هست؟
+     */
+    public function hasUsableCoverImage(): bool
+    {
+        $cover = $this->attributes['cover'] ?? null;
+        if (is_string($cover) && $cover !== '' && Storage::disk('public-folder')->exists($this->getImagePath().$cover)) {
+            return true;
+        }
+
+        return $this->firstExistingHomeImageUrl() !== null;
+    }
+
+    protected function firstExistingHomeImageUrl(): ?string
+    {
+        if (! $this->id) {
+            return null;
+        }
+
+        $disk = Storage::disk('public-folder');
+        $dir = rtrim($this->getImagePath(), '/');
+        if (! $disk->exists($dir)) {
+            return null;
+        }
+
+        foreach ($disk->files($dir) as $rel) {
+            $base = basename($rel);
+            if (! preg_match('/\.(jpe?g|png|gif|webp)$/i', $base)) {
+                continue;
+            }
+            if (preg_match('/\.(jpe?g|png|gif)\.webp$/i', $base)) {
+                continue;
+            }
+
+            return asset($this->getImagePath().$base);
+        }
+
+        return null;
     }
 
     public function getDocumentPathAttribute(): string
@@ -1841,12 +1883,41 @@ class Home extends Model
     # region File Management
     public function addCover(UploadedFile $file): Home
     {
-        $this->deleteCover();
-
+        $oldCover = $this->cover;
         $stored = app(HomePhotoWebpEncoder::class)->storeOptimizedWebp($file, rtrim($this->getImagePath(), '/'));
         $this->update(['cover' => $stored['name']]);
 
+        if ($oldCover && $oldCover !== $stored['name']) {
+            $this->deleteHomeImageFileAfterCommit($oldCover);
+        }
+
         return $this;
+    }
+
+    /**
+     * فایل قبلی را فقط بعد از commit تراکنش پاک کن تا rollback دیتابیس فایل را یتیم نکند.
+     */
+    public function deleteHomeImageFileAfterCommit(?string $filename): void
+    {
+        if (! $filename || ! $this->id) {
+            return;
+        }
+
+        $relative = self::FILE_PATH.$this->id.'/'.$filename;
+        $homeId = (int) $this->id;
+
+        DB::afterCommit(function () use ($relative, $filename, $homeId) {
+            $row = static::query()->whereKey($homeId)->first(['cover', 'video']);
+            if ($row && in_array($filename, [$row->cover, $row->video], true)) {
+                return;
+            }
+
+            if (HomeImage::query()->where('home_id', $homeId)->where('name', $filename)->exists()) {
+                return;
+            }
+
+            Storage::disk('public-folder')->delete($relative);
+        });
     }
 
     /**

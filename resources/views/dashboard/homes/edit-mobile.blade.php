@@ -156,7 +156,8 @@
                 </div>
                 <div class="mb-3">
                     <label for="city_id" class="form-label-mobile">شهر <span class="text-danger">*</span></label>
-                    <select name="city_id" id="city_id" class="form-select form-control-mobile" required>
+                    <select name="city_id" id="city_id" class="form-select form-control-mobile" required
+                            data-current-city="{{ old('city_id', $home->city_id) }}">
                         <option value="">ابتدا استان را انتخاب کنید</option>
                         @if($home->city)
                             <option value="{{ $home->city->id }}" selected>{{ $home->city->name }}</option>
@@ -216,11 +217,11 @@
                     <div class="mb-3">
                         <label for="cover" class="form-label-mobile">عکس اصلی</label>
                         <div class="upload-box upload-box-cover" id="coverUploadBox">
-                            <input type="file" name="cover" id="cover" class="upload-input" accept="image/*">
+                            <input type="file" name="cover" id="cover" class="upload-input" accept="image/*,.heic,.heif">
                             <div class="upload-content">
                                 <i class="bi bi-cloud-arrow-up"></i>
                                 <strong>انتخاب عکس اصلی</strong>
-                                <small>برای کیفیت بهتر، تصویر قبل از ارسال فشرده و WebP می‌شود.</small>
+                                <small>HEIC و تصاویر بزرگ قبل از ارسال به WebP بهینه می‌شوند.</small>
                             </div>
                         </div>
                         @error('cover')
@@ -232,16 +233,17 @@
                     <div class="cover-preview-box mb-3">
                         <span class="preview-label">پیش‌نمایش عکس اصلی</span>
                         <img src="{{ $home->cover_path }}" id="coverPreview" alt="cover preview">
+                        <small id="coverPreviewMeta" class="text-muted d-block mt-2" style="font-size: 12px; line-height: 1.6;"></small>
                     </div>
 
                     <div class="mb-3">
                         <label for="images" class="form-label-mobile">سایر تصاویر</label>
                         <div class="upload-box" id="galleryUploadBox">
-                            <input type="file" name="images[]" id="images" class="upload-input" accept="image/*" multiple>
+                            <input type="file" name="images[]" id="images" class="upload-input" accept="image/*,.heic,.heif" multiple>
                             <div class="upload-content">
                                 <i class="bi bi-images"></i>
                                 <strong>افزودن تصاویر گالری</strong>
-                                <small>چند تصویر را همزمان انتخاب کنید (انتخاب مجدد، به لیست قبلی اضافه می‌شود).</small>
+                                <small>چند تصویر را همزمان انتخاب کنید؛ حجم قبل و بعد از بهینه‌سازی زیر هر عکس دیده می‌شود.</small>
                             </div>
                         </div>
                         @error('images')
@@ -388,12 +390,32 @@
                     <i class="bi bi-arrow-right me-2"></i>
                     انصراف
                 </a>
-                <button type="submit" class="btn btn-mobile-primary flex-fill">
+                <button type="submit" class="btn btn-mobile-primary flex-fill" id="editSubmitBtn">
                     <i class="bi bi-check-circle me-2"></i>
                     ذخیره تغییرات
                 </button>
             </div>
         </form>
+    </div>
+
+    <div id="imageCompressOverlay" class="image-compress-overlay" hidden aria-live="polite" aria-busy="true">
+        <div class="image-compress-overlay__backdrop"></div>
+        <div class="image-compress-overlay__card" role="status">
+            <div class="image-compress-overlay__icon-wrap" aria-hidden="true">
+                <div class="image-compress-overlay__ring"></div>
+                <div class="image-compress-overlay__ring image-compress-overlay__ring--delay"></div>
+                <i class="bi bi-images image-compress-overlay__icon"></i>
+            </div>
+            <p class="image-compress-overlay__title" id="imageCompressOverlayTitle">در حال بهینه‌سازی تصاویر</p>
+            <p class="image-compress-overlay__file" id="imageCompressOverlayFile"></p>
+            <div class="image-compress-overlay__progress-track">
+                <div class="image-compress-overlay__progress-bar" id="imageCompressOverlayBar"></div>
+            </div>
+            <p class="image-compress-overlay__progress-text" id="imageCompressOverlayProgress"></p>
+            <p class="image-compress-overlay__thanks">
+                از صبر و شکیبایی شما در فرایند فشرده‌سازی تصاویر سپاسگزاریم
+            </p>
+        </div>
     </div>
 
     <!-- Map Modal -->
@@ -417,6 +439,7 @@
 @endsection
 
 @section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
 <style>
 .mobile-edit-tabs {
@@ -514,10 +537,18 @@
 .new-image-actions {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
+    gap: 8px;
     padding: 6px 8px;
     font-size: 11px;
     color: #666;
+}
+.new-image-meta {
+    flex: 1;
+    font-size: 10px;
+    line-height: 1.45;
+    text-align: right;
+    word-break: break-word;
 }
 .remove-new-image {
     border: 0;
@@ -533,6 +564,118 @@
 .compress-hint {
     font-size: 11px;
     color: #6f6f6f;
+}
+
+.image-compress-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.image-compress-overlay[hidden] {
+    display: none !important;
+}
+.image-compress-overlay__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+.image-compress-overlay__card {
+    position: relative;
+    width: min(100%, 340px);
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 20px;
+    padding: 28px 22px 24px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+    text-align: center;
+}
+.image-compress-overlay__icon-wrap {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 18px;
+}
+.image-compress-overlay__ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 3px solid rgba(211, 157, 26, 0.18);
+    border-top-color: #D39D1A;
+    animation: imageCompressSpin 0.9s linear infinite;
+}
+.image-compress-overlay__ring--delay {
+    inset: 8px;
+    border-top-color: #f0c96a;
+    animation-duration: 1.2s;
+    animation-direction: reverse;
+}
+@keyframes imageCompressSpin {
+    to { transform: rotate(360deg); }
+}
+.image-compress-overlay__icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.65rem;
+    color: #D39D1A;
+}
+.image-compress-overlay__title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #222;
+}
+.image-compress-overlay__file {
+    margin: 0 0 14px;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.6;
+    min-height: 1.6em;
+    word-break: break-word;
+}
+.image-compress-overlay__progress-track {
+    height: 8px;
+    border-radius: 999px;
+    background: #f0f0f0;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+.image-compress-overlay__progress-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #D39D1A, #f0c96a);
+    transition: width 0.35s ease;
+}
+.image-compress-overlay__progress-bar.is-indeterminate {
+    width: 40%;
+    position: relative;
+    animation: imageCompressIndeterminate 1.1s ease-in-out infinite;
+}
+@keyframes imageCompressIndeterminate {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(320%); }
+}
+.image-compress-overlay__progress-text {
+    margin: 0 0 14px;
+    font-size: 12px;
+    color: #888;
+    min-height: 1.4em;
+}
+.image-compress-overlay__thanks {
+    margin: 0;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    font-size: 12px;
+    line-height: 1.75;
+    color: #9a7b2e;
 }
 
 .mobile-option-grid {
@@ -595,8 +738,15 @@ let map;
 let marker;
 let previewMap = null;
 let previewMarker = null;
-let selectedGalleryFiles = [];
-let selectedCoverFile = null;
+let selectedGalleryItems = [];
+let selectedCoverItem = null;
+let imageCompressBusy = 0;
+let formSubmitBusy = false;
+let imageCompressOverlayState = {
+    total: 0,
+    current: 0,
+    indeterminate: true,
+};
 
 function mapL() {
     return window.MapUtils ? window.MapUtils.neshanLeaflet() : window.L;
@@ -604,6 +754,12 @@ function mapL() {
 const canUseDataTransfer = typeof DataTransfer !== 'undefined';
 const MAX_GALLERY_IMAGES = 30;
 const existingImagesCount = {{ $home->images->count() }};
+const IMAGE_COMPRESS = {
+    maxEdge: 1280,
+    quality: 0.82,
+    skipBelowBytes: 350 * 1024,
+    heicQuality: 0.88,
+};
 
 document.getElementById('mapModal').addEventListener('shown.bs.modal', function () {
     const latVal = document.getElementById('latitude').value;
@@ -747,36 +903,57 @@ function refreshLocationPreviewIfNeeded() {
     }
 }
 
-// Load cities when province changes
+// Load cities when province changes — شهر فعلی را تا آمدن لیست جدید پاک نکن
 document.getElementById('province_id').addEventListener('change', function() {
     const provinceId = this.value;
     const citySelect = document.getElementById('city_id');
-    const currentCityId = '{{ $home->city_id }}';
-    
-    citySelect.innerHTML = '<option value="">در حال بارگذاری...</option>';
-    
-    if (provinceId) {
-        fetch(`/api/cities/${provinceId}`)
-            .then(response => response.json())
-            .then(cities => {
-                citySelect.innerHTML = '<option value="">انتخاب کنید</option>';
-                cities.forEach(city => {
-                    const option = document.createElement('option');
-                    option.value = city.id;
-                    option.textContent = city.name;
-                    if (city.id == currentCityId) {
-                        option.selected = true;
-                    }
-                    citySelect.appendChild(option);
-                });
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                citySelect.innerHTML = '<option value="">خطا در بارگذاری</option>';
-            });
-    } else {
+    const currentCityId = citySelect.value || citySelect.getAttribute('data-current-city') || '{{ $home->city_id }}';
+    const currentCityLabel = (citySelect.options[citySelect.selectedIndex] && citySelect.options[citySelect.selectedIndex].text)
+        ? citySelect.options[citySelect.selectedIndex].text
+        : '';
+
+    if (!provinceId) {
         citySelect.innerHTML = '<option value="">ابتدا استان را انتخاب کنید</option>';
+        return;
     }
+
+    fetch('/api/cities/' + provinceId)
+        .then(response => response.json())
+        .then(cities => {
+            citySelect.innerHTML = '<option value="">انتخاب کنید</option>';
+            let found = false;
+            (cities || []).forEach(city => {
+                const option = document.createElement('option');
+                option.value = city.id;
+                option.textContent = city.name;
+                if (String(city.id) === String(currentCityId)) {
+                    option.selected = true;
+                    found = true;
+                }
+                citySelect.appendChild(option);
+            });
+            if (!found && currentCityId) {
+                const keep = document.createElement('option');
+                keep.value = currentCityId;
+                keep.textContent = currentCityLabel || 'شهر انتخاب‌شده';
+                keep.selected = true;
+                citySelect.appendChild(keep);
+            }
+            if (citySelect.value) {
+                citySelect.setAttribute('data-current-city', citySelect.value);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            if (!citySelect.value && currentCityId) {
+                citySelect.innerHTML = '<option value="">انتخاب کنید</option>';
+                const keep = document.createElement('option');
+                keep.value = currentCityId;
+                keep.textContent = currentCityLabel || 'شهر انتخاب‌شده';
+                keep.selected = true;
+                citySelect.appendChild(keep);
+            }
+        });
 });
 
 // Load cities for current province on page load
@@ -890,19 +1067,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const coverInput = document.getElementById('cover');
     const coverPreview = document.getElementById('coverPreview');
     const coverUploadBox = document.getElementById('coverUploadBox');
+    const coverPreviewMeta = document.getElementById('coverPreviewMeta');
     if (coverInput && coverPreview) {
-        coverInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            selectedCoverFile = file;
+        coverInput.addEventListener('change', async function(e) {
+            const file = e.target.files && e.target.files[0];
+            if (!file) {
+                return;
+            }
+            if (!isRasterImageFile(file)) {
+                alert('فقط فایل تصویری مجاز است (JPG، PNG، WebP یا HEIC).');
+                return;
+            }
             if (coverUploadBox) {
                 coverUploadBox.classList.add('active');
             }
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                coverPreview.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
+            try {
+                const item = await prepareImageFile(file);
+                selectedCoverItem = item;
+                setFileInputFromFile(coverInput, item.file);
+                coverPreview.src = URL.createObjectURL(item.file);
+                if (coverPreviewMeta) {
+                    coverPreviewMeta.textContent = formatImageMetaLine(item.meta);
+                }
+            } catch (err) {
+                console.warn('cover prepare failed', err);
+                selectedCoverItem = { file: file, meta: buildImageMeta(file, file) };
+                if (coverPreviewMeta) {
+                    coverPreviewMeta.textContent = formatImageMetaLine(selectedCoverItem.meta);
+                }
+            }
         });
     }
 
@@ -910,30 +1103,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const newImagesPreview = document.getElementById('newImagesPreview');
     const galleryUploadBox = document.getElementById('galleryUploadBox');
     if (imagesInput && newImagesPreview) {
-        imagesInput.addEventListener('change', function(e) {
-            const freshFiles = Array.from(e.target.files).filter((file) => file.type.startsWith('image/'));
-            if (freshFiles.length) {
-                const availableSlots = getAvailableImageSlots();
-                if (availableSlots <= 0) {
-                    alert('شما به سقف 30 تصویر رسیده‌اید. ابتدا تعدادی از تصاویر فعلی را حذف کنید.');
-                    if (canUseDataTransfer) {
-                        imagesInput.value = '';
-                    }
-                    return;
-                }
-
-                if (freshFiles.length > availableSlots) {
-                    alert(`حداکثر ${MAX_GALLERY_IMAGES} تصویر مجاز است. فقط ${availableSlots} تصویر دیگر می‌توانید اضافه کنید.`);
-                    selectedGalleryFiles = selectedGalleryFiles.concat(freshFiles.slice(0, availableSlots));
-                } else {
-                    selectedGalleryFiles = selectedGalleryFiles.concat(freshFiles);
-                }
-                renderNewImagesPreview();
-                syncGalleryInputFiles();
-                if (galleryUploadBox) {
-                    galleryUploadBox.classList.add('active');
-                }
+        imagesInput.addEventListener('change', async function(e) {
+            if (!e.target.files || !e.target.files.length) {
+                return;
             }
+            await addGalleryFiles(e.target.files);
             if (canUseDataTransfer) {
                 imagesInput.value = '';
             }
@@ -953,23 +1127,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 galleryUploadBox.classList.remove('active');
             });
         });
-        galleryUploadBox.addEventListener('drop', function(e) {
-            const droppedFiles = Array.from(e.dataTransfer.files).filter((file) => file.type.startsWith('image/'));
+        galleryUploadBox.addEventListener('drop', async function(e) {
+            const droppedFiles = Array.from(e.dataTransfer.files);
             if (droppedFiles.length) {
-                const availableSlots = getAvailableImageSlots();
-                if (availableSlots <= 0) {
-                    alert('شما به سقف 30 تصویر رسیده‌اید. ابتدا تعدادی از تصاویر فعلی را حذف کنید.');
-                    return;
-                }
-
-                if (droppedFiles.length > availableSlots) {
-                    alert(`حداکثر ${MAX_GALLERY_IMAGES} تصویر مجاز است. فقط ${availableSlots} تصویر دیگر می‌توانید اضافه کنید.`);
-                    selectedGalleryFiles = selectedGalleryFiles.concat(droppedFiles.slice(0, availableSlots));
-                } else {
-                    selectedGalleryFiles = selectedGalleryFiles.concat(droppedFiles);
-                }
-                renderNewImagesPreview();
-                syncGalleryInputFiles();
+                await addGalleryFiles(droppedFiles);
             }
         });
     }
@@ -997,7 +1158,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('mobileEditHomeForm');
     if (form) {
         form.addEventListener('submit', async function(e) {
-            const finalCount = getRemainingExistingImagesCount() + selectedGalleryFiles.length;
+            if (formSubmitBusy) {
+                e.preventDefault();
+                return;
+            }
+
+            const finalCount = getRemainingExistingImagesCount() + selectedGalleryItems.length;
             if (finalCount > MAX_GALLERY_IMAGES) {
                 e.preventDefault();
                 alert('تعداد کل تصاویر نباید بیشتر از 30 عدد باشد.');
@@ -1005,13 +1171,100 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             e.preventDefault();
+            formSubmitBusy = true;
+            const submitBtn = document.getElementById('editSubmitBtn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+            }
+
             syncTabRequiredAttributes();
             normalizeAllPriceFieldsForSubmit();
-            if (typeof window.prepareCompressedDocumentInput === 'function') {
-                await window.prepareCompressedDocumentInput('document');
+
+            const coverInput = document.getElementById('cover');
+            if (!selectedCoverItem && coverInput) {
+                coverInput.disabled = true;
             }
-            await prepareCompressedWebpFiles();
-            form.submit();
+
+            try {
+                if (typeof window.prepareCompressedDocumentInput === 'function') {
+                    await window.prepareCompressedDocumentInput('document');
+                }
+
+                syncGalleryInputFiles();
+                if (selectedCoverItem) {
+                    setFileInputFromFile(document.getElementById('cover'), selectedCoverItem.file);
+                }
+                const citySelectForSubmit = document.getElementById('city_id');
+                if (citySelectForSubmit && !citySelectForSubmit.value && citySelectForSubmit.getAttribute('data-current-city')) {
+                    const keepId = citySelectForSubmit.getAttribute('data-current-city');
+                    let foundOpt = false;
+                    Array.prototype.forEach.call(citySelectForSubmit.options, function (opt) {
+                        if (String(opt.value) === String(keepId)) {
+                            opt.selected = true;
+                            foundOpt = true;
+                        }
+                    });
+                    if (!foundOpt) {
+                        const keep = document.createElement('option');
+                        keep.value = keepId;
+                        keep.textContent = 'شهر انتخاب‌شده';
+                        keep.selected = true;
+                        citySelectForSubmit.appendChild(keep);
+                    }
+                }
+
+                if (editNeedsManualSubmit()) {
+                    showImageCompressOverlay({
+                        title: 'در حال ذخیره تغییرات',
+                        indeterminate: true,
+                        fileName: '',
+                    });
+                    const fd = new FormData(form);
+                    fd.delete('images[]');
+                    selectedGalleryItems.forEach(function (item) {
+                        if (item && item.file) {
+                            fd.append('images[]', item.file);
+                        }
+                    });
+                    if (!selectedCoverItem) {
+                        fd.delete('cover');
+                    } else if (selectedCoverItem.file) {
+                        fd.set('cover', selectedCoverItem.file);
+                    }
+                    const citySelect = document.getElementById('city_id');
+                    const provinceSelect = document.getElementById('province_id');
+                    if (provinceSelect && provinceSelect.value) {
+                        fd.set('province_id', provinceSelect.value);
+                    }
+                    const cityValue = (citySelect && citySelect.value)
+                        || (citySelect && citySelect.getAttribute('data-current-city'))
+                        || '';
+                    if (cityValue) {
+                        fd.set('city_id', cityValue);
+                    }
+                    const res = await fetch(form.action, {
+                        method: 'POST',
+                        body: fd,
+                        credentials: 'same-origin',
+                        redirect: 'follow',
+                    });
+                    window.location.href = res.url;
+                    return;
+                }
+
+                form.submit();
+            } catch (err) {
+                console.warn('edit submit failed', err);
+                formSubmitBusy = false;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
+                if (coverInput) {
+                    coverInput.disabled = false;
+                }
+                hideImageCompressOverlay();
+                alert('ارسال تغییرات انجام نشد. اتصال را بررسی کنید و دوباره ذخیره کنید.');
+            }
         });
     }
 });
@@ -1019,9 +1272,29 @@ document.addEventListener('DOMContentLoaded', function() {
 function syncGalleryInputFiles() {
     const input = document.getElementById('images');
     if (!input || !canUseDataTransfer) return;
-    const dt = new DataTransfer();
-    selectedGalleryFiles.forEach((file) => dt.items.add(file));
-    input.files = dt.files;
+    try {
+        const dt = new DataTransfer();
+        selectedGalleryItems.forEach(function (item) {
+            if (item && item.file) {
+                dt.items.add(item.file);
+            }
+        });
+        input.files = dt.files;
+    } catch (err) {
+        // مرورگرهایی که DataTransfer را برای input فایل محدود می‌کنند
+    }
+}
+
+function editNeedsManualSubmit() {
+    const coverInput = document.getElementById('cover');
+    const imagesInput = document.getElementById('images');
+    if (selectedCoverItem && (!coverInput || !coverInput.files || !coverInput.files.length)) {
+        return true;
+    }
+    if (selectedGalleryItems.length && (!imagesInput || !imagesInput.files || !imagesInput.files.length)) {
+        return true;
+    }
+    return false;
 }
 
 function getMarkedForDeleteCount() {
@@ -1033,7 +1306,388 @@ function getRemainingExistingImagesCount() {
 }
 
 function getAvailableImageSlots() {
-    return Math.max(0, MAX_GALLERY_IMAGES - (getRemainingExistingImagesCount() + selectedGalleryFiles.length));
+    return Math.max(0, MAX_GALLERY_IMAGES - (getRemainingExistingImagesCount() + selectedGalleryItems.length));
+}
+
+function escapeHtml(str) {
+    return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/"/g, '&quot;');
+}
+
+function canvasSupportsWebp() {
+    try {
+        const canvas = document.createElement('canvas');
+        return canvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+    } catch (e) {
+        return false;
+    }
+}
+
+function getOutputImageFormat() {
+    if (canvasSupportsWebp()) {
+        return { mime: 'image/webp', ext: 'webp' };
+    }
+    return { mime: 'image/jpeg', ext: 'jpg' };
+}
+
+function isRasterImageFile(file) {
+    if (!file) {
+        return false;
+    }
+    const type = (file.type || '').toLowerCase();
+    const name = (file.name || '').toLowerCase();
+    if (type.startsWith('image/')) {
+        return true;
+    }
+    return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(name);
+}
+
+function isHeicFile(file) {
+    if (!file) {
+        return false;
+    }
+    const type = (file.type || '').toLowerCase();
+    const name = (file.name || '').toLowerCase();
+    return /heic|heif/.test(type) || /\.heic$|\.heif$/.test(name);
+}
+
+function getFileExtensionLabel(file) {
+    const name = (file && file.name) ? file.name : '';
+    const ext = name.split('.').pop();
+    return ext ? ext.toUpperCase() : 'تصویر';
+}
+
+function buildImageMeta(originalFile, processedFile) {
+    const originalExt = getFileExtensionLabel(originalFile);
+    const processedExt = getFileExtensionLabel(processedFile);
+    const formatChanged = originalExt !== processedExt;
+
+    return {
+        originalName: originalFile.name || 'image',
+        processedName: processedFile.name || originalFile.name || 'image.jpg',
+        originalSize: originalFile.size || 0,
+        processedSize: processedFile.size || 0,
+        formatLabel: formatChanged ? (originalExt + ' → ' + processedExt) : processedExt,
+        optimized: (processedFile.size || 0) < (originalFile.size || 0),
+    };
+}
+
+function formatFileSize(bytes) {
+    if (bytes >= 1024 * 1024) {
+        return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+    }
+    return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+}
+
+function formatImageMetaLine(meta) {
+    const lines = [];
+    lines.push(meta.processedName);
+    if (meta.optimized && meta.originalSize > meta.processedSize) {
+        lines.push(formatFileSize(meta.originalSize) + ' → ' + formatFileSize(meta.processedSize) + ' (بهینه‌شده)');
+    } else {
+        lines.push(formatFileSize(meta.processedSize));
+    }
+    lines.push('فرمت: ' + meta.formatLabel);
+    return lines.join(' · ');
+}
+
+function shouldSkipClientCompress(file) {
+    if (!isRasterImageFile(file)) {
+        return true;
+    }
+    if (file.size <= IMAGE_COMPRESS.skipBelowBytes) {
+        return true;
+    }
+    const type = (file.type || '').toLowerCase();
+    const name = (file.name || '').toLowerCase();
+    if (type === 'image/gif' || /\.gif$/i.test(name)) {
+        return true;
+    }
+    return false;
+}
+
+function setFileInputFromFile(input, file) {
+    if (!input || !file) {
+        return false;
+    }
+    try {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        return input.files && input.files.length > 0;
+    } catch (err) {
+        return false;
+    }
+}
+
+function renderImageCompressOverlay() {
+    const overlay = document.getElementById('imageCompressOverlay');
+    const titleEl = document.getElementById('imageCompressOverlayTitle');
+    const fileEl = document.getElementById('imageCompressOverlayFile');
+    const barEl = document.getElementById('imageCompressOverlayBar');
+    const progressEl = document.getElementById('imageCompressOverlayProgress');
+    if (!overlay || !titleEl || !fileEl || !barEl || !progressEl) {
+        return;
+    }
+
+    const state = imageCompressOverlayState;
+    if (state.indeterminate || !state.total) {
+        barEl.style.width = '38%';
+        barEl.classList.add('is-indeterminate');
+        progressEl.textContent = 'لطفاً چند لحظه صبر کنید…';
+    } else {
+        barEl.classList.remove('is-indeterminate');
+        const percent = Math.min(100, Math.round((state.current / state.total) * 100));
+        barEl.style.width = percent + '%';
+        progressEl.textContent = 'تصویر ' + state.current + ' از ' + state.total + ' (' + percent + '٪)';
+    }
+
+    fileEl.textContent = state.fileName || '';
+    if (state.title) {
+        titleEl.textContent = state.title;
+    }
+}
+
+function showImageCompressOverlay(options) {
+    const overlay = document.getElementById('imageCompressOverlay');
+    if (!overlay) {
+        return;
+    }
+    imageCompressOverlayState = Object.assign({
+        total: 0,
+        current: 0,
+        indeterminate: true,
+        fileName: '',
+        title: 'در حال بهینه‌سازی تصاویر',
+    }, options || {});
+    overlay.hidden = false;
+    renderImageCompressOverlay();
+}
+
+function updateImageCompressOverlay(patch) {
+    imageCompressOverlayState = Object.assign({}, imageCompressOverlayState, patch || {});
+    renderImageCompressOverlay();
+}
+
+function hideImageCompressOverlay() {
+    const overlay = document.getElementById('imageCompressOverlay');
+    if (overlay) {
+        overlay.hidden = true;
+    }
+    imageCompressOverlayState = { total: 0, current: 0, indeterminate: true };
+}
+
+function beginImageCompress(message, options) {
+    imageCompressBusy += 1;
+    if (imageCompressBusy === 1) {
+        showImageCompressOverlay(Object.assign({ title: message }, options || {}));
+    } else {
+        updateImageCompressOverlay(Object.assign({ title: message || imageCompressOverlayState.title }, options || {}));
+    }
+}
+
+function endImageCompress() {
+    imageCompressBusy = Math.max(0, imageCompressBusy - 1);
+    if (imageCompressBusy === 0) {
+        hideImageCompressOverlay();
+    }
+}
+
+async function convertHeicToJpeg(file) {
+    if (typeof heic2any !== 'function') {
+        throw new Error('heic2any unavailable');
+    }
+    const result = await heic2any({
+        blob: file,
+        toType: 'image/jpeg',
+        quality: IMAGE_COMPRESS.heicQuality,
+    });
+    const blob = Array.isArray(result) ? result[0] : result;
+    if (!blob) {
+        throw new Error('heic conversion empty');
+    }
+    const baseName = (file.name || 'image').replace(/\.[^.]+$/i, '');
+    return new File([blob], baseName + '.jpg', {
+        type: 'image/jpeg',
+        lastModified: Date.now(),
+    });
+}
+
+function compressImageFile(file) {
+    if (shouldSkipClientCompress(file)) {
+        return Promise.resolve(file);
+    }
+
+    return new Promise(function (resolve) {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        const timer = setTimeout(function () {
+            URL.revokeObjectURL(url);
+            resolve(file);
+        }, 25000);
+
+        img.onload = function () {
+            clearTimeout(timer);
+            URL.revokeObjectURL(url);
+
+            let w = img.naturalWidth;
+            let h = img.naturalHeight;
+            if (!w || !h) {
+                resolve(file);
+                return;
+            }
+
+            const maxEdge = IMAGE_COMPRESS.maxEdge;
+            if (w > maxEdge || h > maxEdge) {
+                if (w >= h) {
+                    h = Math.round(h * maxEdge / w);
+                    w = maxEdge;
+                } else {
+                    w = Math.round(w * maxEdge / h);
+                    h = maxEdge;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                resolve(file);
+                return;
+            }
+            ctx.drawImage(img, 0, 0, w, h);
+
+            const output = getOutputImageFormat();
+            canvas.toBlob(function (blob) {
+                if (!blob || blob.size >= file.size * 0.95) {
+                    resolve(file);
+                    return;
+                }
+                const baseName = (file.name || 'image').replace(/\.[^.]+$/i, '');
+                resolve(new File([blob], baseName + '.' + output.ext, {
+                    type: output.mime,
+                    lastModified: Date.now(),
+                }));
+            }, output.mime, IMAGE_COMPRESS.quality);
+        };
+
+        img.onerror = function () {
+            clearTimeout(timer);
+            URL.revokeObjectURL(url);
+            resolve(file);
+        };
+
+        img.src = url;
+    });
+}
+
+async function prepareImageFile(file, options) {
+    const silent = options && options.silent;
+    const originalFile = file;
+    let working = file;
+
+    if (isHeicFile(file)) {
+        if (!silent) {
+            beginImageCompress('در حال تبدیل HEIC…', {
+                fileName: file.name,
+                indeterminate: true,
+            });
+        }
+        try {
+            working = await convertHeicToJpeg(file);
+        } finally {
+            if (!silent) {
+                endImageCompress();
+            }
+        }
+    }
+
+    if (!silent) {
+        beginImageCompress('در حال بهینه‌سازی و تبدیل به WebP…', {
+            fileName: working.name || file.name,
+            indeterminate: true,
+        });
+    }
+    let processed;
+    try {
+        processed = await compressImageFile(working);
+    } finally {
+        if (!silent) {
+            endImageCompress();
+        }
+    }
+
+    return {
+        file: processed,
+        meta: buildImageMeta(originalFile, processed),
+    };
+}
+
+async function addGalleryFiles(files) {
+    const incoming = Array.from(files).filter(function (file) {
+        return isRasterImageFile(file);
+    });
+
+    if (incoming.length === 0 && files.length > 0) {
+        alert('فقط فایل تصویری مجاز است (JPG، PNG، WebP یا HEIC).');
+        return;
+    }
+
+    const availableSlots = getAvailableImageSlots();
+    if (availableSlots <= 0) {
+        alert('شما به سقف 30 تصویر رسیده‌اید. ابتدا تعدادی از تصاویر فعلی را حذف کنید.');
+        return;
+    }
+
+    const toProcess = incoming.slice(0, availableSlots);
+    if (toProcess.length < incoming.length) {
+        alert('حداکثر ' + MAX_GALLERY_IMAGES + ' تصویر مجاز است. فقط ' + availableSlots + ' تصویر دیگر می‌توانید اضافه کنید.');
+    }
+    if (toProcess.length === 0) {
+        return;
+    }
+
+    showImageCompressOverlay({
+        title: 'در حال پردازش گالری تصاویر',
+        total: toProcess.length,
+        current: 0,
+        indeterminate: false,
+        fileName: toProcess[0].name,
+    });
+
+    for (let i = 0; i < toProcess.length; i++) {
+        updateImageCompressOverlay({
+            current: i + 1,
+            total: toProcess.length,
+            fileName: toProcess[i].name,
+            title: isHeicFile(toProcess[i])
+                ? 'در حال تبدیل و فشرده‌سازی…'
+                : 'در حال بهینه‌سازی تصاویر',
+            indeterminate: false,
+        });
+
+        try {
+            const item = await prepareImageFile(toProcess[i], { silent: true });
+            selectedGalleryItems.push(item);
+        } catch (err) {
+            console.warn('gallery prepare failed', err);
+            selectedGalleryItems.push({
+                file: toProcess[i],
+                meta: buildImageMeta(toProcess[i], toProcess[i]),
+            });
+        }
+    }
+
+    hideImageCompressOverlay();
+    syncGalleryInputFiles();
+    renderNewImagesPreview();
+    const galleryUploadBox = document.getElementById('galleryUploadBox');
+    if (galleryUploadBox) {
+        galleryUploadBox.classList.add('active');
+    }
 }
 
 function renderNewImagesPreview() {
@@ -1041,107 +1695,28 @@ function renderNewImagesPreview() {
     if (!container) return;
     container.innerHTML = '';
 
-    selectedGalleryFiles.forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const col = document.createElement('div');
-            col.className = 'col-6';
-            col.innerHTML = `
-                <div class="image-preview-card">
-                    <img src="${event.target.result}" alt="new-image-${index}">
-                    <div class="new-image-actions">
-                        <span>${(file.size / 1024 / 1024).toFixed(2)}MB</span>
-                        <button type="button" class="remove-new-image" data-index="${index}">×</button>
-                    </div>
-                </div>
-            `;
-            container.appendChild(col);
-        };
-        reader.readAsDataURL(file);
+    selectedGalleryItems.forEach(function (item, index) {
+        const col = document.createElement('div');
+        col.className = 'col-6';
+        const url = URL.createObjectURL(item.file);
+        col.innerHTML =
+            '<div class="image-preview-card">' +
+                '<img src="' + url + '" alt="new-image-' + index + '">' +
+                '<div class="new-image-actions">' +
+                    '<span class="new-image-meta">' + escapeHtml(formatImageMetaLine(item.meta)) + '</span>' +
+                    '<button type="button" class="remove-new-image" data-index="' + index + '">×</button>' +
+                '</div>' +
+            '</div>';
+        container.appendChild(col);
     });
 
-    setTimeout(() => {
-        container.querySelectorAll('.remove-new-image').forEach((button) => {
-            button.addEventListener('click', function() {
-                const index = Number(this.dataset.index);
-                selectedGalleryFiles.splice(index, 1);
-                syncGalleryInputFiles();
-                renderNewImagesPreview();
-            });
+    container.querySelectorAll('.remove-new-image').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const index = Number(this.dataset.index);
+            selectedGalleryItems.splice(index, 1);
+            syncGalleryInputFiles();
+            renderNewImagesPreview();
         });
-    }, 0);
-}
-
-async function prepareCompressedWebpFiles() {
-    const coverInput = document.getElementById('cover');
-    const imagesInput = document.getElementById('images');
-
-    if (selectedCoverFile) {
-        const convertedCover = await convertImageToWebp(selectedCoverFile, 1200, 0.82);
-        if (convertedCover && coverInput) {
-            const dt = new DataTransfer();
-            dt.items.add(convertedCover);
-            coverInput.files = dt.files;
-        }
-    }
-
-    if (selectedGalleryFiles.length && imagesInput) {
-        const convertedGallery = [];
-        for (const file of selectedGalleryFiles) {
-            const converted = await convertImageToWebp(file, 1280, 0.78);
-            convertedGallery.push(converted || file);
-        }
-        selectedGalleryFiles = convertedGallery;
-        syncGalleryInputFiles();
-    }
-}
-
-function convertImageToWebp(file, maxSize = 1280, quality = 0.8) {
-    return new Promise((resolve) => {
-        if (!file.type.startsWith('image/')) {
-            resolve(file);
-            return;
-        }
-
-        const image = new Image();
-        const objectUrl = URL.createObjectURL(file);
-
-        image.onload = () => {
-            const canvas = document.createElement('canvas');
-            let { width, height } = image;
-
-            if (width > maxSize || height > maxSize) {
-                if (width > height) {
-                    height = Math.round((height * maxSize) / width);
-                    width = maxSize;
-                } else {
-                    width = Math.round((width * maxSize) / height);
-                    height = maxSize;
-                }
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const context = canvas.getContext('2d');
-            context.drawImage(image, 0, 0, width, height);
-
-            canvas.toBlob((blob) => {
-                URL.revokeObjectURL(objectUrl);
-                if (!blob) {
-                    resolve(file);
-                    return;
-                }
-                const baseName = file.name.replace(/\.[^/.]+$/, '');
-                resolve(new File([blob], `${baseName}.webp`, { type: 'image/webp' }));
-            }, 'image/webp', quality);
-        };
-
-        image.onerror = () => {
-            URL.revokeObjectURL(objectUrl);
-            resolve(file);
-        };
-
-        image.src = objectUrl;
     });
 }
 

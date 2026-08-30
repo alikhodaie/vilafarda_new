@@ -49,7 +49,7 @@
                 ffmpeg-base-url="{{ asset('vendor/ffmpeg') }}"
                 :max-upload-bytes="{{ index_banner_video_max_upload_bytes() }}"
                 current-src="{{ settingFilePath('index:banner-video') }}"
-                hint="پس از انتخاب، ویدئو در مرورگر فشرده و مستقیم ذخیره می‌شود (محدودیت ۲ مگابایت PHP دور زده می‌شود)."
+                hint="پس از انتخاب، ویدئو همان لحظه ذخیره می‌شود (لازم نیست برای خودِ فیلم «ثبت» را بزنید). فقط فایل‌های خیلی حجیم در مرورگر فشرده می‌شوند."
             ></index-banner-video-upload>
         </div>
     </div>

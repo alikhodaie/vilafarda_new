@@ -122,7 +122,7 @@ return [
     'string' => ':attribute باید از نوع رشته ای باشد.',
     'timezone' => 'The :attribute must be a valid timezone.',
     'unique' => ':attribute قبلا ثبت شده، لطفا :attribute دیگری وارد کنید.',
-    'uploaded' => 'بارگذاری «:attribute» انجام نشد. محدودیت PHP (upload_max_filesize / post_max_size) اجازهٔ این حجم را نمی‌دهد؛ تصویر مدرک باید قبل از ارسال سبک شود یا سقف PHP را بالا ببرید. برای لوکال: composer run serve (نه php artisan serve).',
+    'uploaded' => 'The :attribute failed to upload.',
     'url' => 'The :attribute must be a valid URL.',
     'uuid' => 'The :attribute must be a valid UUID.',
 
@@ -153,8 +153,6 @@ return [
     | of "email". This simply helps us make our message more expressive.
     |
     */
-
-    'bootstrap_icon' => 'آیکون انتخاب‌شده معتبر نیست.',
 
     'attributes' => [
         'email' => 'ایمیل',
@@ -198,6 +196,8 @@ return [
         'address' => 'آدرس',
         'province' => 'استان',
         'city' => 'شهر',
+        'city_id' => 'شهر',
+        'province_id' => 'استان',
         'yard' => 'محوطه',
         'infrastructure' => 'زیربنا',
         'main_guest' => 'میهمان اصلی',
@@ -217,14 +217,6 @@ return [
         'daily_off' => 'تعداد روز',
         'document' => 'سند',
         'shaba' => 'شماره شبا',
-        'payment_reference' => 'شناسه پرداخت',
-        'cover' => 'تصویر کاور',
-        'gallery' => 'گالری تصاویر',
-        'gallery.*' => 'یکی از تصاویر گالری',
-        'images' => 'تصاویر',
-        'images.*' => 'یکی از تصاویر',
-        'icon_type' => 'نوع آیکون',
-        'icon_class' => 'آیکون',
     ],
 
 ];

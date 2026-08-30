@@ -272,8 +272,6 @@ class SettingController extends Controller
                     ->withInput();
             }
 
-            Setting::deleteFile(setting('index:banner-video'));
-
             try {
                 $data['index:banner-video'] = app(IndexBannerVideoEncoder::class)->storeOptimizedMp4($bannerVideo);
             } catch (\RuntimeException $e) {
@@ -344,8 +342,6 @@ class SettingController extends Controller
                 UPLOAD_ERR_OK,
                 true
             );
-
-            Setting::deleteFile(setting('index:banner-video'));
 
             $filename = app(IndexBannerVideoEncoder::class)->storeOptimizedMp4($uploaded);
 

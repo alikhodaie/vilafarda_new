@@ -7,19 +7,20 @@
 
     function syncCities() {
         var pid = provinceSelect.value;
-        var firstVisible = null;
+        var selected = citySelect.value;
+
         cityOpts.forEach(function (opt) {
             if (!opt.value) {
                 opt.hidden = false;
                 return;
             }
-            var provinceMatches = String(opt.getAttribute('data-province')) === String(pid);
-            opt.hidden = !provinceMatches;
-            if (provinceMatches && firstVisible === null) firstVisible = opt;
+            var match = String(opt.getAttribute('data-province')) === String(pid);
+            var keepSelected = selected && String(opt.value) === String(selected);
+            opt.hidden = !match && !keepSelected;
         });
-        var currentCityOpt = citySelect.options[citySelect.selectedIndex];
-        if (!currentCityOpt || currentCityOpt.hidden || !currentCityOpt.value) {
-            citySelect.value = firstVisible ? firstVisible.value : '';
+
+        if (selected) {
+            citySelect.value = selected;
         }
     }
 

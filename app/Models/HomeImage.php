@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use App\Services\HomePhotoWebpEncoder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class HomeImage extends Model
@@ -17,32 +17,47 @@ class HomeImage extends Model
     # region Methods
     public function deleteImage(Home $home = null): bool
     {
-        if ($this->name){
-            $path = ($home) ? $home->getImagePath(): $this->home->getImagePath();
-            Storage::delete($path.$this->name);
+        if (! $this->name) {
+            return true;
         }
+
+        $homeModel = $home ?: $this->home;
+        $filename = $this->name;
+        $relative = $homeModel->getImagePath().$filename;
+        $homeId = (int) $homeModel->id;
+
+        DB::afterCommit(function () use ($relative, $filename, $homeId) {
+            $row = Home::query()->whereKey($homeId)->first(['cover', 'video']);
+            if ($row && in_array($filename, [$row->cover, $row->video], true)) {
+                return;
+            }
+
+            Storage::disk('public-folder')->delete($relative);
+        });
 
         return true;
     }
 
     public function updateImage(UploadedFile $file): string
     {
-        $this->deleteImage();
-
-        $originalName = $file->getClientOriginalName();
-        $stored = app(HomePhotoWebpEncoder::class)->storeOptimizedWebp($file, trim($this->home->getImagePath(), '/'), [
-            'max_edge' => Home::IMAGE_GALLERY_MAX_LONG_EDGE,
-            'quality' => Home::IMAGE_GALLERY_WEBP_QUALITY,
-        ]);
+        $oldName = $this->name;
+        $storedName = basename($file->store($this->home->getImagePath(), 'public-folder'));
 
         $this->update([
-            'original_name' => $originalName,
-            'name' => $stored['name'],
-            'size' => $stored['size'],
-            'type' => $stored['type'],
+            'original_name' => $file->getClientOriginalName(),
+            'name' => $storedName,
+            'size' => (int) $file->getSize(),
+            'type' => $file->getMimeType(),
         ]);
 
-        return $stored['name'];
+        if ($oldName && $oldName !== $storedName) {
+            $relative = $this->home->getImagePath().$oldName;
+            DB::afterCommit(function () use ($relative) {
+                Storage::disk('public-folder')->delete($relative);
+            });
+        }
+
+        return $storedName;
     }
     # endregion
 

@@ -84,11 +84,16 @@ class ImageController extends Controller
             'ids.*' => ['integer', Rule::exists('home_images', 'id')->where('home_id', $home->id)],
         ]);
 
+        $ids = array_values(array_unique(array_map('intval', $validated['ids'])));
+
         try {
             DB::beginTransaction();
 
-            foreach ($validated['ids'] as $id) {
-                $image = $home->images()->findOrFail($id);
+            foreach ($ids as $id) {
+                $image = $home->images()->find($id);
+                if (! $image) {
+                    continue;
+                }
                 $image->deleteImage();
                 $image->delete();
             }
@@ -97,7 +102,58 @@ class ImageController extends Controller
 
             return redirect()
                 ->route('admin.homes.edit', $home)
-                ->with('success', count($validated['ids']).' تصویر حذف شد.');
+                ->with('open_tab', 'tab-media')
+                ->with('success', count($ids).' تصویر حذف شد.');
+        }
+        catch (Exception $e) {
+            DB::rollBack();
+            Error::catch($e, __CLASS__, __FUNCTION__);
+            throw ValidationException::withMessages([
+                'image' => __('text.whoops'),
+            ]);
+        }
+    }
+
+    public function destroyAll(Home $home)
+    {
+        $this->authorize('update', $home);
+
+        $images = $home->images()->get();
+        $hadCover = (bool) $home->cover;
+
+        if ($images->isEmpty() && ! $hadCover) {
+            return redirect()
+                ->route('admin.homes.edit', $home)
+                ->with('open_tab', 'tab-media')
+                ->with('warning', 'تصویری برای حذف وجود ندارد.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($images as $image) {
+                $image->deleteImage();
+                $image->delete();
+            }
+
+            if ($hadCover) {
+                $home->deleteCover();
+            }
+
+            DB::commit();
+
+            $parts = [];
+            if ($images->isNotEmpty()) {
+                $parts[] = $images->count().' تصویر گالری';
+            }
+            if ($hadCover) {
+                $parts[] = 'کاور';
+            }
+
+            return redirect()
+                ->route('admin.homes.edit', $home)
+                ->with('open_tab', 'tab-media')
+                ->with('success', implode(' و ', $parts).' حذف شد.');
         }
         catch (Exception $e) {
             DB::rollBack();
