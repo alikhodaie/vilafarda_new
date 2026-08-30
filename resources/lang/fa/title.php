@@ -79,6 +79,7 @@ return [
     'set_custom_price' => 'ثبت قیمت',
     'text_set_custom_reserve' => 'ثبت رزرو',
     'delete_changes' => 'حذف تغییرات',
+    'reset_base_price' => 'برگشت به قیمت پایه',
     'register' => 'ثبت نام',
     'login system' => 'ورود به سیستم',
     'my_homes' => 'املاک من',

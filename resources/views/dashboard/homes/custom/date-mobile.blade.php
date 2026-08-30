@@ -60,6 +60,8 @@
                         text_price="@lang('title.price')"
                         text_active_or_deactivate_days="@lang('title.active_or_deactivate_days')"
                         text_is_active_description="@lang('text.is_active_description')"
+                        text_reset_base_price="@lang('title.reset_base_price')"
+                        text_reset_base_price_description="@lang('text.reset_base_price_description')"
                         text_off="@lang('title.off')"
                         text_price_set_based_on_selected_first_date="@lang('text.price_set_based_on_selected_first_date')"
                         text_custom_date_price_retry_hint="@lang('text.custom_date_price_retry_hint')"

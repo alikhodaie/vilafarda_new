@@ -96,28 +96,16 @@ Vue.filter("formatNumber", function (value) {
 import Switches from 'vue-switches';
 Vue.component('switches', Switches)
 
-require('./src/plugins');
 require('./src/mixin');
 
-import CustomDate from './components/main/Home/CustomDate.vue';
-import PersianCalendar from './components/main/PersianCalendar.vue';
-
-Vue.component('CustomDate', CustomDate);
-Vue.component('PersianCalendar', PersianCalendar);
-
 const files = require.context('./components/admin/', true, /\.vue$/i)
-files.keys().forEach((key) => {
-    const componentName = key.split('/').pop().split('.')[0];
-    if (componentName === 'CustomDate') {
-        return;
-    }
-    Vue.component(componentName, files(key).default);
-})
+files.keys().map(key => Vue.component(key.split('/').pop().split('.')[0], files(key).default))
+
+Vue.component('custom-date', require('./components/main/Home/CustomDate.vue').default)
+Vue.component('persian-calendar', require('./components/main/PersianCalendar.vue').default)
 
 window.Vue = require('vue').default;
 window.eventBus = new Vue({});
 const app = new Vue({
     el: '#app',
-    // Blade uses {{ }}; avoid compiling the same tokens in server-rendered HTML.
-    delimiters: ['${', '}'],
 });

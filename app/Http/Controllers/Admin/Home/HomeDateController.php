@@ -16,10 +16,14 @@ use Illuminate\Support\Facades\DB;
 
 class HomeDateController extends Controller
 {
-    public function show($home)
+    public function show(Request $request, $home)
     {
         $home = Home::query()->with(['custom_dates'])->whereKey(HomeSlug::resolveKeyForQuery($home))->firstOrFail();
         $this->authorize('showDate', $home);
+
+        if ($request->is_mobile ?? false) {
+            return view('admin.homes.date-mobile', compact(['home']));
+        }
 
         return view('admin.homes.date', compact(['home']));
     }
@@ -29,20 +33,31 @@ class HomeDateController extends Controller
         try {
             DB::beginTransaction();
 
-            $price = $request->get('price');
-            $is_active = $request->get('is_active');
-
-            if ($is_active === 'false')
-            {
-                $price = 0;
-            }
-
-            $minNights = max(1, (int) $request->get('min_nights', 1));
-
             $home->unsetRelation('custom_dates');
 
-            foreach ($request->get('dates') as $date) {
-                $home->upsertCustomDate($date, (int) $price, $minNights);
+            $basePrices = [];
+            foreach (['week_price', 'wed_price', 'thu_price', 'fri_price'] as $field) {
+                if ($request->filled($field)) {
+                    $basePrices[$field] = (int) $request->get($field);
+                }
+            }
+
+            if ($basePrices !== []) {
+                $home->update($basePrices);
+            }
+
+            $isActive = $request->get('is_active') !== 'false';
+            $minNights = max(1, (int) $request->get('min_nights', 1));
+
+            if ($request->input('calendar_action') === 'reset_base') {
+                $home->resetCustomDatesToBasePrice($request->get('dates', []));
+                $isActive = false;
+            } else {
+                $price = (int) $request->get('price', 0);
+
+                foreach ($request->get('dates') as $date) {
+                    $home->upsertCustomDate($date, $price, $minNights, $isActive);
+                }
             }
 
             DB::commit();
@@ -51,7 +66,7 @@ class HomeDateController extends Controller
             $home->refresh();
             $warnings = [];
 
-            if ($is_active !== 'false' && $minNights > 1) {
+            if ($isActive && $minNights > 1) {
                 foreach ($request->get('dates') as $date) {
                     $explanation = $home->explainMinNightsLimitation($date, $minNights);
 

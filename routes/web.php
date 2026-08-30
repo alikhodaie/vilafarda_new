@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\Article\ArticleController as AdminArticleControll
 use App\Http\Controllers\Admin\CommentController;
 use App\Http\Controllers\Admin\ConsultantController;
 use App\Http\Controllers\Admin\ContactController as AdminContactController;
+use App\Http\Controllers\Admin\Dev\ProductionPullController;
 use App\Http\Controllers\Admin\DiscountController;
 use App\Http\Controllers\Admin\DiscountUseController;
 use App\Http\Controllers\Admin\FAQ\FAQCategoryController;
@@ -463,7 +464,7 @@ Route::prefix('/admin')->name('admin.')->middleware(['auth', 'admin'])->group(fu
 
         # region Date
         Route::prefix('/{home}/date')->name('date.')->group(function (){
-            Route::get('/', [HomeDateController::class, 'show'])->name('show');
+            Route::get('/', [HomeDateController::class, 'show'])->middleware('detect.mobile')->name('show');
             Route::post('/', [HomeDateController::class, 'store'])->name('store');
             Route::delete('/', [HomeDateController::class, 'destroy'])->name('destroy');
             Route::post('/fast-reserve', [HomeDateController::class, 'updateFastReserve'])->name('update.fast.reserve');
@@ -596,6 +597,12 @@ Route::prefix('/admin')->name('admin.')->middleware(['auth', 'admin'])->group(fu
     Route::post('/discounts/{discount}/edit/use', [DiscountUseController::class, 'update'])->name('discounts.update.use');
     Route::resource('discounts', DiscountController::class);
     # endregion
+
+    if (app()->environment('local')) {
+        Route::get('/dev/production-pull', [ProductionPullController::class, 'show'])->name('dev.production-pull');
+        Route::post('/dev/production-pull', [ProductionPullController::class, 'start'])->name('dev.production-pull.start');
+        Route::get('/dev/production-pull/status', [ProductionPullController::class, 'status'])->name('dev.production-pull.status');
+    }
 });
 # endregion
 

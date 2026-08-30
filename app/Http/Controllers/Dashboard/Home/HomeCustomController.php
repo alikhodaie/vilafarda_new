@@ -24,10 +24,10 @@ class HomeCustomController extends Controller
         $home = auth()->user()->findHomeOrFail($home, ['custom_dates']);
 
         if ($request->is_mobile ?? false) {
-            return view('dashboard.homes.custom.date-mobile', compact('home'));
+            return view('dashboard.homes.custom.date-mobile', compact(['home']));
         }
 
-        return view('dashboard.homes.custom.date', compact('home'));
+        return view('dashboard.homes.custom.date', compact(['home']));
     }
 
     public function storeDate(StoreCustomDateRequest $request, Home $home)
@@ -35,45 +35,33 @@ class HomeCustomController extends Controller
         try {
             DB::beginTransaction();
 
-            $price = $request->get('price');
-            $is_active = $request->get('is_active');
-
-            if ($is_active === 'false')
-            {
-                $price = 0;
-            }
-
-            $minNights = max(1, (int) $request->get('min_nights', 1));
-
             $home->unsetRelation('custom_dates');
 
-            foreach ($request->get('dates') as $date) {
-                $home->upsertCustomDate($date, (int) $price, $minNights);
-            }
-
-            DB::commit();
-
-            $home->unsetRelation('custom_dates');
-            $home->refresh();
-            $warnings = [];
-
-            if ($is_active !== 'false' && $minNights > 1) {
-                foreach ($request->get('dates') as $date) {
-                    $explanation = $home->explainMinNightsLimitation($date, $minNights);
-
-                    if ($explanation) {
-                        $warnings[] = $explanation['message'];
-                    }
+            $basePrices = [];
+            foreach (['week_price', 'wed_price', 'thu_price', 'fri_price'] as $field) {
+                if ($request->filled($field)) {
+                    $basePrices[$field] = (int) $request->get($field);
                 }
             }
 
-            $redirect = redirect()->back()->with('success', __('text.success.update_calendar'));
-
-            if ($warnings !== []) {
-                $redirect->with('warning', __('text.min_nights_saved_with_limits')."\n".implode("\n", $warnings));
+            if ($basePrices !== []) {
+                $home->update($basePrices);
             }
 
-            return $redirect;
+            if ($request->input('calendar_action') === 'reset_base') {
+                $home->resetCustomDatesToBasePrice($request->get('dates', []));
+            } else {
+                $price = (int) $request->get('price', 0);
+                $isActive = $request->get('is_active') !== 'false';
+                $minNights = max(1, (int) $request->get('min_nights', 1));
+
+                foreach ($request->get('dates') as $date) {
+                    $home->upsertCustomDate($date, $price, $minNights, $isActive);
+                }
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', __('text.success.update_calendar'));
         }
         catch (Exception $e){
             DB::rollBack();

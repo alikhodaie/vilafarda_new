@@ -823,8 +823,8 @@ class Home extends Model
                     ->whereIn('status', [Order::AWAITING_PAYMENT, Order::WAITING_FOR_RENTER, Order::IN_RENT]);
             })
             ->whereDoesntHave('custom_dates', function (Builder $query) use ($date) {
-                $query->where('date', $date)
-                    ->where('price', 0);
+                $query->unavailable()
+                    ->where('date', $date);
             })
             ->orderByDesc('homes.off');
     }
@@ -853,6 +853,7 @@ class Home extends Model
         return $query->join('home_custom_dates', function ($join) use ($date, $column) {
             $join->on('homes.id', '=', 'home_custom_dates.home_id')
                 ->where('home_custom_dates.date', '=', $date)
+                ->where('home_custom_dates.is_active', true)
                 ->where('home_custom_dates.price', '!=', 0)
                 ->whereColumn('home_custom_dates.price', '<', "homes.$column");
         })
@@ -870,8 +871,8 @@ class Home extends Model
                     ->whereIn('status', [Order::AWAITING_PAYMENT, Order::WAITING_FOR_RENTER, Order::IN_RENT, Order::DONE]);
             })
             ->whereDoesntHave('custom_dates', function (Builder $query) use ($tomorrow) {
-                $query->where('date', $tomorrow)
-                    ->where('price', 0);
+                $query->unavailable()
+                    ->where('date', $tomorrow);
             });
     }
 
@@ -963,7 +964,7 @@ class Home extends Model
                     ->where('end_at', '>=', $date);
             })
                 ->whereDoesntHave('custom_dates', function (Builder $custom_dates) use ($date){
-                    $custom_dates->where('price', 0)
+                    $custom_dates->unavailable()
                         ->where('date', $date);
                 });
         }
@@ -976,7 +977,7 @@ class Home extends Model
                     ->where('end_at', '>=', $date);
             })
                 ->whereDoesntHave('custom_dates', function (Builder $custom_dates) use ($date){
-                    $custom_dates->where('price', 0)
+                    $custom_dates->unavailable()
                         ->where('date', $date);
                 });
         }
@@ -985,7 +986,7 @@ class Home extends Model
             $end = Jalalian::fromFormat('Y/m/d', request('end_at'))->toCarbon();
 
             $query->whereDoesntHave('custom_dates', function (Builder $custom_dates) use ($start, $end){
-                $custom_dates->where('price', 0)
+                $custom_dates->unavailable()
                     ->whereBetween('date', [$start, $end]);
             });
         }
@@ -1541,22 +1542,40 @@ class Home extends Model
         }
     }
 
-    public function upsertCustomDate(Carbon|string $date, int $price, int $minNights = 1): HomeCustomDate
+    public function upsertCustomDate(Carbon|string $date, int $price, int $minNights = 1, ?bool $isActive = null): HomeCustomDate
     {
         $this->unsetRelation('custom_dates');
 
         $normalizedDate = $this->resolveCalendarDayCarbon($date)->startOfDay();
         $minNights = max(1, (int) $minNights);
         $storedDate = $normalizedDate->toDateString();
+        $preservePriceOnClose = $isActive === false;
+
+        if ($isActive === null) {
+            $isActive = $price > 0;
+        }
 
         $customDate = $this->findCustomDateByCalendarDay($normalizedDate);
 
+        if (! $isActive && $preservePriceOnClose) {
+            $storedPrice = $this->lookupStoredCustomPrice($normalizedDate, $customDate);
+
+            if ($storedPrice > 0) {
+                $price = $storedPrice;
+            } else {
+                $price = max(0, (int) $this->getPrice($normalizedDate, true));
+            }
+        }
+
+        $payload = [
+            'date' => $storedDate,
+            'price' => $price,
+            'min_nights' => $minNights,
+            'is_active' => $isActive,
+        ];
+
         if ($customDate) {
-            $customDate->update([
-                'date' => $storedDate,
-                'price' => $price,
-                'min_nights' => $minNights,
-            ]);
+            $customDate->update($payload);
 
             $this->purgeDuplicateCustomDatesForDay($normalizedDate, (int) $customDate->id);
             $this->unsetRelation('custom_dates');
@@ -1564,16 +1583,51 @@ class Home extends Model
             return $customDate->fresh();
         }
 
-        $created = $this->custom_dates()->create([
-            'date' => $storedDate,
-            'price' => $price,
-            'min_nights' => $minNights,
-        ]);
+        $created = $this->custom_dates()->create($payload);
 
         $this->purgeDuplicateCustomDatesForDay($normalizedDate, (int) $created->id);
         $this->unsetRelation('custom_dates');
 
         return $created;
+    }
+
+    public function lookupStoredCustomPrice(Carbon|string $date, ?HomeCustomDate $customDate = null): int
+    {
+        if ($customDate && (int) $customDate->price > 0) {
+            return (int) $customDate->price;
+        }
+
+        $map = $this->custom_prices_map;
+        $normalized = $this->resolveCalendarDayCarbon($date);
+
+        foreach ([
+            $normalized->format('Y-m-d'),
+            $normalized->format('Y/m/d'),
+            Jalalian::fromCarbon($normalized)->format('Y/m/d'),
+        ] as $key) {
+            if (isset($map[$key]) && (int) $map[$key] > 0) {
+                return (int) $map[$key];
+            }
+        }
+
+        return 0;
+    }
+
+    public function resetCustomDatesToBasePrice(array $dates): void
+    {
+        foreach ($dates as $date) {
+            $normalized = $this->resolveCalendarDayCarbon($date)->startOfDay();
+            $existing = $this->findCustomDateByCalendarDay($normalized);
+
+            if (! $existing) {
+                continue;
+            }
+
+            $id = (int) $existing->id;
+            $existing->delete();
+            $this->purgeDuplicateCustomDatesForDay($normalized, $id);
+            $this->unsetRelation('custom_dates');
+        }
     }
 
     public function getMinNightsForDate(Carbon|string $date): int
@@ -1781,7 +1835,11 @@ class Home extends Model
     {
         $dates = collect([]);
 
-        foreach ($this->custom_dates()->where('price', 0)->get() as $custom_date) {
+        $records = $this->relationLoaded('custom_dates')
+            ? $this->custom_dates->filter(fn (HomeCustomDate $customDate) => $customDate->isUnavailable())
+            : $this->custom_dates()->unavailable()->get();
+
+        foreach ($records as $custom_date) {
             $dates->push($this->resolveCalendarDayCarbon($custom_date->date)->format('Y/m/d'));
         }
 

@@ -15,11 +15,25 @@ class HomeCustomDate extends Model
     public $timestamps = false;
 
     protected $casts = [
-        'date' => 'date'
+        'date' => 'date',
+        'is_active' => 'boolean',
     ];
 
     public function home()
     {
         return $this->belongsTo(Home::class);
+    }
+
+    public function isUnavailable(): bool
+    {
+        return $this->is_active === false || (int) $this->price === 0;
+    }
+
+    public function scopeUnavailable($query)
+    {
+        return $query->where(function ($inner) {
+            $inner->where('is_active', false)
+                ->orWhere('price', 0);
+        });
     }
 }

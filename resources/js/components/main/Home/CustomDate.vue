@@ -7,7 +7,12 @@
             </div>
 
             <input type="hidden" name="_token" :value="csrf">
+            <input type="hidden" name="calendar_action" :value="calendarAction">
             <input type="hidden" name="min_nights" :value="min_nights">
+            <input type="hidden" name="week_price" :value="submitBaseWeekPrice">
+            <input type="hidden" name="wed_price" :value="submitBaseWedPrice">
+            <input type="hidden" name="thu_price" :value="submitBaseThuPrice">
+            <input type="hidden" name="fri_price" :value="submitBaseFriPrice">
             <input
                 type="hidden"
                 :name="is_active_name"
@@ -145,6 +150,26 @@
                                         ></money>
                                         <p class="calendar-edit-field__hint">{{ text_price_set_based_on_selected_first_date }}</p>
                                         <p class="calendar-edit-field__hint calendar-edit-field__hint--retry">{{ text_custom_date_price_retry_hint }}</p>
+                                        <button
+                                            type="button"
+                                            class="calendar-edit-link-btn mt-3"
+                                            @click="submitResetToBase">
+                                            {{ text_reset_base_price || 'برگشت به قیمت پایه' }}
+                                        </button>
+                                        <p class="calendar-edit-field__hint mt-2">{{ text_reset_base_price_description }}</p>
+                                    </template>
+
+                                    <template v-else-if="section.id === 'base_prices'">
+                                        <p class="calendar-edit-field__hint mb-3">نرخ عادی روزهایی که قیمت خاص ندارند. بعد از تغییر، ثبت را بزنید.</p>
+                                        <div class="calendar-edit-field mb-3" v-for="field in basePriceFields" :key="field.key">
+                                            <label class="calendar-edit-field__label" :for="'base-price-' + field.key">{{ field.label }}</label>
+                                            <money
+                                                v-model="basePrices[field.key]"
+                                                inputmode="numeric"
+                                                class="form-control calendar-edit-input"
+                                                min="1000"
+                                            ></money>
+                                        </div>
                                     </template>
 
                                     <template v-else-if="section.id === 'min_stay'">
@@ -257,6 +282,23 @@
                                 ></money>
                                 <p class="text-muted">{{ text_price_set_based_on_selected_first_date }}</p>
                                 <p class="text-muted mb-0">{{ text_custom_date_price_retry_hint }}</p>
+                                <button type="button" class="btn btn-outline-secondary w-100 rounded mt-3" @click="submitResetToBase">
+                                    {{ text_reset_base_price || 'برگشت به قیمت پایه' }}
+                                </button>
+                                <p class="text-muted mt-2 mb-0">{{ text_reset_base_price_description }}</p>
+                            </div>
+                            <div class="form-group mt-4">
+                                <h6 class="font-weight-bold text-black" style="font-size: 16px;">لیست قیمت پایه</h6>
+                                <p class="text-muted">نرخ عادی روزهایی که قیمت خاص ندارند.</p>
+                                <div class="mb-3" v-for="field in basePriceFields" :key="'desktop-' + field.key">
+                                    <label style="color: black">{{ field.label }}</label>
+                                    <money
+                                        v-model="basePrices[field.key]"
+                                        inputmode="numeric"
+                                        class="form-control"
+                                        min="1000"
+                                    ></money>
+                                </div>
                             </div>
                             <div class="form-group mt-4">
                                 <label style="color: black">حداقل مدت رزرو (شب)</label>
@@ -306,7 +348,8 @@ export default {
             'week_price', 'wed_price', 'thu_price', 'fri_price', 'price_name', 'csrf', 'route', 'all_custom_dates',
             'text_set_custom_price', 'text_set_custom_reserve', 'button_cancel_text', 'custom_prices_prop', 'select_range_days',
             'text_delete_changes', 'placeholder', 'text_edit', 'text_remove_selected', 'text_day_selected', 'text_price',
-            'text_active_or_deactivate_days', 'is_active_name', 'text_is_active_description', 'text_off',
+            'text_active_or_deactivate_days', 'is_active_name', 'text_is_active_description',
+            'text_reset_base_price', 'text_reset_base_price_description', 'text_off',
             'text_price_set_based_on_selected_first_date', 'text_custom_date_price_retry_hint', 'text_percentage', 'text_no_off', 'stacked_calendar', 'home_edit_url', 'custom_min_nights_prop',
             'text_min_nights_warning_intro', 'text_min_nights_confirm_save', 'text_min_nights_blocked_order_night',
             'text_min_nights_blocked_host_closed_checkin', 'text_min_nights_blocked_order_checkin',
@@ -333,6 +376,13 @@ export default {
             editSheetClosing: false,
             openAccordion: 'availability',
             is_custom: false,
+            calendarAction: 'save',
+            basePrices: {
+                week: 0,
+                wed: 0,
+                thu: 0,
+                fri: 0,
+            },
             is_active: true,
             off: null,
             price: 0,
@@ -366,10 +416,30 @@ export default {
             if (!this.hasSelection) {
                 return false;
             }
-            if (!this.is_active) {
+            if (this.calendarAction === 'reset_base' || !this.is_active) {
                 return true;
             }
             return parseInt(this.submitPrice, 10) >= 1000;
+        },
+        basePriceFields() {
+            return [
+                { key: 'week', label: 'شنبه تا سه‌شنبه' },
+                { key: 'wed', label: 'چهارشنبه' },
+                { key: 'thu', label: 'پنجشنبه' },
+                { key: 'fri', label: 'جمعه' },
+            ];
+        },
+        submitBaseWeekPrice() {
+            return this.parseMoneyAmount(this.basePrices.week);
+        },
+        submitBaseWedPrice() {
+            return this.parseMoneyAmount(this.basePrices.wed);
+        },
+        submitBaseThuPrice() {
+            return this.parseMoneyAmount(this.basePrices.thu);
+        },
+        submitBaseFriPrice() {
+            return this.parseMoneyAmount(this.basePrices.fri);
         },
         submitPrice() {
             const raw = this.price;
@@ -445,6 +515,7 @@ export default {
             return [
                 { id: 'availability', label: 'پر و خالی کردن تقویم' },
                 { id: 'pricing', label: 'نرخ‌گذاری روزهای خاص' },
+                { id: 'base_prices', label: 'لیست قیمت پایه' },
                 { id: 'min_stay', label: 'حداقل مدت رزرو' },
                 {
                     id: 'period_discount',
@@ -473,6 +544,12 @@ export default {
 
         this.syncCalendarDateProps();
         this.syncCustomPricesFromProp();
+        this.basePrices = {
+            week: this.parseMoneyAmount(this.week_price),
+            wed: this.parseMoneyAmount(this.wed_price),
+            thu: this.parseMoneyAmount(this.thu_price),
+            fri: this.parseMoneyAmount(this.fri_price),
+        };
 
         this.custom_min_nights = this.buildCustomMinNightsMap(
             this.custom_min_nights_prop,
@@ -726,9 +803,25 @@ export default {
 
             return this.getPrice(dateValue, false);
         },
+        parseMoneyAmount(value) {
+            const digits = String(value == null ? '' : value).replace(/[^\d]/g, '');
+
+            if (!digits) {
+                return 0;
+            }
+
+            return parseInt(digits, 10) || 0;
+        },
+        submitResetToBase() {
+            if (!this.hasSelection) {
+                return;
+            }
+
+            this.calendarAction = 'reset_base';
+            this.submitCustomDateForm();
+        },
         capturePriceFromEditor() {
             if (!this.is_active) {
-                this.price = 0;
                 return;
             }
 
@@ -1005,6 +1098,10 @@ export default {
         },
         onFormSubmit(event) {
             event.preventDefault();
+
+            if (this.calendarAction !== 'reset_base') {
+                this.calendarAction = 'save';
+            }
 
             this.capturePriceFromEditor();
             this.min_nights = Math.max(1, parseInt(this.min_nights, 10) || 1);
