@@ -1,9 +1,10 @@
 @if(!empty($similarCategories))
     @php $similarLayout = $layout ?? 'mobile'; @endphp
 
+    <link rel="stylesheet" href="{{ asset('vendor/swiper/swiper-bundle.min.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/suggestions.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/last-minute-off.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/home-similar-homes.css') }}">
+    <link rel="stylesheet" href="{{ public_asset_version('assets/css/home-similar-homes.css') }}">
 
     @if($similarLayout === 'mobile')
         <hr class="home-detail-divider">
@@ -34,8 +35,22 @@
             @endforeach
         </div>
 
-        <div class="swiper home-similar-swiper">
-            <div class="swiper-wrapper" id="similar-homes-list"></div>
+        <div class="home-similar-carousel">
+            @if($similarLayout === 'desktop')
+                <button type="button" class="home-similar-nav home-similar-prev d-none d-lg-inline-flex" aria-label="قبلی">
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                </button>
+            @endif
+
+            <div class="swiper home-similar-swiper">
+                <div class="swiper-wrapper" id="similar-homes-list"></div>
+            </div>
+
+            @if($similarLayout === 'desktop')
+                <button type="button" class="home-similar-nav home-similar-next d-none d-lg-inline-flex" aria-label="بعدی">
+                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                </button>
+            @endif
         </div>
     </section>
 

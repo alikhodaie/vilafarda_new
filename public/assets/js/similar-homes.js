@@ -134,6 +134,10 @@ document.addEventListener('DOMContentLoaded', function () {
             slidesPerView: 'auto',
             spaceBetween: 14,
             freeMode: true,
+            navigation: section.querySelector('.home-similar-next') ? {
+                nextEl: section.querySelector('.home-similar-next'),
+                prevEl: section.querySelector('.home-similar-prev'),
+            } : undefined,
         });
     }
 

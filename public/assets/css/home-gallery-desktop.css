@@ -1,0 +1,205 @@
+/* Desktop mosaic gallery for /homes/{id} — featured + 2×2 thumbs */
+
+.home-gallery-desktop {
+    padding-top: 12px;
+    padding-bottom: 8px;
+}
+
+.home-gallery-desktop__frame {
+    position: relative;
+}
+
+.home-gallery-mosaic {
+    position: relative;
+    display: grid;
+    direction: rtl;
+    width: 100%;
+    height: min(460px, 52vh);
+    min-height: 340px;
+    gap: 6px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.home-gallery-mosaic__item {
+    position: relative;
+    display: block;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #e9ecef;
+    border-radius: 4px;
+}
+
+.home-gallery-mosaic__item--hero {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    border-radius: 4px;
+}
+
+.home-gallery-mosaic__item img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.4s ease;
+}
+
+.home-gallery-mosaic__item:hover img {
+    transform: scale(1.04);
+}
+
+.home-gallery-mosaic[data-count="1"] {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+}
+
+.home-gallery-mosaic[data-count="1"] .home-gallery-mosaic__item--hero {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.home-gallery-mosaic[data-count="2"] {
+    grid-template-columns: 1.2fr 1fr;
+    grid-template-rows: 1fr;
+}
+
+.home-gallery-mosaic[data-count="2"] .home-gallery-mosaic__item--hero {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.home-gallery-mosaic[data-count="3"] {
+    grid-template-columns: 1.2fr 1fr;
+    grid-template-rows: 1fr 1fr;
+}
+
+.home-gallery-mosaic[data-count="4"] .home-gallery-mosaic__item:nth-child(4) {
+    grid-column: 2 / span 2;
+}
+
+.home-gallery-mosaic__actions {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.home-gallery-mosaic__icon-btn,
+.home-gallery-mosaic__actions .home-favorite-btn {
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.14);
+    cursor: pointer;
+    color: #222;
+    flex-shrink: 0;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-gallery-mosaic__icon-btn:hover,
+.home-gallery-mosaic__actions .home-favorite-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.home-gallery-mosaic__icon-btn .bi,
+.home-gallery-mosaic__actions .home-favorite-btn .bi {
+    font-size: 17px;
+    line-height: 1;
+    color: #222;
+    filter: none;
+}
+
+.home-gallery-mosaic__actions .home-favorite-btn.is-active .bi {
+    color: #dc3545;
+}
+
+.home-gallery-mosaic__badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    color: #1a1a1a;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);
+    pointer-events: none;
+}
+
+.home-gallery-mosaic__badge .bi {
+    color: #e6b325;
+    font-size: 13px;
+}
+
+.home-gallery-mosaic__more {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 20, 20, 0.32);
+    z-index: 2;
+}
+
+.home-gallery-mosaic__more-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    color: #1a1a1a;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+.home-gallery-mosaic__more-label .bi {
+    font-size: 15px;
+}
+
+.home-gallery-mosaic__rest {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+}
+
+@media (max-width: 1199.98px) {
+    .home-gallery-mosaic {
+        height: min(380px, 48vh);
+        min-height: 280px;
+        border-radius: 12px;
+        gap: 5px;
+    }
+}

@@ -3,6 +3,7 @@
         class="persian-calendar"
         :class="{
             'persian-calendar--stacked': stackedMonths,
+            'persian-calendar--dual': dualMonths,
             'persian-calendar--manage': isManageCalendar(),
         }">
         <template v-if="stackedMonths">
@@ -50,6 +51,79 @@
             </div>
 
             <div class="calendar-stacked-footer">
+                <button type="button" class="calendar-clear-btn" @click="clearSelection">
+                    <i class="bi bi-trash" aria-hidden="true"></i>
+                    پاک کردن
+                </button>
+            </div>
+        </template>
+
+        <template v-else-if="dualMonths">
+            <div class="calendar-dual">
+                <button
+                    type="button"
+                    class="nav-arrow calendar-dual__nav"
+                    @click="previousMonth"
+                    :disabled="!canGoPrevious"
+                    aria-label="ماه قبل">
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                </button>
+
+                <div class="calendar-dual__month">
+                    <div class="calendar-dual__title">{{ currentMonthName }} {{ toPersianNum(currentYear) }}</div>
+                    <div class="calendar-weekdays">
+                        <div class="weekday" v-for="day in weekDays" :key="'dual-a-' + day">{{ day }}</div>
+                    </div>
+                    <div class="calendar-grid">
+                        <div
+                            v-for="(day, index) in calendarDays"
+                            :key="'dual-a-' + index"
+                            class="calendar-day"
+                            :class="dayCellClasses(day)"
+                            @click="selectDate(day)">
+                            <div class="day-content">
+                                <div class="day-number">{{ day.day }}</div>
+                                <div v-if="resolvedDayPrice(day)" class="day-price">
+                                    {{ formatPrice(resolvedDayPrice(day)) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="calendar-dual__month">
+                    <div class="calendar-dual__title">{{ nextMonthName }} {{ toPersianNum(nextMonthYear) }}</div>
+                    <div class="calendar-weekdays">
+                        <div class="weekday" v-for="day in weekDays" :key="'dual-b-' + day">{{ day }}</div>
+                    </div>
+                    <div class="calendar-grid">
+                        <div
+                            v-for="(day, index) in nextCalendarDays"
+                            :key="'dual-b-' + index"
+                            class="calendar-day"
+                            :class="dayCellClasses(day)"
+                            @click="selectDate(day)">
+                            <div class="day-content">
+                                <div class="day-number">{{ day.day }}</div>
+                                <div v-if="resolvedDayPrice(day)" class="day-price">
+                                    {{ formatPrice(resolvedDayPrice(day)) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    type="button"
+                    class="nav-arrow calendar-dual__nav"
+                    @click="nextMonth"
+                    :disabled="!canGoNext"
+                    aria-label="ماه بعد">
+                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="calendar-dual__footer">
                 <button type="button" class="calendar-clear-btn" @click="clearSelection">
                     <i class="bi bi-trash" aria-hidden="true"></i>
                     پاک کردن
@@ -172,6 +246,10 @@ export default {
             default: ''
         },
         stackedMonths: {
+            type: Boolean,
+            default: false
+        },
+        dualMonths: {
             type: Boolean,
             default: false
         },
@@ -390,6 +468,22 @@ export default {
         endDateLabel() {
             return this.endDate ? this.formatJalaliLabel(this.endDate) : '—';
         },
+        nextMonthDate() {
+            return moment(this.currentDate).add(1, 'jMonth');
+        },
+        nextMonthName() {
+            return this.monthNames[parseInt(this.nextMonthDate.format('jM')) - 1];
+        },
+        nextMonthYear() {
+            return this.nextMonthDate.format('jYYYY');
+        },
+        nextCalendarDays() {
+            void this.selectionStateKey;
+            return this.buildDaysForMonth(
+                parseInt(this.nextMonthDate.format('jYYYY'), 10),
+                parseInt(this.nextMonthDate.format('jM'), 10)
+            );
+        },
         canGoPrevious() {
             if (!this.minDate) return true;
             const minMoment = moment(this.minDate);
@@ -399,8 +493,11 @@ export default {
         canGoNext() {
             if (!this.maxDate) return true;
             const maxMoment = moment(this.maxDate);
-            const currentEnd = moment(this.currentDate).endOf('jMonth');
-            return currentEnd.isBefore(maxMoment, 'day');
+            const lastVisible = this.dualMonths
+                ? moment(this.currentDate).add(1, 'jMonth')
+                : moment(this.currentDate);
+            const nextStart = moment(lastVisible).add(1, 'jMonth').startOf('jMonth');
+            return nextStart.isSameOrBefore(maxMoment, 'day');
         }
     },
     methods: {
@@ -2301,5 +2398,157 @@ export default {
 
 .persian-calendar--stacked .calendar-day.disabled .day-min-nights-badge {
     opacity: 0.45;
+}
+
+.persian-calendar--dual {
+    padding: 4px 0 8px !important;
+    overflow: visible !important;
+    border-radius: 0 !important;
+    background: transparent;
+}
+
+.calendar-dual {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    direction: rtl;
+}
+
+.calendar-dual__month {
+    flex: 1;
+    min-width: 0;
+}
+
+.calendar-dual__title {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #1a1a1a;
+}
+
+.calendar-dual__nav {
+    flex-shrink: 0;
+    align-self: center;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 50% !important;
+    border: 1px solid #e5e5e5 !important;
+    background: #fff !important;
+    color: #222 !important;
+    font-size: 16px !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+}
+
+.calendar-dual__nav:disabled {
+    opacity: 0.35;
+}
+
+.persian-calendar--dual .calendar-weekdays {
+    gap: 4px !important;
+    margin-bottom: 6px !important;
+    padding-bottom: 4px !important;
+}
+
+.persian-calendar--dual .weekday {
+    font-size: 12px !important;
+    color: #888;
+}
+
+.persian-calendar--dual .calendar-grid {
+    gap: 4px !important;
+}
+
+.persian-calendar--dual .calendar-day {
+    border: 1px solid #ececec !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    padding-bottom: calc(100% - 2px) !important;
+}
+
+.persian-calendar--dual .calendar-day.empty {
+    border-color: transparent !important;
+    background: transparent !important;
+}
+
+.persian-calendar--dual .calendar-day.disabled {
+    opacity: 0.38;
+    background: #f7f7f7 !important;
+}
+
+.persian-calendar--dual .day-number {
+    font-size: 13px !important;
+    margin-bottom: 2px !important;
+}
+
+.persian-calendar--dual .day-price {
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+}
+
+.persian-calendar--dual .calendar-day.selected,
+.persian-calendar--dual .calendar-day.check-in,
+.persian-calendar--dual .calendar-day.check-out {
+    background: #fff !important;
+    border: 2px solid #f5c518 !important;
+    color: #1a1a1a !important;
+}
+
+.persian-calendar--dual .calendar-day.selected .day-number,
+.persian-calendar--dual .calendar-day.check-in .day-number,
+.persian-calendar--dual .calendar-day.check-out .day-number,
+.persian-calendar--dual .calendar-day.selected .day-price,
+.persian-calendar--dual .calendar-day.check-in .day-price,
+.persian-calendar--dual .calendar-day.check-out .day-price {
+    color: #1a1a1a !important;
+}
+
+.persian-calendar--dual .calendar-day.in-range {
+    background: #fffbeb !important;
+    border-color: #f5c518 !important;
+}
+
+.persian-calendar--dual .calendar-day.is-friday:not(.disabled) .day-number,
+.persian-calendar--dual .calendar-day.is-friday:not(.disabled) .day-price {
+    color: #dc2626 !important;
+}
+
+.calendar-dual__footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 14px;
+    margin-top: 6px;
+}
+
+.persian-calendar--dual .calendar-clear-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px dashed #d1d5db;
+    background: #fff;
+    color: #374151;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .calendar-dual {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .calendar-dual__nav {
+        order: -1;
+    }
+
+    .calendar-dual__month {
+        flex: 1 1 100%;
+    }
 }
 </style>

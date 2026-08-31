@@ -2,78 +2,121 @@
 @extends('layouts.main.main', ['title' => $home->name, 'show_fixed_buttons' => false])
 
 @section('meta')
-    @if($home->images->isNotEmpty() || $home->cover)
-        @php
-            $lcpCover = ($home->cover) ? $home->cover_path : optional($home->images->first())->image_path;
-        @endphp
-        @if($lcpCover)
-            <link rel="preload" as="image" href="{{ $lcpCover }}" fetchpriority="high">
-        @endif
-    @endif
+    <meta property="og:title" content="{{ $home->name }}"/>
+    <meta property="og:description" content="{{ \Illuminate\Support\Str::limit($home->description, 300) }}"/>
+    <meta property="og:image" content="{{ $home->cover_path }}"/>
+    <meta property="og:url" content="{{ $home->link }}"/>
+    <meta property="og:type" content="website"/>
+    <meta name="twitter:card" content="summary_large_image"/>
+    <meta name="twitter:title" content="{{ $home->name }}"/>
+    <meta name="twitter:description" content="{{ \Illuminate\Support\Str::limit($home->description, 300) }}"/>
+    <meta name="twitter:image" content="{{ $home->cover_path }}"/>
+@endsection
+
+@section('top-assets')
+    <link href="{{ public_asset_version('assets/css/home-favorite.css') }}" rel="stylesheet">
+    <link href="{{ public_asset_version('assets/css/home-gallery-desktop.css') }}" rel="stylesheet">
 @endsection
 
 @section('content')
-    @if($home->images->isNotEmpty() || $home->cover)
+    @php
+        $galleryItems = [];
+        $gallerySeen = [];
+        if ($home->cover) {
+            $coverUrl = $home->cover_path;
+            $galleryItems[] = ['url' => $coverUrl, 'alt' => homeImageAlt($home)];
+            $gallerySeen[$coverUrl] = true;
+        }
+        foreach ($home->images as $galleryImage) {
+            $imageUrl = $galleryImage->image_path;
+            if (isset($gallerySeen[$imageUrl])) {
+                continue;
+            }
+            $gallerySeen[$imageUrl] = true;
+            $galleryItems[] = [
+                'url' => $imageUrl,
+                'alt' => homeImageAlt($home, null, $galleryImage),
+            ];
+        }
+        $galleryTotal = count($galleryItems);
+        $galleryVisible = array_slice($galleryItems, 0, 5);
+        $galleryRest = array_slice($galleryItems, 5);
+        $galleryLayoutCount = count($galleryVisible);
+        $galleryHasMore = $galleryTotal > $galleryLayoutCount;
+        $galleryScore = $home->guestRatingScore();
+        $galleryScoreLabel = null;
+        if ($galleryScore !== null) {
+            if ($galleryScore >= 5) {
+                $galleryScoreLabel = 'ممتاز';
+            } elseif ($galleryScore >= 4) {
+                $galleryScoreLabel = 'عالی';
+            }
+        }
+    @endphp
+
+    @if($galleryTotal > 0)
         <!-- ============================ Hero Banner  Start================================== -->
-        <!-- Gallery Part Start -->
-        <section class="gallery_parts pt-2 pb-2 d-none d-sm-none d-md-none d-lg-none d-xl-block">
+        <section class="home-gallery-desktop d-none d-lg-block">
             <div class="container">
-                <div class="row align-items-center">
-                    @php
-                        $cover = ($home->cover) ? $home->cover_path: $home->images->shift()->image_path
-                    @endphp
-                    <div class="col-lg-8 col-md-7 col-sm-12 pl-1">
-                        <div class="gg_single_part left">
-                            <a href="{{ $cover }}" class="mfp-gallery">
-                                <img src="{{ $cover }}"
-                                     class="img-fluid mx-auto"
-                                     alt="{{ homeImageAlt($home) }}"
-                                     width="800"
-                                     height="500"
-                                     fetchpriority="high"
-                                     loading="eager"
-                                     decoding="async"/>
+                <div class="home-gallery-desktop__frame">
+                    <div class="home-gallery-mosaic" data-count="{{ $galleryLayoutCount }}">
+                        @foreach($galleryVisible as $index => $item)
+                            <a href="{{ $item['url'] }}"
+                               class="home-gallery-mosaic__item mfp-gallery @if($index === 0) home-gallery-mosaic__item--hero @endif"
+                               aria-label="{{ $item['alt'] }}">
+                                <img src="{{ $item['url'] }}"
+                                     alt="{{ $item['alt'] }}"
+                                     loading="{{ $index === 0 ? 'eager' : 'lazy' }}">
+                                @if($index === 0 && $galleryScoreLabel)
+                                    <span class="home-gallery-mosaic__badge">
+                                        <i class="bi bi-star-fill" aria-hidden="true"></i>
+                                        {{ $galleryScoreLabel }}
+                                    </span>
+                                @endif
+                                @if($galleryHasMore && $index === $galleryLayoutCount - 1)
+                                    <span class="home-gallery-mosaic__more">
+                                        <span class="home-gallery-mosaic__more-label">
+                                            <i class="bi bi-images" aria-hidden="true"></i>
+                                            مشاهده بیشتر
+                                        </span>
+                                    </span>
+                                @endif
                             </a>
-                        </div>
-                    </div>
-                    <div class="col-lg-4 col-md-5 col-sm-12 pr-1">
-                        @foreach($home->images->take(3) as $index => $image)
-                            <div class="gg_single_part-right min @if($index ===1) mt-2 mb-2 @endif">
-                                <a href="{{ $image->image_path }}" class="mfp-gallery">
-                                    <img src="{{ $image->image_path }}"
-                                         class="img-fluid mx-auto"
-                                         alt="{{ homeImageAlt($home, $image->original_name ?: 'گالری', $image) }}"
-                                         width="400"
-                                         height="158"
-                                         loading="lazy"
-                                         decoding="async"/>
-                                </a>
-                            </div>
                         @endforeach
                     </div>
+
+                    <div class="home-gallery-mosaic__actions">
+                        <button type="button"
+                                class="home-gallery-mosaic__icon-btn"
+                                id="homeGalleryShareBtn"
+                                aria-label="اشتراک‌گذاری">
+                            <i class="bi bi-share" aria-hidden="true"></i>
+                        </button>
+                        <x-home-favorite-button :home="$home" />
+                    </div>
+
+                    @if($galleryRest !== [])
+                        <div class="home-gallery-mosaic__rest" aria-hidden="true">
+                            @foreach($galleryRest as $item)
+                                <a href="{{ $item['url'] }}" class="mfp-gallery">{{ $item['alt'] }}</a>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
             </div>
         </section>
 
-        <div class="featured_slick_gallery gray d-block d-md-block d-lg-block d-xl-none">
+        <div class="featured_slick_gallery gray d-block d-lg-none">
             <div class="featured_slick_gallery-slide">
-                @foreach($home->covers as $slideIndex => $image)
+                @foreach($galleryItems as $image)
                     <div class="featured_slick_padd" style="height: 300px">
-                        <a href="{{ $image }}" class="mfp-gallery">
-                            <img src="{{ $image }}"
-                                 class="img-fluid mx-auto"
-                                 alt="{{ homeImageAlt($home, 'اسلاید '.($slideIndex + 1)) }}"
-                                 width="600"
-                                 height="300"
-                                 @if($slideIndex === 0) fetchpriority="high" loading="eager" @else loading="lazy" @endif
-                                 decoding="async"/></a>
+                        <a href="{{ $image['url'] }}" class="mfp-gallery-slick">
+                            <img src="{{ $image['url'] }}" class="img-fluid mx-auto" alt="{{ $image['alt'] }}"/></a>
                     </div>
                 @endforeach
             </div>
         </div>
         <!-- ============================ Hero Banner End ================================== -->
-
-        <!-- ============================ Property Detail Start ================================== -->
     @endif
 
     <!-- ============================ Property Name Start================================== -->
@@ -84,12 +127,9 @@
                 <div class="col-lg-12 col-md-12">
                     <div class="align-items-end">
                         <h3>{{ $home->name }}</h3>
-                        @if($home->hasGuestReviews())
-                            <div class="text-muted mt-2" title="امتیاز مهمان‌ها">
-                                <i class="fas fa-star text-warning"></i> {{ $home->guestRatingScoreForDisplay() }}
-                                ({{ persianNumber($home->count_comments) }} نظر مهمان)
-                            </div>
-                        @endif
+                        <div class="text-muted mt-2"><i class="fas fa-star text-warning"></i> {{ $home->fake_score }}
+                            ({{ number_format($home->count_comments) }} دیدگاه)
+                        </div>
                         <div class="mt-2">
                             <div class="d-flex justify-content-between">
                                 <span class="text-muted">{{ $home->province->name }} - {{ $home->city->name }}</span>
@@ -106,7 +146,7 @@
     <!-- ============================ Property Detail Start ================================== -->
     <section class="gray pt-1">
         <div class="container">
-            <div class="row">
+            <div class="row home-show-detail-row">
 
                 <!-- property main detail -->
                 <div class="col-12 mb-1">
@@ -171,74 +211,19 @@
 
                     </div>
 
-                    <div class="property_block_wrap mb-1">
-                        <div class="property_block_wrap_header">
-                            <h4 class="property_block_title">قیمت روزهای هفته</h4>
-                        </div>
-                        <div class="block-body">
-                            <ul class="list-unstyled mb-2">
-                                <li class="d-flex justify-content-between py-2 border-bottom">
-                                    <span class="text-muted">@lang('title.week_price')</span>
-                                    <strong>{{ number_format($home->week_price) }} @lang('title.toman')</strong>
-                                </li>
-                                <li class="d-flex justify-content-between py-2 border-bottom">
-                                    <span class="text-muted">@lang('title.wed_price')</span>
-                                    <strong>{{ number_format($home->wed_price) }} @lang('title.toman')</strong>
-                                </li>
-                                <li class="d-flex justify-content-between py-2 border-bottom">
-                                    <span class="text-muted">@lang('title.thu_price')</span>
-                                    <strong>{{ number_format($home->thu_price) }} @lang('title.toman')</strong>
-                                </li>
-                                <li class="d-flex justify-content-between py-2">
-                                    <span class="text-muted">@lang('title.fri_price')</span>
-                                    <strong>{{ number_format($home->fri_price) }} @lang('title.toman')</strong>
-                                </li>
-                            </ul>
-                            <p class="text-muted small @if($home->hasLongStayDiscount()) mb-2 @else mb-0 @endif">
-                                ممکن است برخی روزها به‌دلیل پیک سفر یا تعطیلات، قیمت متفاوتی داشته باشند. مبلغ دقیق هر شب هنگام انتخاب تاریخ در تقویم رزرو نمایش داده می‌شود.
-                            </p>
-                            @if($home->hasLongStayDiscount())
-                                <p class="small mb-0 py-2 px-3 rounded" style="color: #555; background: #fffafa; border: 1px solid #fce8e8;">
-                                    <i class="fas fa-tag ml-1" style="color: #c45c5c; font-size: 12px;" aria-hidden="true"></i>
-                                    تخفیف رزرو چندشبه:
-                                    <strong style="color: #b84a4a; font-weight: 600;">{{ $home->longStayDiscountLabel() }}</strong>
-                                    <span class="text-muted">(برای اقامت‌های بلندتر از این مدت)</span>
-                                </p>
-                            @endif
-                        </div>
-                    </div>
-
                     @include('main.homes.partials.options', compact('home'))
+
+                    @include('main.homes.partials.sleep-place', compact('home'))
 
                     @include('main.homes.partials.safeties', compact('home'))
 
                     @include('main.homes.partials.healths', compact('home'))
 
-                    @if($home->latitude && $home->longitude)
-                        <div class="property_block_wrap mb-1">
-                            <div class="property_block_wrap_header">
-                                <h4 class="property_block_title">محدوده اقامتگاه</h4>
-                            </div>
-                            <div class="block-body">
-                                <p class="text-muted small mb-3">محل تقریبی اقامتگاه در محدودهٔ مشخص‌شده روی نقشه نمایش داده می‌شود.</p>
-                                <div class="map-container">
-                                    <leaftlet-map :zoom="13" :layer="true" :readonly="true" :height="450" :radius="750"
-                                                  :latitude="{{ $home->latitude }}"
-                                                  :longitude="{{ $home->longitude }}"></leaftlet-map>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
-                    @include('main.homes.partials.sleep-place', compact('home'))
-
                     @include('main.homes.partials.rules', compact('home'))
 
-                    @include('main.homes.partials.cancel-policy', compact('home'))
+                    @include('main.homes.partials.cancel-policy', ['home' => $home, 'layout' => 'desktop'])
 
                     @include('main.homes.partials.video', compact('home'))
-
-                    @include('main.homes.partials.similar-homes', ['layout' => 'desktop'])
 
                     <!-- Single Block Wrap -->
                     <div class="property_block_wrap mb-1">
@@ -258,8 +243,7 @@
                                 max_guest="{{ $home->main_guest }}"
                                 max_extra_guest="{{ $home->extra_guest }}"
                                 price_per_surplus="{{ $home->price_per_surplus }}"
-                                :custom_prices_prop='@json($home->custom_prices_map)'
-                                :custom_min_nights_prop='@json($home->custom_min_nights_map)'
+                                :custom_prices_prop="{{ $home->custom_prices->pluck('price', 'date') }}"
                                 off="{{ $home->off }}"
                                 daily_off="{{ $home->daily_off }}"
                                 daily_off_percent="{{ $home->daily_off_amount }}"
@@ -270,15 +254,29 @@
                                 min_date="{{ Order::getMinReserveDate() }}"
                                 max_date="{{ \App\Models\Order::getMaxReserveDate() }}"
                                 :disable_dates_prop='@json($home->disable_dates)'
-                                :order_blocked_dates_prop='@json($home->disable_order_dates)'
-                                :host_closed_dates_prop='@json($home->disable_custom_dates)'
-                                :fast_reserve_dates='@json($home->fast_reserve_dates)'
-                                :prop_holidays='@json(\App\Classes\Date::holidayList())'
+                                :fast_reserve_dates="{{ $home->fast_reserve_dates }}"
+                                :prop_holidays="{{ \App\Classes\Date::holidayList() }}"
                                 text_start_date="{{ __('text.start_date_text', ['hour' => Order::START_DATE_HOUR, 'time' => __('title.noon')]) }}"
                                 text_end_date="{{ __('text.end_date_text', ['hour' => \App\Models\Order::END_DATE_HOUR, 'time' => __('title.noon')]) }}"
                             ></reserve-home>
                         </div>
                     </div>
+
+                    @if($home->latitude && $home->longitude)
+                        <!-- Single Block Wrap -->
+                        <div class="property_block_wrap mb-1">
+                            <div class="property_block_wrap_header">
+                                <h4 class="property_block_title">@lang('title.position')</h4>
+                            </div>
+                            <div class="block-body">
+                                <div class="map-container">
+                                    <leaftlet-map :zoom="13" :layer="true" :readonly="true" :height="450"
+                                                  :latitude="{{ $home->latitude }}"
+                                                  :longitude="{{ $home->longitude }}"></leaftlet-map>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
                     @if(! auth()->check())
                         <div class="alert alert-danger text-center">
@@ -429,8 +427,7 @@
                                         max_guest="{{ $home->main_guest }}"
                                         max_extra_guest="{{ $home->extra_guest }}"
                                         price_per_surplus="{{ $home->price_per_surplus }}"
-                                        :custom_prices_prop='@json($home->custom_prices_map)'
-                                :custom_min_nights_prop='@json($home->custom_min_nights_map)'
+                                        :custom_prices_prop="{{ $home->custom_prices->pluck('price', 'date') }}"
                                         off="{{ $home->off }}"
                                         daily_off="{{ $home->daily_off }}"
                                         daily_off_percent="{{ $home->daily_off_amount }}"
@@ -441,13 +438,14 @@
                                         min_date="{{ Order::getMinReserveDate() }}"
                                         max_date="{{ Order::getMaxReserveDate() }}"
                                         :disable_dates_prop='@json($home->disable_dates)'
-                                :order_blocked_dates_prop='@json($home->disable_order_dates)'
-                                :host_closed_dates_prop='@json($home->disable_custom_dates)'
-                                        :fast_reserve_dates='@json($home->fast_reserve_dates)'
-                                        :prop_holidays='@json(\App\Classes\Date::holidayList())'
+                                        :fast_reserve_dates="{{ $home->fast_reserve_dates }}"
+                                        :prop_holidays="{{ \App\Classes\Date::holidayList() }}"
                                         text_start_date="{{ __('text.start_date_text', ['hour' => \App\Models\Order::START_DATE_HOUR, 'time' => __('title.noon')]) }}"
                                         text_end_date="{{ __('text.end_date_text', ['hour' => Order::END_DATE_HOUR, 'time' => __('title.noon')]) }}"
                                         hide_calendar="true"
+                                        contact_url="{{ route('main.contact-us') }}"
+                                        faq_url="{{ route('main.faq') }}"
+                                        cancel_policy_url="#cancel-policy"
                                     ></reserve-home>
                                 </div>
                             </div>
@@ -493,8 +491,7 @@
                                 max_guest="{{ $home->main_guest }}"
                                 max_extra_guest="{{ $home->extra_guest }}"
                                 price_per_surplus="{{ $home->price_per_surplus }}"
-                                :custom_prices_prop='@json($home->custom_prices_map)'
-                                :custom_min_nights_prop='@json($home->custom_min_nights_map)'
+                                :custom_prices_prop="{{ $home->custom_prices->pluck('price', 'date') }}"
                                 off="{{ $home->off }}"
                                 daily_off="{{ $home->daily_off }}"
                                 daily_off_percent="{{ $home->daily_off_amount }}"
@@ -505,10 +502,8 @@
                                 min_date="{{ \App\Models\Order::getMinReserveDate() }}"
                                 max_date="{{ \App\Models\Order::getMaxReserveDate() }}"
                                 :disable_dates_prop='@json($home->disable_dates)'
-                                :order_blocked_dates_prop='@json($home->disable_order_dates)'
-                                :host_closed_dates_prop='@json($home->disable_custom_dates)'
-                                :fast_reserve_dates='@json($home->fast_reserve_dates)'
-                                :prop_holidays='@json(\App\Classes\Date::holidayList())'
+                                :fast_reserve_dates="{{ $home->fast_reserve_dates }}"
+                                :prop_holidays="{{ \App\Classes\Date::holidayList() }}"
                                 text_start_date="{{ __('text.start_date_text', ['hour' => \App\Models\Order::START_DATE_HOUR, 'time' => __('title.noon')]) }}"
                                 text_end_date="{{ __('text.end_date_text', ['hour' => \App\Models\Order::END_DATE_HOUR, 'time' => __('title.noon')]) }}"
                             ></reserve-home>
@@ -520,6 +515,35 @@
     </section>
     <!-- ============================ Property Detail End ================================== -->
 
+    @if(!empty($similarCategories))
+        <div class="home-similar-homes-desktop">
+            <div class="container">
+                @include('main.homes.partials.similar-homes', ['layout' => 'desktop'])
+            </div>
+        </div>
+    @endif
+
+    <!-- Reservation Summary Modal for Desktop -->
+    <div class="modal fade" id="reserveSummaryModal" tabindex="-1" aria-labelledby="reserveSummaryModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">خلاصه رزرو</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="opacity: 0.5; font-size: 1.5rem; font-weight: 700; line-height: 1; color: #000; text-shadow: 0 1px 0 #fff;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="reserveSummaryBody">
+                    <!-- Summary will be shown here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-dark" data-bs-dismiss="modal" style="background-color: #000; border-color: #000;">بستن</button>
+                    <button type="button" class="btn" id="confirmReserveBtn" style="background-color: #D39D1A; border-color: #D39D1A; color: white;">تایید و پرداخت</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('bottom-assets')
@@ -528,12 +552,13 @@
         /* Minimal Sidebar Styles */
         .property-sidebar {
             padding: 0;
+            overflow: visible;
         }
         
         .property-sidebar .sider_blocks_wrap {
-            background-color: #fff;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
+            background-color: transparent;
+            border: none;
+            border-radius: 0;
             box-shadow: none;
             padding: 0;
             margin-bottom: 0;
@@ -541,16 +566,36 @@
         
         .property-sidebar .sider_blocks_wrap.shadows {
             box-shadow: none;
-            border: 1px solid #e9ecef;
+            border: none;
         }
         
         .property-sidebar .sidetab-content {
             padding: 0;
+            overflow: visible;
         }
         
         .property-sidebar .side-booking-body {
-            padding: 1rem;
+            padding: 0;
             background: transparent;
+            overflow: visible;
+        }
+
+        .home-show-detail-row {
+            align-items: stretch;
+        }
+
+        @media (min-width: 768px) {
+            .property-sidebar.side_stiky {
+                position: sticky;
+                top: 88px;
+                z-index: 20;
+            }
+        }
+
+        .home-similar-homes-desktop {
+            background: #fff;
+            padding: 28px 0 40px;
+            border-top: 1px solid #ececec;
         }
         
         /* Ensure font is applied */
@@ -563,27 +608,103 @@
         body * {
             font-family: 'Vazirmatn', 'IranYekan', sans-serif;
         }
+        
+        /* Reserve Summary Modal Styles */
+        .reserve-summary-content {
+            padding: 16px 0;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        
+        .summary-row.total-row {
+            margin-top: 8px;
+            padding-top: 16px;
+            border-top: 2px solid #D39D1A;
+        }
+        
+        .summary-row .summary-label {
+            font-size: 14px;
+            color: #666666;
+            font-weight: 500;
+        }
+        
+        .summary-row .summary-value {
+            font-size: 14px;
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+        
+        .summary-row.total-row .summary-value {
+            font-size: 18px;
+            color: #D39D1A;
+            font-weight: 700;
+        }
     </style>
     <script>
-        // Ensure sidebar reserve button works (fallback for desktop)
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Vue to mount
             setTimeout(function() {
                 const sidebarBtn = document.querySelector('.sidebar-reserve-btn');
                 if (sidebarBtn) {
-                    // Check if Vue handler is working
                     sidebarBtn.addEventListener('click', function(e) {
-                        // Let Vue handle it first, but if it doesn't work, this will catch it
                         setTimeout(function() {
                             const reserveComponent = document.querySelector('.property-sidebar reserve-home');
                             if (reserveComponent && reserveComponent.__vue__) {
-                                // Vue component exists, let it handle
                                 return;
                             }
                         }, 100);
-                    }, true); // Use capture phase
+                    }, true);
                 }
             }, 500);
+
+            const shareBtn = document.getElementById('homeGalleryShareBtn');
+            if (shareBtn) {
+                shareBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const payload = {
+                        title: @json($home->name),
+                        url: @json($home->link)
+                    };
+                    if (window.eventBus && typeof window.eventBus.$emit === 'function') {
+                        window.eventBus.$emit('open_share_modal', payload);
+                        return;
+                    }
+                    if (navigator.share) {
+                        navigator.share(payload).catch(function () {});
+                        return;
+                    }
+                    if (navigator.clipboard && payload.url) {
+                        navigator.clipboard.writeText(payload.url);
+                    }
+                });
+            }
+
+            if (window.jQuery && jQuery.fn.magnificPopup) {
+                jQuery('.featured_slick_gallery').magnificPopup({
+                    type: 'image',
+                    delegate: 'a.mfp-gallery-slick',
+                    fixedContentPos: true,
+                    fixedBgPos: true,
+                    overflowY: 'auto',
+                    closeBtnInside: false,
+                    preloader: true,
+                    removalDelay: 0,
+                    mainClass: 'mfp-fade',
+                    gallery: {
+                        enabled: true
+                    }
+                });
+            }
         });
     </script>
 @endsection

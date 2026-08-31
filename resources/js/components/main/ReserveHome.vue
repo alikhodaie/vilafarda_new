@@ -38,85 +38,116 @@
             <span class="banner-text">در این روزها «آنی و قطعی» رزرو کنید</span>
         </div>
 
-        <!-- Guest Counter - Only show in sidebar -->
-        <div v-if="isSidebar" class="guest-section sidebar-guest">
-            <label class="section-label">{{ count_guest_text }}</label>
-            <div class="guest-counter">
-                <button 
-                    type="button" 
-                    class="counter-button minus" 
-                    @click="decreaseGuest"
-                    :disabled="guest <= 1">
-                    <i class="bi bi-dash"></i>
+        <!-- Sidebar booking card -->
+        <div v-if="isSidebar" class="reserve-card">
+            <div class="reserve-card__header">
+                <span>نرخ هر شب از:</span>
+                <strong>{{ week_price | formatNumber }} تومان</strong>
+            </div>
+
+            <div class="reserve-card__body">
+                <div class="reserve-card__field">
+                    <label class="reserve-card__label">تاریخ سفر</label>
+                    <div class="reserve-card__dates">
+                        <button
+                            type="button"
+                            class="reserve-card__date-cell"
+                            :class="{ 'is-active': sidebarCalendarOpen && sheetDateFocus === 'start', 'has-value': !!start_date }"
+                            @click="openSidebarCalendar('start')">
+                            <span :class="{ 'is-placeholder': !start_date }">
+                                {{ start_date ? formatPersianDateShort(start_date) : 'تاریخ ورود' }}
+                            </span>
+                        </button>
+                        <span class="reserve-card__dates-divider" aria-hidden="true"></span>
+                        <button
+                            type="button"
+                            class="reserve-card__date-cell"
+                            :class="{ 'is-active': sidebarCalendarOpen && sheetDateFocus === 'end', 'has-value': !!end_date }"
+                            @click="openSidebarCalendar('end')">
+                            <span :class="{ 'is-placeholder': !end_date }">
+                                {{ end_date ? formatPersianDateShort(end_date) : 'تاریخ خروج' }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="reserve-card__field">
+                    <label class="reserve-card__label">{{ count_guest_text }}</label>
+                    <div class="reserve-card__counter">
+                        <button
+                            type="button"
+                            class="reserve-card__counter-btn"
+                            :disabled="guest <= 1"
+                            aria-label="کاهش تعداد مهمان"
+                            @click="decreaseGuest">
+                            <i class="bi bi-dash" aria-hidden="true"></i>
+                        </button>
+                        <span class="reserve-card__counter-value">{{ persianDigit(guest) }}</span>
+                        <button
+                            type="button"
+                            class="reserve-card__counter-btn"
+                            :disabled="guest >= maxGuestsTotal"
+                            aria-label="افزایش تعداد مهمان"
+                            @click="increaseGuest">
+                            <i class="bi bi-plus" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <p v-if="parseInt(max_extra_guest) > 0" class="reserve-card__hint">
+                        ظرفیت اصلی {{ persianDigit(max_guest) }} نفر است.
+                        تا {{ persianDigit(max_extra_guest) }} نفر اضافه با هزینه جداگانه قابل پذیرش است.
+                    </p>
+                    <p v-if="extra_guest > 0" class="reserve-card__extra">
+                        {{ persianDigit(extra_guest) }} نفر اضافه
+                        <span v-if="extra_guest_price > 0">
+                            — {{ extra_guest_price | formatNumber }} تومان
+                        </span>
+                    </p>
+                </div>
+
+                <div v-if="start_date && end_date && total > 0" class="reserve-card__total">
+                    <span>{{ persianDigit(nightsCount) }} شب</span>
+                    <strong>{{ total | formatNumber }} تومان</strong>
+                </div>
+
+                <div v-if="range_warning" class="alert-box alert-danger">
+                    {{ range_warning }}
+                </div>
+
+                <button
+                    type="button"
+                    class="reserve-card__submit"
+                    @click.prevent.stop="handleReserveClick">
+                    ثبت درخواست رزرو (رایگان)
                 </button>
-                <input 
-                    type="number" 
-                    v-model.number="guest" 
-                    class="guest-input"
-                    :min="1"
-                    :max="parseInt(max_guest) + parseInt(max_extra_guest)"
-                    readonly>
-                <button 
-                    type="button" 
-                    class="counter-button plus" 
-                    @click="increaseGuest"
-                    :disabled="guest >= parseInt(max_guest) + parseInt(max_extra_guest)">
-                    <i class="bi bi-plus"></i>
-                </button>
-            </div>
-        </div>
 
-        <!-- Dates Summary - Only show in sidebar -->
-        <div v-if="isSidebar" class="dates-summary sidebar-summary">
-            <div v-if="start_date && end_date">
-                <div class="summary-item">
-                    <span class="summary-label">تاریخ ورود</span>
-                    <span class="summary-value">{{ formatPersianDateShort(start_date) }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">تاریخ خروج</span>
-                    <span class="summary-value">{{ formatPersianDateShort(end_date) }}</span>
-                </div>
-                <div class="summary-item nights">
-                    <span class="summary-label">تعداد شب</span>
-                    <span class="summary-value">{{ nightsCount }}</span>
+                <a
+                    v-if="contact_url"
+                    :href="contact_url"
+                    class="reserve-card__chat">
+                    <i class="bi bi-chat-dots" aria-hidden="true"></i>
+                    با امکان چت آنلاین با میزبان
+                    <i class="bi bi-info-circle reserve-card__chat-info" aria-hidden="true"></i>
+                </a>
+
+                <div class="reserve-card__links">
+                    <a v-if="cancel_policy_url" :href="cancel_policy_url">
+                        <i class="bi bi-shield-check" aria-hidden="true"></i>
+                        ضمانت تحویل
+                    </a>
+                    <a v-if="faq_url" :href="faq_url">
+                        <i class="bi bi-question-circle" aria-hidden="true"></i>
+                        راهنمای رزرو
+                    </a>
                 </div>
             </div>
-            <div v-else class="summary-empty">
-                <span class="empty-text">لطفاً تاریخ را از تقویم انتخاب کنید</span>
-            </div>
-        </div>
-
-        <!-- Price Display - Only show in sidebar -->
-        <div v-if="isSidebar" class="sidebar-price-section">
-            <div v-if="!start_date || !end_date" class="price-start">
-                <span class="price-label">شروع از :</span>
-                <span class="price-amount">{{ week_price | formatNumber }}</span>
-                <span class="price-unit">تومان / هر شب</span>
-            </div>
-            <div v-else-if="total > 0" class="price-total">
-                <span class="total-label">{{ total_payment_text }}</span>
-                <span class="total-amount">{{ total | formatNumber }} تومان</span>
-            </div>
-        </div>
-
-        <!-- Reserve Button for Sidebar - Always show -->
-        <div v-if="isSidebar" class="sidebar-reserve-section">
-            <button 
-                type="button" 
-                class="sidebar-reserve-btn"
-                @click.prevent.stop="handleReserveClick"
-                :disabled="!start_date || !end_date">
-                {{ submit_reserve_text }}
-            </button>
         </div>
 
         <!-- Warning Messages -->
-        <div v-if="range_warning" class="alert-box alert-danger">
+        <div v-if="!isSidebar && range_warning" class="alert-box alert-danger">
             {{ range_warning }}
         </div>
 
-        <div v-if="start_date_text || end_date_text" class="alert-box alert-warning">
+        <div v-if="!isSidebar && (start_date_text || end_date_text)" class="alert-box alert-warning">
             <p v-if="start_date_text">{{ start_date_text }}</p>
             <p v-if="end_date_text">{{ end_date_text }}</p>
         </div>
@@ -246,6 +277,64 @@
                 </div>
             </div>
         </transition>
+
+        <transition name="reserve-cal-fade">
+            <div
+                v-if="isSidebar && sidebarCalendarOpen"
+                class="reserve-desktop-calendar"
+                @keydown.esc="closeSidebarCalendar">
+                <div class="reserve-desktop-calendar__backdrop" @click="closeSidebarCalendar"></div>
+                <div class="reserve-desktop-calendar__panel" role="dialog" aria-modal="true" @click.stop>
+                    <div class="reserve-desktop-calendar__dates">
+                        <button
+                            type="button"
+                            class="reserve-card__date-cell"
+                            :class="{ 'is-active': sheetDateFocus === 'start' || (start_date && !end_date), 'has-value': !!start_date }"
+                            @click="sheetDateFocus = 'start'">
+                            <span class="reserve-desktop-calendar__date-label">تاریخ ورود</span>
+                            <span :class="{ 'is-placeholder': !start_date }">
+                                {{ start_date ? formatPersianDateShort(start_date) : 'انتخاب کنید' }}
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            class="reserve-card__date-cell"
+                            :class="{ 'is-active': sheetDateFocus === 'end', 'has-value': !!end_date }"
+                            @click="sheetDateFocus = 'end'">
+                            <span class="reserve-desktop-calendar__date-label">تاریخ خروج</span>
+                            <span :class="{ 'is-placeholder': !end_date }">
+                                {{ end_date ? formatPersianDateShort(end_date) : 'انتخاب کنید' }}
+                            </span>
+                        </button>
+                    </div>
+                    <div v-if="start_date && !end_date" class="info-box min-nights-box reserve-desktop-calendar__min-nights">
+                        <span class="info-text">حداقل شب رزرو: {{ minNightsLabel }}</span>
+                    </div>
+                    <PersianCalendar
+                        :min-date="min_date"
+                        :max-date="max_date"
+                        :disable-dates="disable_dates"
+                        :custom-prices="custom_prices"
+                        :custom-min-nights="custom_min_nights"
+                        :holidays="holidays"
+                        :week-price="week_price"
+                        :wed-price="wed_price"
+                        :thu-price="thu_price"
+                        :fri-price="fri_price"
+                        :off="off"
+                        :start-date="start_date"
+                        :end-date="end_date"
+                        :min-end-date="min_end_date"
+                        :max-end-date="max_end_date"
+                        :host-closed-dates="host_closed_dates"
+                        :reserved-dates="order_blocked_dates"
+                        :dual-months="true"
+                        @date-selected="handleDateSelected"
+                        @dates-cleared="clearDates"
+                    ></PersianCalendar>
+                </div>
+            </div>
+        </transition>
     </div>
 </template>
 
@@ -288,13 +377,17 @@ export default {
         'fast_reserve_dates',
         'hide_calendar',
         'mobile_bottom_sheet',
-        'stacked_calendar'
+        'stacked_calendar',
+        'contact_url',
+        'faq_url',
+        'cancel_policy_url'
     ],
     data() {
         return {
             sheetOpen: false,
             sheetStep: 'form',
             sheetDateFocus: 'start',
+            sidebarCalendarOpen: false,
             start_date_text: '',
             end_date_text: '',
             range_warning: '',
@@ -370,24 +463,24 @@ export default {
     mounted() {
         this.setupReserveButton();
         this.setupSidebarReserveButton();
+        document.addEventListener('keydown', this.onDesktopCalendarKeydown);
     },
     beforeDestroy() {
         this.$root.$off('reserve-dates-updated', this.handleDatesUpdated);
         this.$root.$off('reserve-guest-updated', this.handleGuestUpdated);
+        document.removeEventListener('keydown', this.onDesktopCalendarKeydown);
         document.body.classList.remove('reserve-sheet-open');
+        document.body.classList.remove('reserve-desktop-calendar-open');
     },
     watch: {
         guest(newVal) {
-            const guestNum = parseInt(newVal);
-            this.extra_guest = guestNum > parseInt(this.max_guest) ? guestNum - parseInt(this.max_guest) : 0;
+            this.syncExtraGuestFromGuest(newVal);
             // Sync guest count with other instances (only if not internal update)
             if (!this.isInternalUpdate) {
                 this.$root.$emit('reserve-guest-updated', {
                     guest: this.guest
                 });
             }
-        },
-        extra_guest() {
             this.calcTotal();
         },
         dateRange(newVal) {
@@ -506,6 +599,10 @@ export default {
             }
             
             if (!this.start_date || !this.end_date) {
+                if (this.isSidebar) {
+                    this.openSidebarCalendar('start');
+                    return;
+                }
                 this.scrollToCalendar();
                 if (this.$root.showAlert) {
                     this.$root.showAlert('لطفاً ابتدا تاریخ ورود و خروج را انتخاب کنید', 'warning', true);
@@ -526,6 +623,20 @@ export default {
             this.sheetOpen = false;
             this.sheetStep = 'form';
             document.body.classList.remove('reserve-sheet-open');
+        },
+        openSidebarCalendar(focus) {
+            this.sheetDateFocus = focus === 'end' ? 'end' : 'start';
+            this.sidebarCalendarOpen = true;
+            document.body.classList.add('reserve-desktop-calendar-open');
+        },
+        closeSidebarCalendar() {
+            this.sidebarCalendarOpen = false;
+            document.body.classList.remove('reserve-desktop-calendar-open');
+        },
+        onDesktopCalendarKeydown(event) {
+            if (event.key === 'Escape' && this.sidebarCalendarOpen) {
+                this.closeSidebarCalendar();
+            }
         },
         openSheetCalendar(focus) {
             this.sheetDateFocus = focus === 'end' ? 'end' : 'start';
@@ -626,6 +737,10 @@ export default {
 
                 if (this.sheetOpen && this.sheetStep === 'calendar' && this.start_date && this.end_date) {
                     this.sheetStep = 'form';
+                }
+
+                if (this.sidebarCalendarOpen && this.start_date && this.end_date) {
+                    this.closeSidebarCalendar();
                 }
             });
         },
@@ -813,8 +928,6 @@ export default {
             }
         },
         handleStartDateChange(startDate) {
-            this.dates = [];
-            this.calcTotal();
             this.start_date_text = '';
             this.end_date_text = '';
             this.disable_end_dates = [...this.disable_dates];
@@ -822,6 +935,8 @@ export default {
             this.min_end_date = this.min_date;
 
             if (!startDate) {
+                this.dates = [];
+                this.calcTotal();
                 return;
             }
 
@@ -851,42 +966,47 @@ export default {
             } else {
                 this.max_end_date = moment(this.max_date, ['YYYY/MM/DD', 'YYYY-MM-DD']).format('YYYY-MM-DD');
             }
+
+            this.syncStayDates();
+            this.calcTotal();
         },
         handleEndDateChange(endDate) {
-            this.dates = [];
-            this.calcTotal();
             this.start_date_text = '';
             this.end_date_text = '';
             this.range_warning = '';
 
-            if (this.start_date && endDate) {
-                const startDateFa = new Date(this.start_date).toLocaleDateString('fa-IR');
-                const endDateFa = new Date(endDate).toLocaleDateString('fa-IR');
-
-                this.start_date_text = this.text_start_date.replace(':date', startDateFa);
-                this.end_date_text = this.text_end_date.replace(':date', endDateFa);
-
-                this.dates = this.$root.datePeriod(this.start_date, endDate);
-                const requiredNights = this.getMinNightsForDate(this.start_date);
-                if (this.dates.length < requiredNights) {
-                    this.range_warning = `حداقل ${this.toPersianNum(requiredNights)} شب برای رزرو از این تاریخ لازم است.`;
-                    this.end_date = '';
-                    this.dates = [];
-                    this.total = 0;
-                    return;
-                }
-
+            if (!this.start_date || !endDate) {
+                this.dates = [];
                 this.calcTotal();
-                
-                // Emit to sync with other instances when dates are complete
-                if (!this.isInternalUpdate) {
-                    this.$nextTick(() => {
-                        this.$root.$emit('reserve-dates-updated', {
-                            start_date: this.start_date,
-                            end_date: this.end_date
-                        });
+                return;
+            }
+
+            const startDateFa = new Date(this.start_date).toLocaleDateString('fa-IR');
+            const endDateFa = new Date(endDate).toLocaleDateString('fa-IR');
+
+            this.start_date_text = this.text_start_date.replace(':date', startDateFa);
+            this.end_date_text = this.text_end_date.replace(':date', endDateFa);
+
+            this.dates = this.$root.datePeriod(this.start_date, endDate);
+            const requiredNights = this.getMinNightsForDate(this.start_date);
+            if (this.dates.length < requiredNights) {
+                this.range_warning = `حداقل ${this.toPersianNum(requiredNights)} شب برای رزرو از این تاریخ لازم است.`;
+                this.end_date = '';
+                this.dates = [];
+                this.total = 0;
+                return;
+            }
+
+            this.calcTotal();
+
+            // Emit to sync with other instances when dates are complete
+            if (!this.isInternalUpdate) {
+                this.$nextTick(() => {
+                    this.$root.$emit('reserve-dates-updated', {
+                        start_date: this.start_date,
+                        end_date: this.end_date
                     });
-                }
+                });
             }
         },
         decreaseGuest() {
@@ -910,10 +1030,51 @@ export default {
         normalize(date) {
             return moment(date).format('YYYY-MM-DD');
         },
+        syncExtraGuestFromGuest(guestValue) {
+            const guestNum = parseInt(guestValue, 10) || 0;
+            const maxGuest = parseInt(this.max_guest, 10) || 0;
+            this.extra_guest = guestNum > maxGuest ? guestNum - maxGuest : 0;
+        },
+        syncStayDates() {
+            if (!this.start_date || !this.end_date) {
+                return;
+            }
+
+            const datePeriod = this.resolveDatePeriodMethod();
+            if (!datePeriod) {
+                return;
+            }
+
+            this.dates = datePeriod(this.start_date, this.end_date);
+        },
+        resolveDatePeriodMethod() {
+            if (typeof this.datePeriod === 'function') {
+                return this.datePeriod.bind(this);
+            }
+
+            if (this.$root && typeof this.$root.datePeriod === 'function') {
+                return this.$root.datePeriod.bind(this.$root);
+            }
+
+            return null;
+        },
+        getStayNightsCount() {
+            const datePeriod = this.resolveDatePeriodMethod();
+
+            if (this.start_date && this.end_date && datePeriod) {
+                return datePeriod(this.start_date, this.end_date).length;
+            }
+
+            return Array.isArray(this.dates) ? this.dates.length : 0;
+        },
         calcExtraGuestPrice() {
-            this.extra_guest_price = this.extra_guest * this.price_per_surplus * this.dates.length;
+            const nights = this.getStayNightsCount();
+            const unitPrice = parseInt(this.price_per_surplus, 10) || 0;
+            this.extra_guest_price = this.extra_guest * unitPrice * nights;
         },
         calcTotal() {
+            this.syncExtraGuestFromGuest(this.guest);
+            this.syncStayDates();
             this.calcExtraGuestPrice();
             this.daily_off_price = 0;
 
@@ -996,8 +1157,10 @@ export default {
 /* Reduce padding for sidebar */
 .property-sidebar .jabama-reserve-form,
 .side-booking-body .jabama-reserve-form {
-    padding: 12px;
-    border-radius: 8px;
+    padding: 0;
+    border-radius: 16px;
+    overflow: visible;
+    background: transparent;
 }
 
 /* ============================================
@@ -1799,5 +1962,281 @@ export default {
 
 body.reserve-sheet-open {
     overflow: hidden;
+}
+
+body.reserve-desktop-calendar-open {
+    overflow: hidden;
+}
+
+.reserve-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    border: 1px solid #ececec;
+}
+
+.reserve-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #2b2b2b;
+    color: #fff;
+    padding: 14px 18px;
+    font-size: 13px;
+}
+
+.reserve-card__header strong {
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.reserve-card__body {
+    padding: 18px;
+}
+
+.reserve-card__field {
+    margin-bottom: 16px;
+}
+
+.reserve-card__label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+}
+
+.reserve-card__dates,
+.reserve-desktop-calendar__dates {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.reserve-card__date-cell {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 12px 10px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 13px;
+    color: #1a1a1a;
+    min-width: 0;
+}
+
+.reserve-card__date-cell.is-active {
+    background: #faf6ea;
+    box-shadow: inset 0 0 0 1px #c9a227;
+}
+
+.reserve-card__date-cell .is-placeholder {
+    color: #9a9a9a;
+}
+
+.reserve-card__dates-divider {
+    width: 1px;
+    background: #e5e5e5;
+    flex-shrink: 0;
+}
+
+.reserve-card__counter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 6px 8px;
+    background: #fff;
+}
+
+.reserve-card__counter-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #333;
+    padding: 0;
+}
+
+.reserve-card__counter-btn:hover:not(:disabled) {
+    border-color: #d4af37;
+    background: #fffbeb;
+}
+
+.reserve-card__counter-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.reserve-card__counter-value {
+    flex: 1;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+.reserve-card__hint {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #8a8a8a;
+    line-height: 1.7;
+}
+
+.reserve-card__extra {
+    margin: 8px 0 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #b45309;
+    line-height: 1.6;
+}
+
+.reserve-card__total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: #555;
+}
+
+.reserve-card__total strong {
+    color: #1a1a1a;
+    font-size: 15px;
+}
+
+.reserve-card__submit {
+    width: 100%;
+    border: none !important;
+    border-radius: 999px !important;
+    background: #f5c518 !important;
+    color: #1a1a1a !important;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 13px 16px;
+    cursor: pointer;
+}
+
+.reserve-card__submit:hover {
+    background: #e6b512 !important;
+    color: #1a1a1a !important;
+}
+
+.reserve-card__chat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+    color: #4a4a4a;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.reserve-card__chat:hover {
+    color: #1a1a1a;
+}
+
+.reserve-card__chat-info {
+    font-size: 13px;
+    color: #3b82f6;
+}
+
+.reserve-card__links {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.reserve-card__links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    padding: 10px 8px;
+    font-size: 12px;
+    color: #333;
+    text-decoration: none;
+    background: #fff;
+}
+
+.reserve-card__links a:hover {
+    border-color: #cfcfcf;
+    background: #fafafa;
+}
+
+.reserve-desktop-calendar {
+    position: fixed;
+    inset: 0;
+    z-index: 20050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.reserve-desktop-calendar__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+}
+
+.reserve-desktop-calendar__panel {
+    position: relative;
+    z-index: 1;
+    width: min(920px, calc(100vw - 48px));
+    max-height: calc(100vh - 48px);
+    overflow: auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+    padding: 20px 22px 16px;
+}
+
+.reserve-desktop-calendar__dates {
+    max-width: 420px;
+    margin-bottom: 16px;
+}
+
+.reserve-desktop-calendar__dates .reserve-card__date-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+}
+
+.reserve-desktop-calendar__date-label {
+    font-size: 11px;
+    color: #888;
+}
+
+.reserve-desktop-calendar__min-nights {
+    margin-top: 0;
+}
+
+.reserve-cal-fade-enter-active,
+.reserve-cal-fade-leave-active {
+    transition: opacity 0.2s ease;
+}
+
+.reserve-cal-fade-enter,
+.reserve-cal-fade-leave-to {
+    opacity: 0;
 }
 </style>

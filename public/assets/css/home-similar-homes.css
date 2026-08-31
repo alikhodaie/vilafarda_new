@@ -15,9 +15,13 @@
     font-family: inherit;
 }
 
+.home-similar-carousel {
+    position: relative;
+}
+
 .home-similar-swiper {
-    overflow: visible;
-    margin: 0 -2px;
+    overflow: hidden;
+    margin: 0;
 }
 
 .home-similar-swiper .swiper-slide {
@@ -29,7 +33,50 @@
     position: relative;
 }
 
+.home-similar-nav {
+    position: absolute;
+    top: 38%;
+    z-index: 5;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #e5e5e5;
+    border-radius: 50%;
+    background: #fff;
+    color: #222;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+}
+
+.home-similar-prev {
+    right: -8px;
+}
+
+.home-similar-next {
+    left: -8px;
+}
+
+.home-similar-nav:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.home-similar-homes-desktop .home-similar-homes {
+    margin-bottom: 0;
+}
+
+.home-similar-homes-desktop .property_block_title {
+    font-size: 20px;
+    font-weight: 700;
+}
+
 @media (max-width: 767px) {
+    .home-similar-swiper {
+        overflow: visible;
+        margin: 0 -2px;
+    }
+
     .home-similar-swiper .swiper-slide {
         width: 16.25rem;
     }
