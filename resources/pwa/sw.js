@@ -1,12 +1,11 @@
 /* eslint-disable no-restricted-globals */
 /**
  * Service Worker نسخه موبایل/PWA.
- * اگر منطق کش را عوض کردید، STATIC_CACHE و IMAGE_CACHE را یک واحد بالا ببرید
- * تا مرورگر کش قدیمی را دور بریزد.
+ * تصاویر /files را عمداً اینجا کش نمی‌کنیم: Safari روی iOS اگر fetch عکس
+ * از SW رد شود اغلب آیکون شکسته (?) نشان می‌دهد یا لود را خیلی دیر می‌کند.
+ * اگر منطق کش استاتیک را عوض کردید STATIC_CACHE را یک واحد بالا ببرید.
  */
-var STATIC_CACHE = 'rentnaab-static-v1';
-var IMAGE_CACHE = 'rentnaab-images-v1';
-var IMAGE_CACHE_MAX = 80;
+var STATIC_CACHE = 'rentnaab-static-v2';
 var PRECACHE_URLS = ['/offline'];
 var CDN_HOSTS = ['cdn.jsdelivr.net'];
 
@@ -24,7 +23,7 @@ self.addEventListener('activate', function (event) {
     event.waitUntil(
         caches.keys().then(function (keys) {
             return Promise.all(keys.map(function (key) {
-                if (key !== STATIC_CACHE && key !== IMAGE_CACHE) {
+                if (key !== STATIC_CACHE) {
                     return caches.delete(key);
                 }
                 return undefined;
@@ -57,17 +56,12 @@ self.addEventListener('fetch', function (event) {
         return;
     }
 
-    if (shouldBypass(url)) {
+    if (shouldBypass(url) || isUncachedFile(url, request)) {
         return;
     }
 
     if (isCdnAsset(url) || isStaticAsset(url)) {
         event.respondWith(cacheFirst(request, STATIC_CACHE));
-        return;
-    }
-
-    if (isImageAsset(url, request)) {
-        event.respondWith(staleWhileRevalidate(request, IMAGE_CACHE, IMAGE_CACHE_MAX));
     }
 });
 
@@ -98,35 +92,6 @@ function cacheFirst(request, cacheName) {
                 cache.put(request, copy);
             });
             return response;
-        });
-    });
-}
-
-function staleWhileRevalidate(request, cacheName, maxEntries) {
-    return caches.open(cacheName).then(function (cache) {
-        return cache.match(request).then(function (cached) {
-            var network = fetch(request).then(function (response) {
-                if (isCacheableResponse(response)) {
-                    cache.put(request, response.clone());
-                    trimCache(cache, maxEntries);
-                }
-                return response;
-            }).catch(function () {
-                return cached;
-            });
-
-            return cached || network;
-        });
-    });
-}
-
-function trimCache(cache, maxEntries) {
-    cache.keys().then(function (keys) {
-        if (keys.length <= maxEntries) {
-            return;
-        }
-        cache.delete(keys[0]).then(function () {
-            trimCache(cache, maxEntries);
         });
     });
 }
@@ -163,22 +128,23 @@ function shouldBypass(url) {
     });
 }
 
+function isUncachedFile(url, request) {
+    if (url.origin !== self.location.origin) {
+        return false;
+    }
+
+    if (url.pathname.indexOf('/files/') === 0) {
+        return true;
+    }
+
+    return request.destination === 'image';
+}
+
 function isStaticAsset(url) {
     if (url.origin !== self.location.origin) {
         return false;
     }
-    return /^\/(assets|vendor|files\/setting)\//.test(url.pathname);
-}
-
-function isImageAsset(url, request) {
-    if (url.origin !== self.location.origin) {
-        return false;
-    }
-    if (/^\/files\/homes\//.test(url.pathname)) {
-        return true;
-    }
-    var dest = request.destination;
-    return dest === 'image' && url.pathname.indexOf('/files/') === 0;
+    return /^\/(assets|vendor)\//.test(url.pathname);
 }
 
 function isCdnAsset(url) {

@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             container.innerHTML = '';
-            villas.forEach(home => {
+            villas.forEach((home, index) => {
                 const imgSrc = home.cover_path || home.cover || '';
                 const discount = home.discount_percent > 0 ? home.discount_percent : null;
                 const persianPrice = home.off_price
@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const favoriteBtn = window.HomeFavorite
                     ? window.HomeFavorite.buildButtonHtml(home)
                     : '';
+                const loadingAttr = index < 2 ? ' loading="eager" fetchpriority="high"' : '';
 
                 slide.innerHTML = `
                     <div class="home-favorite-card-wrap" style="width:100%;">
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <a href="/homes/${home.id}">
                             <div class="villa-card p-2" style="width:100%; position:relative; height:360px; display:flex; flex-direction:column; justify-content:flex-end;">
                                 <div class="home-card-image-wrap" style="background:#eee; border-radius: 3rem; overflow:hidden; height:100%; width:100%; position:relative; display:flex; flex-direction:column; justify-content:flex-end;">
-                                    <img src="${imgSrc}" style="width:100%; height:100%; object-fit:cover; border-radius:3rem;" alt="${window.SeoImage ? window.SeoImage.escapeAttr(window.SeoImage.altForHome(home)) : ''}" width="260" height="360" loading="lazy" decoding="async" onerror="this.style.display='none'">
+                                    <img src="${imgSrc}" style="width:100%; height:100%; object-fit:cover; border-radius:3rem;" alt="${window.SeoImage ? window.SeoImage.escapeAttr(window.SeoImage.altForHome(home)) : ''}" width="260" height="360"${loadingAttr} decoding="async" onerror="this.style.display='none'">
                                     ${badge}
                                     <div class="villa-card__image-gradient" aria-hidden="true"></div>
                                     <div class="villa-card__caption">

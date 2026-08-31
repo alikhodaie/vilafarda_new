@@ -4,6 +4,7 @@
     'width' => 400,
     'height' => 200,
     'eager' => false,
+    'lazy' => true,
 ])
 
 <img src="{{ $src }}"
@@ -15,7 +16,7 @@
      @if($eager)
          fetchpriority="high"
          loading="eager"
-     @else
+     @elseif($lazy)
          loading="lazy"
      @endif
 />

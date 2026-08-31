@@ -58,7 +58,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return parts.join(' . ');
     }
 
-    function buildCard(home) {
+    function listingImageLoadingAttr(index) {
+        return index < 2 ? ' loading="eager" fetchpriority="high"' : '';
+    }
+
+    function buildCard(home, index) {
         const imgSrc = home.cover_path || home.cover || '';
         const cityName = home.city?.name || home.province?.name || '';
         const typeLabel = home.type_label || 'اقامتگاه';
@@ -90,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     favoriteBtn +
                     '<a href="/homes/' + home.id + '" class="last-minute-off-card">' +
                         '<div class="last-minute-off-card__image-wrap">' +
-                            '<img src="' + imgSrc + '" alt="' + (window.SeoImage ? window.SeoImage.escapeAttr(window.SeoImage.altForHome(home)) : '') + '" class="last-minute-off-card__image" width="320" height="200" loading="lazy" decoding="async">' +
+                            '<img src="' + imgSrc + '" alt="' + (window.SeoImage ? window.SeoImage.escapeAttr(window.SeoImage.altForHome(home)) : '') + '" class="last-minute-off-card__image" width="320" height="200"' + listingImageLoadingAttr(index) + ' decoding="async">' +
                             scoreLabel +
                             '<div class="last-minute-off-card__price-overlay">' +
                                 discount + original + offPrice +

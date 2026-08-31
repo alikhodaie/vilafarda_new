@@ -30,6 +30,8 @@
                     :src="$cover"
                     width="320"
                     height="240"
+                    :eager="$loop->index === 0"
+                    :lazy="false"
                     class="last-minute-off-card__image"
                 />
                 @if($scoreLabel)
