@@ -36,19 +36,24 @@ Vue.mixin({
         },
 
         datePeriod(start, end){
-            start = new Date(start);
-            end = new Date(end);
-            let dates = [start];
-            let Difference_In_Time = end.getTime() - start.getTime();
-            let Difference_In_Days = Difference_In_Time / (1000 * 3600 * 24);
-            for (var i = 0; i < (Difference_In_Days - 1); i++) {
-                let tomorrow = new Date();
-                tomorrow.setMonth(start.getMonth());
-                tomorrow.setDate(start.getDate() + i + 1);
-                dates.push(tomorrow)
+            const startMoment = this.parseCalendarMoment(start);
+            const endMoment = this.parseCalendarMoment(end);
+
+            if (!startMoment || !endMoment) {
+                return [];
             }
 
-            return dates
+            const dates = [];
+            const cursor = startMoment.clone().startOf('day');
+            const checkout = endMoment.clone().startOf('day');
+
+            // شب‌های اقامت: از ورود تا قبل از خروج (روز چک‌اوت محاسبه نمی‌شود)
+            while (cursor.isBefore(checkout, 'day')) {
+                dates.push(cursor.toDate());
+                cursor.add(1, 'day');
+            }
+
+            return dates;
         },
 
         isHoliday(holidays, date){
