@@ -138,7 +138,7 @@
                                     </div>
                                 </div>
                             </div>
-                            @if($home->status === Home::ACCEPTED && $home->isHostActive())
+                            @if($home->isPubliclyViewable())
                                 <a class="w-100 text-center mb-3 pt-3" style="border-top: 1px solid #cdcdcd;"
                                    href="{{ $home->link }}" target="_blank">نمایش</a>
                             @endif

@@ -102,6 +102,7 @@ class Home extends Model
     const ACCEPTED = 'accepted';
     const PENDING = 'pending';
     const REJECTED = 'rejected';
+    const DEACTIVATED = 'deactivated';
     const STATUSES = [
         self::PENDING => [
             'value' => self::PENDING,
@@ -117,6 +118,11 @@ class Home extends Model
             'value' => self::REJECTED,
             'fa_text' => 'رد شده',
             'color' => 'danger'
+        ],
+        self::DEACTIVATED => [
+            'value' => self::DEACTIVATED,
+            'fa_text' => 'غیرفعال سازی',
+            'color' => 'secondary'
         ],
     ];
 
@@ -789,6 +795,13 @@ class Home extends Model
             ->where('is_host_active', true);
     }
 
+    public function scopePubliclyViewable($query)
+    {
+        return $query
+            ->where('is_draft', false)
+            ->whereIn('status', [self::ACCEPTED, self::DEACTIVATED]);
+    }
+
     public function scopeHostInactive($query)
     {
         return $query->where('is_host_active', false);
@@ -797,6 +810,36 @@ class Home extends Model
     public function isHostActive(): bool
     {
         return (bool) ($this->is_host_active ?? true);
+    }
+
+    public function isDeactivated(): bool
+    {
+        return $this->status === self::DEACTIVATED;
+    }
+
+    public function isPubliclyViewable(): bool
+    {
+        if ($this->is_draft) {
+            return false;
+        }
+
+        return in_array($this->status, [self::ACCEPTED, self::DEACTIVATED], true);
+    }
+
+    public function isBookingEnabled(): bool
+    {
+        return $this->status === self::ACCEPTED
+            && ! $this->is_draft
+            && $this->isHostActive();
+    }
+
+    public function returnToReviewUnlessDeactivated(): void
+    {
+        if ($this->isDeactivated()) {
+            return;
+        }
+
+        $this->update(['status' => self::PENDING]);
     }
 
     public function hostDeactivationReasonLabel(): ?string
@@ -1145,7 +1188,7 @@ class Home extends Model
 
     public function getFastReserveDatesAttribute(): Collection
     {
-        if (!$this->fast_reserve_start_at || !$this->fast_reserve_end_at){
+        if (! $this->isBookingEnabled() || !$this->fast_reserve_start_at || !$this->fast_reserve_end_at){
             return collect([]);
         }
 
@@ -1831,8 +1874,25 @@ class Home extends Model
         ];
     }
 
+    public function closedCalendarDates(): Collection
+    {
+        $dates = collect();
+        $start = Carbon::parse(Order::getMinReserveDate())->startOfDay();
+        $end = Carbon::parse(Order::getMaxReserveDate())->startOfDay();
+
+        for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
+            $dates->push($date->format('Y/m/d'));
+        }
+
+        return $dates->values();
+    }
+
     public function getDisableCustomDatesAttribute(): Collection
     {
+        if (! $this->isBookingEnabled()) {
+            return $this->closedCalendarDates();
+        }
+
         $dates = collect([]);
 
         $records = $this->relationLoaded('custom_dates')
@@ -1848,6 +1908,10 @@ class Home extends Model
 
     public function getDisableDatesAttribute(): Collection
     {
+        if (! $this->isBookingEnabled()) {
+            return $this->closedCalendarDates();
+        }
+
         return $this->disable_custom_dates
             ->merge($this->disable_order_dates)
             ->unique()

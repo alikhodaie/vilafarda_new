@@ -36,9 +36,7 @@ class HomeImageController extends Controller
 
             $image = $home->addImage($request->file('file'));
 
-            $home->update([
-                'status' => Home::PENDING
-            ]);
+            $home->returnToReviewUnlessDeactivated();
 
             DB::commit();
             return $image;

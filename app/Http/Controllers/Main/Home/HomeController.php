@@ -123,7 +123,7 @@ class HomeController extends Controller
             'activeComments.activeChildren.user',
             'activeComments.user'
         ])
-        ->active()
+        ->publiclyViewable()
         ->findOrFail($home->id);
 
         app(HomeStatisticsService::class)->recordView($home);
@@ -144,16 +144,24 @@ class HomeController extends Controller
 
     public function trackClick(Home $home)
     {
-        $home = Home::query()->active()->findOrFail($home->id);
+        $home = Home::query()->publiclyViewable()->findOrFail($home->id);
 
-        app(HomeStatisticsService::class)->recordClick($home);
+        if ($home->isBookingEnabled()) {
+            app(HomeStatisticsService::class)->recordClick($home);
+        }
 
         return redirect()->route('main.homes.show', $home);
     }
 
     public function reserve(ReserveRequest $request, Home $home)
     {
-        $home = Home::query()->active()->findOrFail($home->id);
+        $home = Home::query()->publiclyViewable()->findOrFail($home->id);
+
+        if (! $home->isBookingEnabled()) {
+            throw ValidationException::withMessages([
+                'date' => 'رزرو این اقامتگاه در حال حاضر امکان‌پذیر نیست.'
+            ]);
+        }
 
         if ($home->user_id === auth()->id()){
             throw ValidationException::withMessages([

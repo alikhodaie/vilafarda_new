@@ -60,7 +60,7 @@
                         {{ $status['value'] == old('status', $home->status) ? 'selected' : '' }}>{{ $status['fa_text'] }}</option>
             @endforeach
         </select>
-        <p class="text-muted small mb-0 mt-1">مثلاً فعال، در انتظار تأیید، رد شده — وضعیت نمایش در سایت.</p>
+        <p class="text-muted small mb-0 mt-1">تایید شده در سایت دیده می‌شود. غیرفعال سازی صفحه جزئیات را برای گوگل نگه می‌دارد ولی جستجو و رزرو را می‌بندد.</p>
     </div>
 
     <div class="col-12 col-md-4 mb-3">

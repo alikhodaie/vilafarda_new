@@ -4,7 +4,7 @@ namespace App\Observers;
 
 use App\Models\Home;
 use App\Models\Province;
-use App\Services\HomeProfileStatsService;
+use App\Services\SitemapService;
 
 class HomeObserver
 {
@@ -20,6 +20,10 @@ class HomeObserver
     public function updated(Home $home)
     {
         cache()->delete(Province::CACHE_KEY);
+
+        if ($home->wasChanged(['status', 'is_draft', 'is_host_active', 'slug'])) {
+            SitemapService::forgetCache();
+        }
     }
 
     public function deleted(Home $home)

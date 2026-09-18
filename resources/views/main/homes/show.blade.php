@@ -127,6 +127,7 @@
                 <div class="col-lg-12 col-md-12">
                     <div class="align-items-end">
                         <h3>{{ $home->name }}</h3>
+                        @include('main.homes.partials.deactivated-notice')
                         <div class="text-muted mt-2"><i class="fas fa-star text-warning"></i> {{ $home->fake_score }}
                             ({{ number_format($home->count_comments) }} دیدگاه)
                         </div>
@@ -462,10 +463,14 @@
                      style="width: 90%; background-color: rgb(0 0 0 / 70%)">
                     <span class="align-self-center text-light"
                           style="font-size: 12px">{{ $home->price() }} @lang('title.toman')</span>
-                    <button type="button" data-toggle="modal" data-target="#reserve" class="btn btn-info rounded"
-                            title="@lang('title.text_set_custom_reserve')">
-                        @lang('title.text_set_custom_reserve')
-                    </button>
+                    @if($home->isBookingEnabled())
+                        <button type="button" data-toggle="modal" data-target="#reserve" class="btn btn-info rounded"
+                                title="@lang('title.text_set_custom_reserve')">
+                            @lang('title.text_set_custom_reserve')
+                        </button>
+                    @else
+                        <span class="align-self-center text-light" style="font-size: 12px">رزرو امکان‌پذیر نیست</span>
+                    @endif
                 </div>
             </div>
             <div class="modal fade" id="reserve" tabindex="-1" role="dialog" aria-labelledby="reserve"

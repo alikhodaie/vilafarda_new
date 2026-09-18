@@ -608,7 +608,9 @@ class JsonLdService
             'url' => $canonical,
             'price' => $price,
             'priceCurrency' => 'IRR',
-            'availability' => 'https://schema.org/InStock',
+            'availability' => $home->isBookingEnabled()
+                ? 'https://schema.org/InStock'
+                : 'https://schema.org/OutOfStock',
             'validFrom' => now()->toIso8601String(),
             'priceSpecification' => [
                 '@type' => 'UnitPriceSpecification',

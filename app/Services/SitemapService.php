@@ -64,7 +64,7 @@ class SitemapService
             $urls = [];
 
             Home::query()
-                ->active()
+                ->publiclyViewable()
                 ->select(['id', 'slug', 'updated_at'])
                 ->orderBy('id')
                 ->chunkById(500, function ($homes) use (&$urls) {
@@ -208,7 +208,7 @@ class SitemapService
 
     private function homesLastModified(): string
     {
-        $updatedAt = Home::query()->active()->max('updated_at');
+        $updatedAt = Home::query()->publiclyViewable()->max('updated_at');
 
         return $this->formatLastmod($updatedAt);
     }

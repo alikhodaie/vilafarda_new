@@ -139,7 +139,7 @@
                                 ادامه ثبت اقامتگاه
                             </a>
                         @else
-                            @if($home->status === Home::ACCEPTED && $home->isHostActive())
+                            @if($home->isPubliclyViewable())
                                 <a href="{{ route('main.homes.show', $home) }}" class="btn btn-primary btn-sm flex-fill" style="font-size: 12px; background: #D39D1A; border-color: #D39D1A; color: white; border-radius: 8px;">
                                     <i class="bi bi-eye me-1"></i>
                                     مشاهده

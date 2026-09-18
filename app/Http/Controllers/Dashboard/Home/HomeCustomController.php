@@ -163,9 +163,7 @@ class HomeCustomController extends Controller
             ]);
 
             if ($home->wasChanged()){
-                $home->update([
-                    'status' => Home::PENDING
-                ]);
+                $home->returnToReviewUnlessDeactivated();
             }
 
             DB::commit();
@@ -232,9 +230,7 @@ class HomeCustomController extends Controller
             ]);
 
             if ($must_pending || $home->wasChanged()){
-                $home->update([
-                    'status' => Home::PENDING
-                ]);
+                $home->returnToReviewUnlessDeactivated();
             }
 
             DB::commit();
@@ -270,9 +266,7 @@ class HomeCustomController extends Controller
 
             $home->updateCover($request->file('file'));
 
-                $home->update([
-                    'status' => Home::PENDING
-                ]);
+            $home->returnToReviewUnlessDeactivated();
 
 
             DB::commit();
@@ -295,9 +289,7 @@ class HomeCustomController extends Controller
 
             $home->deleteCover();
 
-                $home->update([
-                    'status' => Home::PENDING
-                ]);
+            $home->returnToReviewUnlessDeactivated();
 
             DB::commit();
             if ($request->ajax()){

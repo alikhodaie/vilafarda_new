@@ -1348,6 +1348,10 @@
     </div>
 </div>
 
+<div class="container">
+    @include('main.homes.partials.deactivated-notice')
+</div>
+
 <!-- Detail Section -->
 <div class="container home-detail-page">
     @php
@@ -1692,7 +1696,7 @@
     <section id="reserve-calendar-section" class="home-detail-section reserve-calendar-main reserve-calendar-section--page-end mb-4">
         <h3 class="home-detail-section__title">
             <i class="bi bi-calendar3"></i>
-            انتخاب تاریخ رزرو
+            {{ $home->isBookingEnabled() ? 'انتخاب تاریخ رزرو' : 'تقویم اقامتگاه' }}
         </h3>
         <div class="home-reserve-calendar-box">
         <reserve-home
@@ -1749,9 +1753,15 @@
         </p>
     </div>
 
-    <button type="button" class="fixed-flex-box-btn" id="reserveBtn" data-mobile-reserve-trigger>
-        درخواست رزرو (رایگان)
-    </button>
+    @if($home->isBookingEnabled())
+        <button type="button" class="fixed-flex-box-btn" id="reserveBtn" data-mobile-reserve-trigger>
+            درخواست رزرو (رایگان)
+        </button>
+    @else
+        <button type="button" class="fixed-flex-box-btn" id="reserveBtn" disabled>
+            رزرو امکان‌پذیر نیست
+        </button>
+    @endif
 </div>
 
 @php

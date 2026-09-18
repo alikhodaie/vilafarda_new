@@ -398,9 +398,7 @@ class HomeController extends Controller
             }
 
             if ($home->wasChanged()){
-                $home->update([
-                    'status' => Home::PENDING
-                ]);
+                $home->returnToReviewUnlessDeactivated();
             }
 
             DB::commit();
