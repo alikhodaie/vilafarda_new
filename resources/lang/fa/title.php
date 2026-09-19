@@ -489,6 +489,7 @@ return [
     'sms_category_orders' => 'سفارشات',
     'sms_category_scheduled' => 'زمان‌بندی‌شده',
     'sms_category_auth' => 'احراز هویت',
+    'sms_category_homes' => 'اقامتگاه‌ها',
     'sms_logs' => 'لاگ پیامک‌ها',
     'sms_log_detail' => 'جزئیات پیامک',
     'sms_log_status_sent' => 'ارسال شده',

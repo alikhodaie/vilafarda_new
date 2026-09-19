@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Classes\SMS;
+use App\Models\Home;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Models\User;
@@ -39,7 +40,27 @@ class OrderAdminSmsService
 
     public const LAST_ROTATING_COUNT_KEY = 'order_sms:last_rotating_count';
 
+    public const LAST_HOME_ROTATING_INDEX_KEY = 'home_sms:last_rotating_index';
+
+    public const LAST_HOME_ROTATING_COUNT_KEY = 'home_sms:last_rotating_count';
+
     public function pickNextRotatingAdmin(): ?User
+    {
+        return $this->pickNextRotatingAdminWithKeys(
+            self::LAST_ROTATING_INDEX_KEY,
+            self::LAST_ROTATING_COUNT_KEY
+        );
+    }
+
+    public function pickNextRotatingHomeAdmin(): ?User
+    {
+        return $this->pickNextRotatingAdminWithKeys(
+            self::LAST_HOME_ROTATING_INDEX_KEY,
+            self::LAST_HOME_ROTATING_COUNT_KEY
+        );
+    }
+
+    private function pickNextRotatingAdminWithKeys(string $indexKey, string $countKey): ?User
     {
         $admins = $this->getRotatingOnlyAdmins();
 
@@ -51,14 +72,14 @@ class OrderAdminSmsService
             return $admins->first();
         }
 
-        return DB::transaction(function () use ($admins) {
+        return DB::transaction(function () use ($admins, $indexKey, $countKey) {
             $setting = Setting::query()
-                ->where('key', self::LAST_ROTATING_INDEX_KEY)
+                ->where('key', $indexKey)
                 ->lockForUpdate()
                 ->first();
 
             $countSetting = Setting::query()
-                ->where('key', self::LAST_ROTATING_COUNT_KEY)
+                ->where('key', $countKey)
                 ->lockForUpdate()
                 ->first();
 
@@ -72,12 +93,12 @@ class OrderAdminSmsService
             $nextIndex = ($lastIndex + 1) % $admins->count();
 
             Setting::query()->updateOrCreate(
-                ['key' => self::LAST_ROTATING_INDEX_KEY],
+                ['key' => $indexKey],
                 ['value' => (string) $nextIndex]
             );
 
             Setting::query()->updateOrCreate(
-                ['key' => self::LAST_ROTATING_COUNT_KEY],
+                ['key' => $countKey],
                 ['value' => (string) $admins->count()]
             );
 
@@ -128,6 +149,46 @@ class OrderAdminSmsService
                 'related' => $order,
                 'source' => 'OrderObserver::created',
             ]);
+        }
+    }
+
+    public function sendAdminHomeSubmittedSms(Home $home): void
+    {
+        $pattern = trim((string) config('sms.patterns.home_submitted_admin'));
+        if ($pattern === '') {
+            return;
+        }
+
+        $limit = $this->parameterMaxLength();
+        $paramName = $this->resolveSmsParamName(
+            'home_submitted_admin',
+            ['admin_name' => 'ADMIN-NAME'],
+            'admin_name'
+        );
+        $sentMobiles = [];
+
+        $admins = $this->getAlwaysAdmins();
+        $rotatingAdmin = $this->pickNextRotatingHomeAdmin();
+        if ($rotatingAdmin) {
+            $admins = $admins->push($rotatingAdmin)->unique('id')->values();
+        }
+
+        foreach ($admins as $admin) {
+            if (! filled($admin->mobile) || in_array($admin->mobile, $sentMobiles, true)) {
+                continue;
+            }
+
+            SMS::sendPattern($admin->mobile, $pattern, [
+                [
+                    'name' => $paramName,
+                    'value' => Str::limit(trim($admin->full_name), $limit, ''),
+                ],
+            ], [
+                'user_id' => $admin->id,
+                'related' => $home,
+                'source' => 'HomeObserver::updated',
+            ]);
+            $sentMobiles[] = $admin->mobile;
         }
     }
 

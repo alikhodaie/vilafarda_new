@@ -12,6 +12,8 @@ class SmsTemplates
 
     public const CATEGORY_AUTH = 'auth';
 
+    public const CATEGORY_HOMES = 'homes';
+
     public static function all(): Collection
     {
         return collect(config('sms_templates', []))
@@ -25,6 +27,7 @@ class SmsTemplates
             self::CATEGORY_ORDERS => __('title.sms_category_orders'),
             self::CATEGORY_SCHEDULED => __('title.sms_category_scheduled'),
             self::CATEGORY_AUTH => __('title.sms_category_auth'),
+            self::CATEGORY_HOMES => __('title.sms_category_homes'),
             default => $category,
         };
     }

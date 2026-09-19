@@ -842,6 +842,30 @@ class Home extends Model
         $this->update(['status' => self::PENDING]);
     }
 
+    public function shouldNotifyHostOnSubmit(): bool
+    {
+        return $this->wasChanged('is_draft')
+            && ! $this->is_draft
+            && $this->status === self::PENDING;
+    }
+
+    public function shouldNotifyHostOnReview(): bool
+    {
+        return $this->wasChanged('status')
+            && ! $this->is_draft
+            && $this->getOriginal('status') === self::PENDING
+            && in_array($this->status, [self::ACCEPTED, self::REJECTED], true);
+    }
+
+    public function reviewResultLabel(): ?string
+    {
+        return match ($this->status) {
+            self::ACCEPTED => 'تایید شد',
+            self::REJECTED => 'رد شد',
+            default => null,
+        };
+    }
+
     public function hostDeactivationReasonLabel(): ?string
     {
         if (! $this->host_deactivation_reason) {

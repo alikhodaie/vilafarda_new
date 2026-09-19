@@ -21,6 +21,9 @@ return [
         'before_residence' => env('SMS_PATTERN_BEFORE_RESIDENCE', ''),
         'after_residence' => env('SMS_PATTERN_AFTER_RESIDENCE', ''),
         'login_otp' => env('SMS_PATTERN_LOGIN_OTP', ''),
+        'home_submitted_host' => env('SMS_PATTERN_HOME_SUBMITTED_HOST', ''),
+        'home_submitted_admin' => env('SMS_PATTERN_HOME_SUBMITTED_ADMIN', ''),
+        'home_reviewed_host' => env('SMS_PATTERN_HOME_REVIEWED_HOST', ''),
     ],
     'parameter_names' => [
         'order_created_admin' => [
@@ -39,6 +42,16 @@ return [
             'home_name' => 'HOME_NAME',
             'consultant_name' => 'CONSULTANT_NAME',
             'consultant_mobile' => 'CONSULTANT_MOBILE',
+        ],
+        'home_submitted_host' => [
+            'host_name' => 'HOST-NAME',
+        ],
+        'home_submitted_admin' => [
+            'admin_name' => 'ADMIN-NAME',
+        ],
+        'home_reviewed_host' => [
+            'host_name' => 'HOST-NAME',
+            'review_result' => 'REVIEW-RESULT',
         ],
     ],
     'parameter_max_length' => (int) env('SMS_PARAMETER_MAX_LENGTH', 40),
