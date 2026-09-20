@@ -45,6 +45,7 @@ use App\Http\Controllers\Auth\Password\ResetPasswordController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Dashboard\CommentController as DashboardCommentsController;
 use App\Http\Controllers\Dashboard\FavoriteController;
+use App\Http\Controllers\Dashboard\InboxController;
 use App\Http\Controllers\Dashboard\Home\HomeController as DashboardHomeController;
 use App\Http\Controllers\Dashboard\Home\HomeCustomController;
 use App\Http\Controllers\Dashboard\Home\HomeImageController;
@@ -272,6 +273,17 @@ Route::prefix('/dashboard')->name('dashboard.')->middleware(['auth', 'detect.mob
     Route::resource('tickets', TicketController::class)->except(['edit', 'update', 'destroy']);
     Route::post('/tickets/{ticket}', [TicketController::class, 'reply'])->name('tickets.reply');
     #  endregion
+
+    # region Inbox
+    Route::prefix('/inbox')->name('inbox.')->group(function () {
+        Route::get('/', [InboxController::class, 'index'])->name('index');
+        Route::post('/read-all', [InboxController::class, 'markAllRead'])->name('read-all');
+        Route::get('/{type}/{id}', [InboxController::class, 'show'])
+            ->where('type', 'newsletter|sms')
+            ->where('id', '[0-9]+')
+            ->name('show');
+    });
+    # endregion
 
     # region Homes
     Route::resource('homes', DashboardHomeController::class)->except(['store']);

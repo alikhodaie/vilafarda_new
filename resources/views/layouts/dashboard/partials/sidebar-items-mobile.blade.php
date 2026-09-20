@@ -187,6 +187,30 @@
         <hr>
     </a>
 
+    <a href="{{ route('dashboard.inbox.index') }}" class="profile-link">
+        <div class="d-flex align-items-center gap-3 justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon-square position-relative">
+                    <i class="bi bi-bell-fill fs-3"></i>
+                    @if(($inboxUnreadCount ?? 0) > 0)
+                        <span class="inbox-unread-badge">{{ $inboxUnreadCount > 99 ? '99+' : $inboxUnreadCount }}</span>
+                    @endif
+                </div>
+                <div>
+                    <div class="fw-semibold">
+                        @lang('title.inbox')
+                        @if(($inboxUnreadCount ?? 0) > 0)
+                            <span class="badge rounded-pill bg-danger ms-1" style="font-size: 11px; vertical-align: middle;">{{ $inboxUnreadCount }}</span>
+                        @endif
+                    </div>
+                    <small class="text-muted">خبرها و پیامک‌های ویلا فردا</small>
+                </div>
+            </div>
+            <i class="bi bi-chevron-left fs-5 text-muted"></i>
+        </div>
+        <hr>
+    </a>
+
     <a href="{{ route('dashboard.tickets.index') }}" class="profile-link">
         <div class="d-flex align-items-center gap-3 justify-content-between">
             <div class="d-flex align-items-center gap-3">

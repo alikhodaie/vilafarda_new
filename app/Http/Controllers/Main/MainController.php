@@ -51,6 +51,7 @@ class MainController extends Controller
 
         if ($request->is_mobile ?? false) {
             $suggestionCategories = HomeIndexSectionService::suggestionCategories();
+            $firstSuggestionSlug = $suggestionCategories[0]['slug'] ?? null;
 
             return view('main.index-mobile', compact(
                 'cities',
@@ -66,9 +67,13 @@ class MainController extends Controller
                 'suggestionCategories'
             ) + [
                 'showOpenTomorrow' => HomeIndexSectionService::hasOpenTomorrowHomes(),
+                'openTomorrowHomes' => HomeIndexSectionService::homesForCategory('open-tomorrow', 10),
                 'showOffHomes' => HomeIndexSectionService::hasOffHomes(),
                 'offCities' => HomeIndexSectionService::offCities(),
                 'offHomesInitial' => HomeIndexSectionService::offHomes(null, 10),
+                'suggestionInitialHomes' => $firstSuggestionSlug
+                    ? HomeIndexSectionService::homesForCategory($firstSuggestionSlug, 6)
+                    : collect(),
                 'showSuggestions' => count($suggestionCategories) > 0,
                 'showConsultants' => $consultants->isNotEmpty(),
                 'showArticles' => $articles->isNotEmpty(),
@@ -91,6 +96,7 @@ class MainController extends Controller
             'comments',
         ]) + [
             'showOpenTomorrow' => HomeIndexSectionService::hasOpenTomorrowHomes(),
+            'openTomorrowHomes' => HomeIndexSectionService::homesForCategory('open-tomorrow', 10),
             'showOffHomes' => HomeIndexSectionService::hasOffHomes(),
             'offCities' => HomeIndexSectionService::offCities(),
             'offHomesInitial' => HomeIndexSectionService::offHomes(null, 10),

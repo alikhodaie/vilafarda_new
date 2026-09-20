@@ -557,6 +557,22 @@ if (!function_exists('persianDate')){
     }
 }
 
+if (! function_exists('inbox_linkify')) {
+    /**
+     * لینک‌های http(s) داخل متن ساده صندوق پیام را قابل‌کلیک می‌کند.
+     */
+    function inbox_linkify(string $text): string
+    {
+        $escaped = e($text);
+
+        return (string) preg_replace(
+            '~(https?://[^\s<]+)~u',
+            '<a href="$1" class="inbox-action-link">$1</a>',
+            $escaped
+        );
+    }
+}
+
 if (! function_exists('public_asset_version')) {
     /**
      * آدرس فایل استاتیک با نسخهٔ filemtime برای bust کردن کش مرورگر.

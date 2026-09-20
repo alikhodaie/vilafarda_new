@@ -10,6 +10,27 @@
                 <input class="form-control" name="title" id="title" type="text" value="{{ old('title') }}"/>
             </div>
 
+            <div class="col-12 mb-4">
+                <label class="form-label d-block">@lang('title.newsletter_audience') <span>*</span></label>
+                <p class="text-muted small mb-3">@lang('title.newsletter_audience_help')</p>
+                @foreach(\App\Models\Newsletter::AUDIENCES as $value => $label)
+                    <div class="form-check mb-2">
+                        <input class="form-check-input"
+                               type="radio"
+                               name="audience"
+                               id="audience-{{ $value }}"
+                               value="{{ $value }}"
+                               @checked(old('audience', \App\Models\Newsletter::AUDIENCE_ALL) === $value)>
+                        <label class="form-check-label" for="audience-{{ $value }}">
+                            {{ $label }}
+                            @if(isset($audienceCounts[$value]))
+                                <span class="text-muted">({{ persianNumber($audienceCounts[$value]) }} نفر)</span>
+                            @endif
+                        </label>
+                    </div>
+                @endforeach
+            </div>
+
             <div class="col-12 mb-5">
                 <label class="form-label" for="content">@lang('title.body') <span>*</span></label>
                 <tinymce-editor

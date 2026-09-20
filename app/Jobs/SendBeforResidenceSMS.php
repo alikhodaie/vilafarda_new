@@ -38,10 +38,10 @@ class SendBeforResidenceSMS implements ShouldQueue
             ->get();
 
         foreach ($orders as $order){
-            SMS::sendPattern($order->renter->mobile, config('sms.patterns.before_residence'), [[
+            SMS::sendPattern($order->renter->mobile, config('sms.patterns.before_residence') ?: '810272', [[
                 'name' => 'ID',
-                'value' => (string) $order->id,
-            ]]);
+                'value' => $order->home->code,
+            ]], ['related' => $order, 'source' => 'SendBeforResidenceSMS']);
         }
     }
 }

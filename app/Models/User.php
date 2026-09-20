@@ -166,6 +166,16 @@ class User extends Authenticatable
         return (bool) $this->is_admin;
     }
 
+    public function isNewsletterHost(): bool
+    {
+        return $this->homes()->where('is_draft', false)->exists();
+    }
+
+    public function isNewsletterGuest(): bool
+    {
+        return $this->rents()->exists();
+    }
+
     public function isBlocked(): bool
     {
         return $this->is_block;
@@ -304,6 +314,16 @@ class User extends Authenticatable
     public function tickets()
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    public function smsLogs(): HasMany
+    {
+        return $this->hasMany(SmsLog::class);
+    }
+
+    public function inboxReads(): HasMany
+    {
+        return $this->hasMany(InboxRead::class);
     }
 
     public function homes()

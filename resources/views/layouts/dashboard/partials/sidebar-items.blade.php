@@ -67,6 +67,16 @@
         @lang('title.host_transactions')
     </a>
 </li>
+<li @if($active === 'inbox') class="active" @endif>
+    <a href="{{ route('dashboard.inbox.index') }}">
+        <i class="fa fa-bell"></i>
+        @lang('title.inbox')
+
+        @if(($inboxUnreadCount ?? 0) > 0)
+            <span class="notti_coun style-4">{{ $inboxUnreadCount }}</span>
+        @endif
+    </a>
+</li>
 <li @if($active === 'tickets') class="active" @endif>
     <a href="{{ route('dashboard.tickets.index') }}">
         <i class="fa fa-envelope"></i>

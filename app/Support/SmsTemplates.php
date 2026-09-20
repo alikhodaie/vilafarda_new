@@ -39,10 +39,96 @@ class SmsTemplates
 
     public static function titleForPatternId(string $patternId): ?string
     {
-        $template = self::all()->first(
-            fn (array $template) => (string) ($template['pattern_id'] ?? '') === (string) $patternId
-        );
+        $template = self::findByPatternId($patternId);
 
         return $template['title'] ?? null;
+    }
+
+    public static function findByPatternId(string $patternId): ?array
+    {
+        if ($patternId === '') {
+            return null;
+        }
+
+        return self::all()->first(
+            fn (array $template) => (string) ($template['pattern_id'] ?? '') === (string) $patternId
+        );
+    }
+
+    public static function findForInbox(?string $patternId, ?string $patternTitle = null): ?array
+    {
+        if ($patternId) {
+            $byId = self::findByPatternId($patternId);
+            if ($byId) {
+                return $byId;
+            }
+        }
+
+        $title = trim((string) $patternTitle);
+        if ($title === '') {
+            return null;
+        }
+
+        return self::all()->first(
+            fn (array $template) => (string) ($template['title'] ?? '') === $title
+        );
+    }
+
+    public static function isInboxVisible(string $patternId): bool
+    {
+        if ($patternId === 'bulk') {
+            return true;
+        }
+
+        $template = self::findByPatternId($patternId);
+
+        if ($template === null) {
+            return true;
+        }
+
+        if (($template['category'] ?? '') === self::CATEGORY_AUTH) {
+            return false;
+        }
+
+        return ! self::isAdminRecipient($template);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function hiddenInboxPatternIds(): array
+    {
+        return self::hiddenInboxTemplates()
+            ->pluck('pattern_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function hiddenInboxTitles(): array
+    {
+        return self::hiddenInboxTemplates()
+            ->pluck('title')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public static function isAdminRecipient(array $template): bool
+    {
+        return mb_strpos((string) ($template['recipient'] ?? ''), 'ادمین') !== false;
+    }
+
+    private static function hiddenInboxTemplates(): Collection
+    {
+        return self::all()->filter(function (array $template) {
+            return ($template['category'] ?? '') === self::CATEGORY_AUTH
+                || self::isAdminRecipient($template);
+        });
     }
 }

@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\Newsletter\NewsletterRequest;
 use App\Mail\NewsletterEmail;
 use App\Models\Newsletter;
 use App\Models\NewsletterSubscriber;
+use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,9 @@ class NewsletterController extends Controller
     {
         $this->authorize('create', Newsletter::class);
 
-        return view('admin.newsletters.create');
+        return view('admin.newsletters.create', [
+            'audienceCounts' => $this->audienceCounts(),
+        ]);
     }
 
     public function store(NewsletterRequest $request)
@@ -43,24 +46,49 @@ class NewsletterController extends Controller
         $this->authorize('create', Newsletter::class);
 
 
-        try {
-            DB::beginTransaction();
+        $audience = (string) $request->get('audience', Newsletter::AUDIENCE_ALL);
 
+        try {
             Newsletter::query()->create([
                 'title' => $request->get('title'),
                 'body' => $request->get('body'),
+                'audience' => $audience,
             ]);
-
-            $subscribers = NewsletterSubscriber::query()->pluck('email');
-            Mail::to($subscribers)->send(new NewsletterEmail($request->get('title'), $request->get('body')));
-
-            DB::commit();
-            return redirect()->route('admin.newsletter.index')->with('success', __('text.success.create_newsletter'));
         } catch (Exception $exception) {
-            DB::rollBack();
             Error::catch($exception, __CLASS__, __FUNCTION__);
-            return redirect()->back()->with('danger', __('text.whoops'));
+
+            return redirect()->back()->withInput()->with('danger', __('text.whoops'));
         }
+
+        $mailFailed = false;
+
+        if ($audience === Newsletter::AUDIENCE_ALL) {
+            $subscribers = NewsletterSubscriber::query()
+                ->whereNotNull('email')
+                ->where('email', '!=', '')
+                ->pluck('email')
+                ->filter()
+                ->unique()
+                ->values();
+
+            if ($subscribers->isNotEmpty()) {
+                try {
+                    Mail::to($subscribers)->send(new NewsletterEmail($request->get('title'), $request->get('body')));
+                } catch (Exception $exception) {
+                    $mailFailed = true;
+                    Error::catch($exception, __CLASS__, __FUNCTION__);
+                }
+            }
+        }
+
+        return redirect()
+            ->route('admin.newsletter.index')
+            ->with(
+                $mailFailed ? 'warning' : 'success',
+                $mailFailed
+                    ? __('text.success.create_newsletter_mail_failed')
+                    : __('text.success.create_newsletter')
+            );
     }
 
     public function destroy(Newsletter $newsletter)
@@ -80,5 +108,22 @@ class NewsletterController extends Controller
             Error::catch($exception, __CLASS__, __FUNCTION__);
             return redirect()->back()->with('danger', __('text.whoops'));
         }
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function audienceCounts(): array
+    {
+        return [
+            Newsletter::AUDIENCE_ALL => User::query()->count(),
+            Newsletter::AUDIENCE_HOSTS => User::query()
+                ->whereHas('homes', function ($homes) {
+                    $homes->where('is_draft', false);
+                })
+                ->count(),
+            Newsletter::AUDIENCE_GUESTS => User::query()->whereHas('rents')->count(),
+            Newsletter::AUDIENCE_ADMINS => User::query()->admin()->count(),
+        ];
     }
 }

@@ -81,7 +81,7 @@ class OrderObserver
                         'name' => 'ID',
                         'value' => Str::limit($order->home->code, 25, ''),
                     ]
-                    ]);
+                    ], ['related' => $order, 'source' => 'OrderObserver::updated']);
 //                SMS::sendPattern($order->owner->mobile, '4pfs6agwusq7gnv', ['name' => $order->home->name]);
 
                 $orders = $order->owner->orders()->where('id', '!=', $order->id)->where('status', Order::PENDING)->get();
@@ -98,7 +98,7 @@ class OrderObserver
                         'name' => 'ID',
                         'value' => Str::limit($order->home->code, 25, ''),
                     ]
-                    ]);
+                    ], ['related' => $order, 'source' => 'OrderObserver::updated']);
 
                 if ($order->wasExpiredDueToHostNonApproval()){
                     // میزبان به درخواست پاسخ نداده و مهلت تمام شده؛ تقویم آن روزها بسته شد.
@@ -125,7 +125,7 @@ class OrderObserver
                             'name' => 'ID',
                             'value' => Str::limit($order->home->code, 25, ''),
                         ]
-                    ]);
+                    ], ['related' => $order, 'source' => 'OrderObserver::updated']);
                 }
 
 
@@ -148,7 +148,7 @@ class OrderObserver
                         'name' => 'REASON',
                         'value' => Str::limit($order->rejectReasonLabel() ?? Order::REJECT_REASONS[Order::REJECT_REASON_BOOKED], 25, ''),
                     ],
-                    ]);
+                    ], ['related' => $order, 'source' => 'OrderObserver::updated']);
 
 //                SMS::sendPattern($order->owner->mobile, 'oogvrnsz22do5mc', ['name' => $order->home->name]);
 
@@ -192,7 +192,7 @@ class OrderObserver
                         'name' => 'MOBILE',
                         'value' => $order->renter->mobile,
                     ],
-                ]);
+                ], ['related' => $order, 'source' => 'OrderObserver::updated']);
             }
             if ($order->status === Order::DONE){
                 $amount = 1;

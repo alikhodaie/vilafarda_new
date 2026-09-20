@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Admin\Newsletter;
 
 use App\Models\Newsletter;
-use App\Models\NewsletterSubscriber;
 use Illuminate\Foundation\Http\FormRequest;
 
 class NewsletterRequest extends FormRequest
@@ -28,6 +27,7 @@ class NewsletterRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'max:190'],
             'body'  => ['required', 'string'],
+            'audience' => ['required', 'string', 'in:'.implode(',', Newsletter::audienceValues())],
         ];
     }
 }

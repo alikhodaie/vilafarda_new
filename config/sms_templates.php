@@ -10,6 +10,7 @@ return [
         'category' => 'orders',
         'parameters' => ['HOME_NAME', 'CONSULTANT_NAME', 'CONSULTANT_MOBILE'],
         'description' => 'مشاور شما (%CONSULTANT_NAME%) — برای سوالات بیشتر با مشاور خود تماس بگیرید: %CONSULTANT_MOBILE%',
+        'inbox_body' => "درخواست رزرو شما برای اقامتگاه «%HOME_NAME%» ثبت شد.\nمشاور شما %CONSULTANT_NAME% است. برای سؤال یا هماهنگی با این شماره تماس بگیرید: %CONSULTANT_MOBILE%\nمنتظر تأیید میزبان بمانید. نتیجه را همین‌جا و با پیامک به شما خبر می‌دهیم.%RENT_LINK_LINE%",
     ],
     'order_created_owner' => [
         'pattern_id' => config('sms.patterns.order_created_owner'),
@@ -19,6 +20,7 @@ return [
         'source' => 'OrderObserver::created',
         'category' => 'orders',
         'parameters' => ['COUNT', 'START-DATE', 'END-DATE', 'AMOUNT'],
+        'inbox_body' => "یک درخواست رزرو جدید برای اقامتگاه شما آمده است.\nتعداد مهمان: %COUNT%\nورود: %START-DATE%\nخروج: %END-DATE%\nمبلغ تسویه شما: %AMOUNT% تومان\nلطفاً هرچه زودتر درخواست را تأیید یا رد کنید. اگر تا ۳۰ دقیقه پاسخ ندهید، درخواست لغو می‌شود.%ORDER_LINK_LINE%",
     ],
     'order_created_admin' => [
         'pattern_id' => config('sms.patterns.order_created_admin'),
@@ -38,6 +40,7 @@ return [
         'source' => 'OrderObserver::updated',
         'category' => 'orders',
         'parameters' => ['ID'],
+        'inbox_body' => "میزبان درخواست رزرو شما را تأیید کرد.\nکد اقامتگاه: %ID%\nالان باید هزینه رزرو را پرداخت کنید تا رزرو قطعی شود. اگر پرداخت را به تأخیر بیندازید، ممکن است رزرو لغو شود.%PAY_LINK_LINE%",
     ],
     'order_canceled' => [
         'pattern_id' => config('sms.patterns.order_canceled'),
@@ -47,6 +50,7 @@ return [
         'source' => 'OrderObserver::updated',
         'category' => 'orders',
         'parameters' => ['ID'],
+        'inbox_body' => "رزرو مربوط به اقامتگاه با کد %ID% لغو شد.\nاین رزرو دیگر فعال نیست. اگر مبلغی پرداخت کرده‌اید، وضعیت بازگشت وجه را از جزئیات همین رزرو یا با پشتیبانی پیگیری کنید.%ACTION_LINK_LINE%%SEARCH_LINK_LINE%",
     ],
     'order_rejected' => [
         'pattern_id' => config('sms.patterns.order_rejected'),
@@ -57,6 +61,7 @@ return [
         'category' => 'orders',
         'parameters' => ['HOME-NAME', 'REASON'],
         'description' => 'متغیر REASON علت رد درخواست است (اقامتگاه رزرو است / قیمت درست نیست / تعمیرات دارم).',
+        'inbox_body' => "متأسفانه میزبان درخواست رزرو اقامتگاه «%HOME-NAME%» را رد کرد.\nعلت اعلام‌شده: %REASON%\nاین درخواست دیگر قابل پرداخت نیست. می‌توانید اقامتگاه دیگری انتخاب کنید یا برای همان مقصد تاریخ دیگری رزرو کنید.%SEARCH_LINK_LINE%",
     ],
     'order_pending_timeout_owner' => [
         'pattern_id' => config('sms.patterns.order_pending_timeout_owner'),
@@ -67,6 +72,7 @@ return [
         'category' => 'orders',
         'parameters' => ['HOST-NAME', 'HOME-NAME', 'CALENDAR-LINK'],
         'description' => 'HOST-NAME نام و نام‌خانوادگی میزبان است. لینک تقویم در قالب: https://vilafarda.ir/#CALENDAR-LINK# (مقدار ارسالی مثل hc/117).',
+        'inbox_body' => "میزبان گرامی %HOST-NAME%\nشما به درخواست رزرو اقامتگاه «%HOME-NAME%» تا ۳۰ دقیقه پاسخ ندادید؛ به همین دلیل درخواست لغو شد و آن تاریخ‌ها در تقویم بسته شدند تا دوباره رزرو روی‌هم نیفتد.\nلطفاً روزهای آزاد را دوباره باز کنید.%CALENDAR_LINK_LINE%",
     ],
     'order_waiting_for_renter' => [
         'pattern_id' => config('sms.patterns.order_waiting_for_renter'),
@@ -76,6 +82,7 @@ return [
         'source' => 'OrderObserver::updated',
         'category' => 'orders',
         'parameters' => ['ID', 'START-DATE', 'END-DATE', 'AMOUNT', 'USERNAME', 'MOBILE'],
+        'inbox_body' => "شما درخواست رزرو را تأیید کردید و الان منتظر پرداخت مهمان هستید.\nکد اقامتگاه: %ID%\nورود: %START-DATE%\nخروج: %END-DATE%\nمبلغ تسویه شما: %AMOUNT% تومان\nمهمان: %USERNAME%\nموبایل مهمان: %MOBILE%\nبعد از پرداخت مهمان، رزرو قطعی می‌شود.%ORDER_LINK_LINE%",
     ],
     'before_residence' => [
         'pattern_id' => config('sms.patterns.before_residence'),
@@ -85,6 +92,7 @@ return [
         'source' => 'SendBeforResidenceSMS',
         'category' => 'scheduled',
         'parameters' => ['ID'],
+        'inbox_body' => "یادآوری سفر: کمتر از ۴۸ ساعت تا ورود شما به اقامتگاه با کد %ID% مانده است.\nلطفاً ساعت ورود، وسایل لازم و هماهنگی با میزبان را دوباره بررسی کنید تا روز ورود مشکلی پیش نیاید.%RENT_LINK_LINE%",
     ],
     'after_residence' => [
         'pattern_id' => config('sms.patterns.after_residence'),
@@ -94,6 +102,7 @@ return [
         'source' => 'SendAfterResidenceSMS',
         'category' => 'scheduled',
         'parameters' => ['ID'],
+        'inbox_body' => "سفر شما به پایان رسیده است.\nاگر از اقامتگاه راضی بودید یا نکته‌ای داشتید، امتیاز و نظر بگذارید. نظر شما به میزبان و مهمان‌های بعدی کمک می‌کند.%REVIEW_LINK_LINE%",
     ],
     'login_otp' => [
         'pattern_id' => config('sms.patterns.login_otp'),
@@ -114,6 +123,7 @@ return [
         'category' => 'homes',
         'parameters' => ['HOST-NAME'],
         'description' => 'میزبان گرامی %HOST-NAME% اقامتگاه شما ثبت شد و پس از تایید در صفحه ما نمایش داده می‌شود. امیدواریم همکاری خوبی با هم داشته باشیم. در صورت طولانی شدن این روند با پشتیبانی در تماس باشید.',
+        'inbox_body' => "میزبان گرامی %HOST-NAME%\nاقامتگاه شما برای بررسی ارسال شد. تا وقتی تیم ویلا فردا آن را تأیید کند، در سایت نمایش داده نمی‌شود.\nنتیجه بازبینی را همین‌جا به شما خبر می‌دهیم. اگر این مرحله طول کشید، با پشتیبانی تماس بگیرید.%HOME_LINK_LINE%",
     ],
     'home_submitted_admin' => [
         'pattern_id' => config('sms.patterns.home_submitted_admin'),
@@ -134,5 +144,6 @@ return [
         'category' => 'homes',
         'parameters' => ['HOST-NAME', 'REVIEW-RESULT'],
         'description' => 'میزبان گرامی %HOST-NAME% اقامتگاه شما توسط تیم ما بازبینی شده و %REVIEW-RESULT%. اگر سوالی دارید با شماره‌های پشتیبانی در تماس باشید. مقدار REVIEW-RESULT: تایید شد / رد شد.',
+        'inbox_body' => "میزبان گرامی %HOST-NAME%\nاقامتگاه شما بازبینی شد و نتیجه آن «%REVIEW-RESULT%» است.\nاگر تأیید شده، اقامتگاه در سایت نمایش داده می‌شود و می‌توانید تقویم و قیمت را مدیریت کنید. اگر رد شده، جزئیات را ببینید و در صورت نیاز با پشتیبانی تماس بگیرید.%HOME_LINK_LINE%",
     ],
 ];

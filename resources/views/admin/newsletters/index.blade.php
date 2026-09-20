@@ -6,6 +6,8 @@
         canSeeButton="{{ auth()->user()->can('create', \App\Models\Newsletter::class) }}"
         buttonLink="{{ route('admin.newsletter.create') }}">
 
+        <p class="text-muted mb-3">خبرهای ثبت‌شده در «پیام های جدید ویلا فردا» برای کاربران نمایش داده می‌شوند و تعداد خوانده‌نشده روی دکمه پروفایل دیده می‌شود.</p>
+
         <x-slot name="buttonText">
             <i class="fa fa-plus"></i>
         </x-slot>
@@ -19,6 +21,7 @@
                     <tr>
                         <th scope="col">@lang('title.id')</th>
                         <th scope="col">@lang('title.title')</th>
+                        <th scope="col">@lang('title.newsletter_audience')</th>
                         <th class="text-end" scope="col"></th>
                     </tr>
                     </thead>
@@ -27,6 +30,7 @@
                         <tr class="align-middle">
                             <td class="text-nowrap">{{ $item->id }}</td>
                             <td class="text-nowrap">{{ $item->title }}</td>
+                            <td class="text-nowrap">{{ $item->audienceLabel() }}</td>
                             <td class="text-end">
                                 @can('delete', $item)
                                     <delete-modal

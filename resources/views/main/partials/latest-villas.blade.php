@@ -26,6 +26,9 @@
     </div>
 </section>
 
+<script>
+    window.openTomorrowInitial = @json(($openTomorrowHomes ?? collect())->values());
+</script>
 <script src="{{ asset('vendor/swiper/swiper-bundle.min.js') }}"></script>
 <script src="{{ asset('assets/js/index-section-visibility.js') }}"></script>
 @if($showDesktopNav)

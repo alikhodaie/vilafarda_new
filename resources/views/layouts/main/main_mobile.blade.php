@@ -21,6 +21,7 @@
         <share-modal></share-modal>
     </div>
 
+    @include('components.bottom-bar')
     @include('layouts.main.partials.script')
     @yield('scripts')
 </body>

@@ -255,6 +255,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (firstBadge) {
         firstBadge.classList.add('active');
         updateSectionDescription(firstBadge);
-        fetchHomes(firstBadge.getAttribute('data-value'));
+
+        const firstSlug = firstBadge.getAttribute('data-value');
+        const initialHomes = normalizeHomes(window.suggestionInitialHomes || []);
+
+        if (initialHomes.length && firstSlug === (window.suggestionInitialSlug || firstSlug)) {
+            renderHomes(initialHomes, firstBadge.getAttribute('data-more-url') || getActiveMoreUrl());
+        } else {
+            fetchHomes(firstSlug);
+        }
     }
 });

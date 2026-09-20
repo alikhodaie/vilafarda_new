@@ -2,13 +2,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const container = document.getElementById('discounted-villas-list');
     if (!container) return;
 
-    fetch('/api/homes/open-tomorrow?limit=10')
-        .then(response => response.json())
-        .then(data => {
-            const villas = data.data || data;
-            if (window.IndexSectionVisibility?.hideIfEmpty(container, villas)) {
-                return;
-            }
+    function renderVillas(villas) {
+        if (window.IndexSectionVisibility?.hideIfEmpty(container, villas)) {
+            return;
+        }
 
             container.innerHTML = '';
             villas.forEach((home, index) => {
@@ -74,6 +71,17 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
                 }
             }
-        })
+    }
+
+    const initialVillas = Array.isArray(window.openTomorrowInitial) ? window.openTomorrowInitial : [];
+
+    if (initialVillas.length) {
+        renderVillas(initialVillas);
+        return;
+    }
+
+    fetch('/api/homes/open-tomorrow?limit=10')
+        .then(response => response.json())
+        .then(data => renderVillas(data.data || data))
         .catch(() => window.IndexSectionVisibility?.hide(container));
 }); 

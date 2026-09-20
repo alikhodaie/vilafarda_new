@@ -33,4 +33,3 @@
     </div>
 </div>
 <!-- End Mobile Navbar --> 
-@include('components.bottom-bar')

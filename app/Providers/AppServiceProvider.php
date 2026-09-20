@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Http\View\Composers\InboxUnreadComposer;
 use App\Http\View\Composers\SeoComposer;
+use App\Services\UserInboxService;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
@@ -17,7 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        $this->app->singleton(UserInboxService::class);
     }
 
     /**
@@ -43,5 +45,11 @@ class AppServiceProvider extends ServiceProvider
             'layouts.dashboard.dashboard',
             'layouts.dashboard.dashboard-mobile',
         ], SeoComposer::class);
+
+        View::composer([
+            'components.bottom-bar',
+            'layouts.dashboard.partials.sidebar-items',
+            'layouts.dashboard.partials.sidebar-items-mobile',
+        ], InboxUnreadComposer::class);
     }
 }

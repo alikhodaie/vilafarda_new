@@ -164,6 +164,7 @@ return [
 
         'delete_newsletter' => 'خبرنامه با موفقیت حذف شد',
         'create_newsletter' => 'خبرنامه با موفقیت ایجاد شد',
+        'create_newsletter_mail_failed' => 'خبر در صندوق پیام کاربران ثبت شد، اما ارسال ایمیل به مشترکین انجام نشد. در لوکال سرویس ایمیل (mailhog) در دسترس نیست.',
 
         'delete_faq' => 'سوال :question با موفقیت حذف شد',
         'create_faq' => 'سوال :question با موفقیت ایجاد شد',
